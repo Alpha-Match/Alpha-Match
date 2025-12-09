@@ -1,0 +1,1 @@
+Next.js + React Query를 활용한 프론트 서버 입니다.
