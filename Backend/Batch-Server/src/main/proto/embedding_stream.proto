@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.alpha.backend.grpc.proto";
+option java_outer_classname = "EmbeddingStreamProto";
+
+package embedding;
+
+// 개별 Recruit Row 데이터
+message RecruitRow {
+  string id = 1;                      // UUID
+  string company_name = 2;            // 회사명
+  int32 exp_years = 3;                // 경력 연수
+  string english_level = 4;           // 영어 레벨
+  string primary_keyword = 5;         // 주요 키워드
+  repeated float vector = 6;          // Embedding Vector (1536 dimension)
+}
+
+// Chunk 단위 전송 (여러 Row를 묶어서)
+message RowChunk {
+  repeated RecruitRow rows = 1;       // Row 배열
+}
+
+// Streaming 요청 파라미터
+message StreamEmbeddingRequest {
+  string last_processed_uuid = 1;     // 마지막 처리된 UUID (checkpoint)
+  int32 chunk_size = 2;               // Chunk 크기 (default: 300)
+}
+
+// Embedding Stream Service
+service EmbeddingStreamService {
+  // Python 서버 → Batch 서버로 Streaming 전송
+  rpc StreamEmbedding(StreamEmbeddingRequest) returns (stream RowChunk);
+}

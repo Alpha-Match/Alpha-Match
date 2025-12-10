@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.alpha.backend.grpc.proto";
+option java_outer_classname = "CacheServiceProto";
+
+package cache;
+
+// 캐시 무효화 요청
+message CacheInvalidateRequest {
+  string target = 1;                  // 무효화할 캐시 대상 (예: "recruit")
+}
+
+// 캐시 무효화 응답
+message CacheInvalidateResponse {
+  bool success = 1;                   // 성공 여부
+  string message = 2;                 // 응답 메시지
+}
+
+// Cache Service
+service CacheService {
+  // Batch 서버 → API 서버로 캐시 무효화 요청
+  rpc InvalidateCache(CacheInvalidateRequest) returns (CacheInvalidateResponse);
+}
