@@ -62,6 +62,36 @@
         - 아키텍처 결정 기록 (ADR)
         - 트러블슈팅 가이드
 
+### 📂 프로젝트 구조 시각화
+
+문서의 역할을 실제 디렉토리 구조와 함께 시각적으로 이해하면 좋습니다.
+
+```
+/ (Root)
+├── .gitignore
+├── GEMINI.md           # 👈 (For AI) 최상위 AI 컨텍스트
+├── README.md           # 👈 (For Human) 프로젝트 전체 가이드
+├── DOCUMENT_GUIDE.md   # 👈 이 문서
+├── docs/               # 👈 프로젝트 전체 상세 문서 (아키텍처, ADR 등)
+│   └── ...
+├── Frontend/
+│   └── Front-Server/
+│       ├── GEMINI.md   # 👈 (For AI) 프론트엔드 관련 AI 컨텍스트
+│       └── README.md   # 👈 (For Human) 프론트엔드 설정 및 실행 가이드
+│
+├── Backend/
+│   ├── Api-Server/
+│   │   ├── GEMINI.md
+│   │   └── README.md
+│   │
+│   └── Batch-Server/
+│       ├── GEMINI.md   # 👈 (For AI) 배치 서버 관련 AI 컨텍스트
+│       ├── README.md   # 👈 (For Human) 배치 서버 가이드
+│       └── docs/       # 👈 배치 서버 관련 상세 설계 문서
+│
+└── ... (Other modules)
+```
+
 ### 🎨 시각화와 구조화
 
 - **Mermaid 활용**: 복잡한 데이터 흐름, 아키텍처, 요청/응답 시퀀스는 Mermaid 다이어그램으로 시각화하여 AI와 개발자 모두의 이해를 돕습니다. (사용자 선호사항)
