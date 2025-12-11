@@ -339,7 +339,7 @@ for i in range(10000):
         'exp_years': np.random.randint(0, 15),
         'english_level': np.random.choice(['Beginner', 'Intermediate', 'Advanced']),
         'primary_keyword': np.random.choice(['Backend', 'Frontend', 'DevOps', 'AI']),
-        'job_post_vectors': np.random.rand(384).astype(np.float32)
+        'job_post_vectors': np.random.rand(1536).astype(np.float32)
     })
 
 df = pd.DataFrame(data)
