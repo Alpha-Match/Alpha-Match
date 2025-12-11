@@ -296,6 +296,190 @@ public Mono<Void> processStreamParallel() {
 
 ---
 
+## 5-1. 청크 재분할 및 병렬 구독 전략 (NEW)
+
+### 기존 방식의 한계
+
+Python 서버에서 받은 큰 청크(예: 300 rows)를 그대로 DB에 전달하면:
+- **단일 스레드 처리**: Reactive 스트림이지만 실제로는 순차 처리
+- **DB 커넥션 풀 미활용**: 여러 커넥션이 있어도 하나만 사용
+- **처리량 제한**: I/O 대기 시간 동안 다른 작업 불가
+
+### 청크 재분할 전략
+
+Python에서 받은 큰 청크를 **Reactive 파이프라인에서 더 작은 단위로 세분화**하여 병렬 처리합니다.
+
+```java
+@Service
+public class StreamingService {
+
+    @Autowired
+    @Qualifier("jpaScheduler")
+    private Scheduler jpaScheduler;
+
+    @Autowired
+    private EmbeddingGrpcClient grpcClient;
+
+    @Autowired
+    private ChunkProcessor chunkProcessor;
+
+    public Mono<Void> processStreamWithRepartitioning() {
+        return grpcClient.streamEmbeddings(null, 300)
+                // 1. Python에서 받은 큰 청크 (300 rows)
+                .doOnNext(chunk -> log.info("Received chunk with {} rows", chunk.getRowsCount()))
+
+                // 2. 청크 재분할: 300 rows → 50 rows씩 6개
+                .flatMap(chunk -> Flux.fromIterable(chunk.getRowsList())
+                        .buffer(50)  // 50개씩 재분할
+                        .map(rows -> RowChunk.newBuilder().addAllRows(rows).build())
+                )
+
+                // 3. 병렬 처리 (4개 병렬 스트림)
+                .parallel(4)
+                .runOn(jpaScheduler)  // 각 병렬 스트림을 Virtual Thread에서 실행
+
+                // 4. Blocking I/O (JPA)
+                .flatMap(subChunk -> Mono.fromCallable(() -> {
+                    chunkProcessor.processSubChunk(subChunk);  // DB 저장
+                    return subChunk;
+                }))
+
+                // 5. 순차 스트림으로 복귀
+                .sequential()
+
+                // 6. 에러 처리
+                .onErrorContinue((error, subChunk) -> {
+                    log.error("Error processing sub-chunk: {}", error.getMessage());
+                })
+
+                .then();
+    }
+}
+```
+
+### 동작 원리
+
+```
+┌────────────────────────────────────────────────────┐
+│  Python Server                                     │
+│  - RowChunk(300 rows)                              │
+└────────────┬───────────────────────────────────────┘
+             │ gRPC Stream
+             ▼
+┌────────────────────────────────────────────────────┐
+│  Reactive Event Loop (Non-blocking)                │
+│  - Backpressure 제어                                │
+│  - Chunk 재분할: 300 → 50×6                        │
+└────────┬───────────┬───────────┬───────────┬────────┘
+         │           │           │           │
+         │ parallel(4) → 4개 병렬 스트림        │
+         ▼           ▼           ▼           ▼
+┌─────────────┐┌─────────────┐┌─────────────┐┌─────────────┐
+│VThread 1    ││VThread 2    ││VThread 3    ││VThread 4    │
+│SubChunk 1   ││SubChunk 2   ││SubChunk 3   ││SubChunk 4   │
+│(50 rows)    ││(50 rows)    ││(50 rows)    ││(50 rows)    │
+│JPA Save     ││JPA Save     ││JPA Save     ││JPA Save     │
+└─────────────┘└─────────────┘└─────────────┘└─────────────┘
+         │           │           │           │
+         └───────────┴───────────┴───────────┘
+                     ▼
+         ┌─────────────────────────┐
+         │  PostgreSQL(pgvector)   │
+         │  - 병렬 Insert/Upsert   │
+         └─────────────────────────┘
+```
+
+### 병렬 구독의 이점
+
+**1. DB 커넥션 풀 활용 극대화**
+```yaml
+# application.yml
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 20  # 20개 커넥션
+
+# parallel(4) 사용 시 → 4개 커넥션 동시 사용
+# 처리량 약 4배 증가 (이론적)
+```
+
+**2. I/O 대기 시간 활용**
+```
+순차 처리:  [DB Write 1] → [DB Write 2] → [DB Write 3]
+            ════════════════════════════════════════ 12초
+
+병렬 처리:  [DB Write 1]
+            [DB Write 2]
+            [DB Write 3]
+            [DB Write 4]
+            ═════════════ 3초 (4배 빠름)
+```
+
+**3. Reactive의 진정한 활용**
+- 단순 gRPC 수신 → JPA 저장이 아님
+- **DB I/O 직전까지 비동기 파이프라인 구성**
+- 병렬 구독으로 여러 I/O 스레드 활용
+
+### 적절한 파라미터 설정
+
+#### 재분할 크기 (buffer size)
+
+| 크기 | 장점 | 단점 | 권장 사용 |
+|-----|------|------|----------|
+| 10~30 | 빠른 에러 격리 | 컨텍스트 스위칭 과다 | 테스트 환경 |
+| 50~100 | 균형잡힌 성능 | - | **프로덕션 권장** |
+| 200+ | DB 처리량 최대 | 메모리 부담, 에러 영향 증가 | 대용량 초기 로딩 |
+
+#### 병렬도 (parallel degree)
+
+```java
+// 권장: CPU 코어 수 또는 DB 커넥션 풀의 1/2
+int parallelism = Math.min(
+    Runtime.getRuntime().availableProcessors(),  // CPU 코어 수
+    hikariConfig.getMaximumPoolSize() / 2        // 커넥션 풀의 절반
+);
+
+.parallel(parallelism)
+```
+
+### 주의사항
+
+#### 1. Checkpoint 순서 보장
+```java
+// Bad: 병렬 처리 시 순서 보장 안 됨
+.parallel(4)
+.flatMap(this::processChunk)
+.doOnNext(chunk -> updateCheckpoint(chunk.lastId))  // 순서 꼬임!
+
+// Good: sequential() 이후 checkpoint 업데이트
+.parallel(4)
+.flatMap(this::processChunk)
+.sequential()  // 순서 복원
+.reduce((first, second) -> second)  // 마지막 청크만 추출
+.doOnNext(lastChunk -> updateCheckpoint(lastChunk.lastId))
+```
+
+#### 2. Connection Pool 고갈 방지
+```yaml
+# 병렬도보다 충분히 큰 커넥션 풀 설정
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 20  # parallel(4) 사용 시 최소 8~10 권장
+```
+
+#### 3. 메모리 관리
+```java
+// buffer 크기 × 병렬도 = 동시 메모리 사용량
+// 예: 50 rows × 4 parallel × 1536 vector dimension × 4 bytes
+//   = 약 1.2MB (관리 가능)
+
+// 너무 크면 위험:
+// 500 rows × 10 parallel × 1536 × 4 = 약 30MB
+```
+
+---
+
 ## 6. 성능 최적화
 
 ### 1. Batch Upsert

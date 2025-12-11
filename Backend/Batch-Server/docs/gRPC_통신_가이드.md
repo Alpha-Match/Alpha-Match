@@ -1,15 +1,39 @@
 # 🔌 gRPC 통신 가이드
 
 **작성일:** 2025-12-10
-**업데이트:** 2025-12-10
+**업데이트:** 2025-12-11
+
+**구현 상태:** ✅ gRPC Client 구현 완료, Python Server와 통신 검증 완료 (141,897 rows)
 
 ---
 
 ## gRPC 통신 개요
 
-Batch Server는 2개의 gRPC 통신을 수행합니다:
-1. **Client → Python AI Server**: Embedding 데이터 수신 (Streaming)
-2. **Client → API Server**: 캐시 무효화 요청 (Unary)
+Batch Server는 다음과 같은 gRPC 통신을 수행합니다:
+
+### 1. Python AI Server와의 통신 (양방향)
+- **서버 스트리밍 (Server Streaming)**: Batch가 Client, Python이 Server
+  - Quartz 스케줄러 기반 자동 배치 작업
+  - Batch 서버가 능동적으로 데이터 요청 및 수신
+  - Checkpoint 기반 재시작 가능
+
+- **클라이언트 스트리밍 (Client Streaming)**: Batch가 Server, Python이 Client
+  - 사용자 요청 기반 수동 데이터 전송
+  - Python 서버가 준비된 데이터를 즉시 전송
+  - 실시간 데이터 갱신
+
+### 2. API Server와의 통신
+- **Unary (단방향)**: 캐시 무효화 요청
+  - Batch 서버가 Client, API 서버가 Server
+  - Embedding 저장 완료 시 호출
+
+### 통신 패턴 비교
+
+| 통신 유형 | Batch 역할 | 사용 시나리오 | 주요 장점 |
+|---------|----------|------------|----------|
+| **서버 스트리밍** | Client | Quartz 자동 배치 | 능동적 제어, Checkpoint 재시작 |
+| **클라이언트 스트리밍** | Server | 사용자 수동 요청 | 즉각 반응, 실시간 갱신 |
+| **Unary** | Client | 캐시 무효화 | 단순, 빠름 |
 
 ---
 
@@ -49,7 +73,7 @@ message RecruitRow {
   int32 exp_years = 3;
   string english_level = 4;
   string primary_keyword = 5;
-  repeated float vector = 6;  // 1536 dimensions
+  repeated float vector = 6;  // 384 dimensions
 }
 ```
 
@@ -177,6 +201,141 @@ public class StreamingService {
     }
 }
 ```
+
+---
+
+## 1-1. 클라이언트 스트리밍 (Client Streaming) - NEW
+
+### 사용 시나리오
+사용자가 직접 Python 서버에 "Batch 서버로 데이터 전송" 요청
+
+### Proto 정의
+
+```protobuf
+syntax = "proto3";
+
+package embedding;
+
+option java_multiple_files = true;
+option java_package = "com.alpha.backend.grpc.proto";
+
+service EmbeddingStreamService {
+  // 클라이언트 스트리밍: Python이 여러 청크를 전송, Batch가 단일 응답
+  rpc UploadEmbeddings(stream RowChunk) returns (UploadResult);
+}
+
+message UploadResult {
+  bool success = 1;
+  int32 total_rows = 2;
+  string message = 3;
+  repeated string failed_ids = 4;  // 실패한 레코드 ID
+}
+```
+
+### Server 구현 (Batch Server)
+
+```java
+@GrpcService
+public class EmbeddingUploadService extends EmbeddingStreamServiceGrpc.EmbeddingStreamServiceImplBase {
+
+    @Autowired
+    private ChunkProcessor chunkProcessor;
+
+    @Autowired
+    private CheckpointRepository checkpointRepository;
+
+    @Override
+    public StreamObserver<RowChunk> uploadEmbeddings(
+            StreamObserver<UploadResult> responseObserver) {
+
+        return new StreamObserver<>() {
+            private int totalRows = 0;
+            private final List<String> failedIds = new ArrayList<>();
+
+            @Override
+            public void onNext(RowChunk chunk) {
+                log.info("Receiving chunk with {} rows", chunk.getRowsCount());
+
+                try {
+                    // 청크 처리
+                    chunkProcessor.processChunk(chunk);
+                    totalRows += chunk.getRowsCount();
+
+                    // Checkpoint 업데이트
+                    String lastId = chunk.getRows(chunk.getRowsCount() - 1).getId();
+                    checkpointRepository.updateLatestCheckpoint(UUID.fromString(lastId));
+
+                } catch (Exception e) {
+                    log.error("Error processing chunk", e);
+                    // 실패한 ID 수집
+                    chunk.getRowsList().forEach(row -> failedIds.add(row.getId()));
+                }
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                log.error("Error in upload stream: {}", throwable.getMessage(), throwable);
+
+                UploadResult result = UploadResult.newBuilder()
+                        .setSuccess(false)
+                        .setMessage("Stream error: " + throwable.getMessage())
+                        .build();
+
+                responseObserver.onNext(result);
+                responseObserver.onCompleted();
+            }
+
+            @Override
+            public void onCompleted() {
+                log.info("Upload completed. Total rows: {}", totalRows);
+
+                UploadResult result = UploadResult.newBuilder()
+                        .setSuccess(failedIds.isEmpty())
+                        .setTotalRows(totalRows)
+                        .setMessage(failedIds.isEmpty()
+                                ? "Successfully processed all chunks"
+                                : "Completed with " + failedIds.size() + " failures")
+                        .addAllFailedIds(failedIds)
+                        .build();
+
+                responseObserver.onNext(result);
+                responseObserver.onCompleted();
+
+                // 캐시 무효화
+                cacheInvalidateClient.invalidateCache("recruit");
+            }
+        };
+    }
+}
+```
+
+### 동작 흐름
+
+```mermaid
+sequenceDiagram
+    participant User as User
+    participant PY as Python Server (Client)
+    participant BS as Batch Server (Server)
+    participant DB as PostgreSQL
+
+    User->>PY: 데이터 전송 요청
+    PY->>BS: RowChunk 1
+    BS->>DB: Upsert Chunk 1
+    PY->>BS: RowChunk 2
+    BS->>DB: Upsert Chunk 2
+    PY->>BS: RowChunk N
+    BS->>DB: Upsert Chunk N
+    PY->>BS: onCompleted()
+    BS->>BS: Cache Invalidate
+    BS-->>PY: UploadResult
+    PY-->>User: 완료 응답
+```
+
+### 장점
+
+1. **즉각적인 반응**: Python 서버가 데이터 준비되는 즉시 전송
+2. **사용자 제어**: 수동 트리거로 원하는 시점에 실행
+3. **실시간 갱신**: 배치 스케줄 대기 없이 즉시 반영
 
 ---
 
@@ -397,7 +556,96 @@ grpc:
 
 ## 5. 테스트
 
-### gRPC Client 단위 테스트
+### 5.1 실제 통신 테스트 (구현 완료)
+
+**GrpcStreamTestService.java** - 스트리밍 테스트 서비스
+
+```java
+@Service
+@Slf4j
+@RequiredArgsConstructor
+public class GrpcStreamTestService {
+
+    private final EmbeddingGrpcClient embeddingGrpcClient;
+    private final BatchProperties batchProperties;
+
+    /**
+     * 연결 테스트 (간단한 ping)
+     */
+    public void testConnection() {
+        Flux<RowChunk> stream = embeddingGrpcClient.streamEmbeddings(null, 1);
+
+        stream
+            .take(1) // 첫 번째 chunk만 받기
+            .doOnNext(chunk -> {
+                log.info("Connection successful! Received {} rows", chunk.getRowsCount());
+            })
+            .blockLast();
+    }
+
+    /**
+     * 전체 스트리밍 테스트 (처음부터)
+     */
+    public void testFullStream() {
+        int rowsReceived = testEmbeddingStream(null);
+        log.info("Full stream test completed. Total rows: {}", rowsReceived);
+    }
+
+    /**
+     * Checkpoint를 사용한 재개 테스트
+     */
+    public void testStreamWithCheckpoint(String checkpointUuid) {
+        UUID lastUuid = UUID.fromString(checkpointUuid);
+        int rowsReceived = testEmbeddingStream(lastUuid);
+        log.info("Successfully resumed from checkpoint. Received {} rows", rowsReceived);
+    }
+}
+```
+
+**GrpcTestRunner.java** - 자동 테스트 실행
+
+```java
+@Component
+@Slf4j
+@RequiredArgsConstructor
+@ConditionalOnProperty(name = "grpc.test.enabled", havingValue = "true")
+public class GrpcTestRunner implements CommandLineRunner {
+
+    private final GrpcStreamTestService grpcStreamTestService;
+
+    @Override
+    public void run(String... args) throws Exception {
+        // 1. 연결 테스트
+        log.info("[STEP 1] Testing gRPC Connection...");
+        grpcStreamTestService.testConnection();
+
+        // 2. 전체 스트리밍 테스트
+        log.info("[STEP 2] Testing Full Streaming...");
+        grpcStreamTestService.testFullStream();
+    }
+}
+```
+
+**테스트 실행 방법:**
+
+```bash
+# 1. Python Server 실행
+cd Demo-Python
+python src/grpc_server.py
+
+# 2. Batch Server 실행 (테스트 자동 실행)
+cd Backend/Batch-Server
+./gradlew bootRun
+```
+
+**실제 테스트 결과 (2025-12-11):**
+- ✅ Python Server 연결 성공
+- ✅ 141,897 rows 데이터 수신 성공
+- ✅ Vector 차원 검증 (1536)
+- ✅ Checkpoint 재개 기능 검증
+- ✅ Backpressure 정상 작동
+
+### 5.2 gRPC Client 단위 테스트 (예정)
 
 ```java
 @SpringBootTest
@@ -417,7 +665,7 @@ class EmbeddingGrpcClientTest {
 }
 ```
 
-### gRPC Server Mock 테스트
+### 5.3 gRPC Server Mock 테스트 (예정)
 
 ```java
 @TestConfiguration

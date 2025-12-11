@@ -86,9 +86,16 @@ C:/Final_2025-12-09/Alpha-Match/
 - DB 스키마 설계 (Flyway)
 - Batch Server 기본 구조 (Entity, Repository, Config, gRPC Client)
 - 전체 프로젝트 문서화 구조 완성
+- **Batch Server gRPC 통신 구현 및 검증 완료** (2025-12-11)
+  - Python Server와 통신 성공 (141,897 rows)
+  - GrpcStreamTestService, GrpcTestRunner 구현
+  - Checkpoint 재개 기능 검증
 
 ### 🔄 진행 중
 - Batch Server Application Services 구현
+  - ChunkProcessor (DB 저장 로직)
+  - StreamingService (gRPC → DB 파이프라인)
+  - CacheSyncService (캐시 무효화)
 - Python Demo Server 구현
 
 ### ⏳ 예정
@@ -148,7 +155,7 @@ Batch Server가 자동으로 Python Server에 연결하여 데이터를 수신�
 ### 문서화 규칙
 - 각 서버의 CLAUDE.md: 서버별 상세 설명
 - docs/: 공통 기술 설계 문서
-- hist/: 작업 히스토리 (날짜별)
+- docs/hist/: 작업 히스토리 (날짜별)
 
 ### 통신 프로토콜
 - Backend 간: gRPC (고성능, Streaming 지원)
@@ -184,4 +191,16 @@ Batch Server가 자동으로 Python Server에 연결하여 데이터를 수신�
 
 ---
 
-**최종 수정일:** 2025-12-10
+---
+
+## 📋 최근 업데이트 (2025-12-11)
+
+### Batch Server - gRPC 통신 구현 완료
+- Python Server와 gRPC Streaming 통신 성공 (141,897 rows)
+- GrpcStreamTestService, GrpcTestRunner 구현
+- Checkpoint 재개 기능 검증 완료
+- 상세 내역: `/Backend/Batch-Server/hist/2025-12-11_01_gRPC_Client_구현_및_통신_검증.md`
+
+---
+
+**최종 수정일:** 2025-12-11

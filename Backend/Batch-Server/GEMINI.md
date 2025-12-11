@@ -55,13 +55,21 @@ Python AI Server로부터 gRPC Streaming으로 Recruit Embedding 및 Metadata를
 - Repositories (JPA + Native Query for Upsert)
 - Config 클래스 (BatchProperties, ExecutorConfig, GrpcClientConfig)
 - gRPC Clients (EmbeddingGrpcClient, CacheInvalidateGrpcClient)
+- **gRPC 통신 테스트 완료** (2025-12-11)
+  - GrpcStreamTestService: 스트리밍 테스트 서비스
+  - GrpcTestRunner: 자동 테스트 러너
+  - Python Server와 통신 성공 (141,897 rows 수신)
+  - Checkpoint 재개 기능 검증
 
 ### 🔄 진행 중
 - Application Services (StreamingService, ChunkProcessor, CacheSyncService)
+  - DB 저장 로직 구현 예정
+  - Batch Job/Step 통합 예정
 
 ### ⏳ 예정
 - Batch Configuration (Job, Step, Listener)
 - BatchScheduler
+- DLQ 처리 로직
 
 **상세 일정**: `/../../docs/개발_우선순위.md` 참조
 
@@ -75,7 +83,8 @@ src/main/java/com/alpha/backend/
 ├── grpc/           # gRPC 클라이언트 (Embedding, CacheInvalidate)
 ├── domain/         # Entity + Repository (metadata, embedding, dlq)
 ├── infrastructure/ # CheckpointEntity, CheckpointRepository
-├── application/    # Service (Streaming, ChunkProcessor, CacheSync)
+├── application/    # Service (GrpcStreamTestService, ChunkProcessor 등)
+├── runner/         # GrpcTestRunner (테스트 자동 실행)
 ├── batch/          # Spring Batch (Job, Step, Listener)
 └── scheduler/      # BatchScheduler
 ```
@@ -96,7 +105,7 @@ src/main/java/com/alpha/backend/
 batch:
   embedding:
     chunk-size: 300               # Chunk 크기
-    vector-dimension: 1536        # Vector 차원
+    vector-dimension: 384        # Vector 차원
     max-retry: 3                  # 재시도 횟수
 
 grpc:
@@ -105,7 +114,26 @@ grpc:
       address: static://localhost:50051
     api-cache:
       address: static://localhost:50052
+  test:
+    enabled: true                 # gRPC 테스트 활성화 (개발 환경)
 ```
+
+### 3. gRPC 통신 테스트
+```bash
+# Python Server 먼저 실행 (Demo-Python)
+cd Demo-Python
+python src/grpc_server.py
+
+# Batch Server 실행 (테스트 자동 실행)
+cd Backend/Batch-Server
+./gradlew bootRun
+```
+
+**테스트 결과 예시:**
+- 연결 성공 확인
+- 141,897 rows 데이터 수신
+- Checkpoint 기능 검증
+- Vector 차원 검증 (384)
 
 ---
 
@@ -161,7 +189,7 @@ if (invalidating.compareAndSet(false, true)) {
 
 ## 📝 작업 문서 작성 지침
 
-**적용 범위:** hist/ 디렉토리 내 히스토리 문서 작성 시
+**적용 범위:** docs/hist/ 디렉토리 내 히스토리 문서 작성 시
 
 ### 기본 원칙
 - 파일명: `hist/YYYY-MM-DD_nn_주제.md`
@@ -175,5 +203,31 @@ if (invalidating.compareAndSet(false, true)) {
 **상세**: 루트 CLAUDE.md의 hist 작성 지침 참조
 
 ---
+---
 
-**최종 수정일:** 2025-12-10
+## 📋 다음 작업 단계
+
+### 1. DB 저장 로직 구현 (우선순위: 높음)
+- ChunkProcessor 구현
+  - Metadata/Embedding 분리 로직
+  - Batch Upsert 처리
+  - DLQ 처리
+- StreamingService 구현
+  - gRPC Stream → DB 저장 파이프라인
+  - Checkpoint 관리
+- CacheSyncService 구현
+  - API Server 캐시 무효화
+
+### 2. Spring Batch Job/Step 구성
+- EmbeddingProcessingJob
+- receiveEmbeddingStep
+- storeEmbeddingStep
+- Listener 구현
+
+### 3. Scheduler 구현
+- Quartz 기반 배치 스케줄러
+- Cron 설정
+
+---
+
+**최종 수정일:** 2025-12-11

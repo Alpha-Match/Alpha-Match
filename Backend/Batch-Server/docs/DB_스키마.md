@@ -26,7 +26,7 @@
 │  recruit_embedding      │
 │─────────────────────────│
 │ id (PK,FK)       UUID   │
-│ vector      VECTOR(1536)│
+│ vector      VECTOR(384)│
 │ updated_at    TIMESTAMP │
 └─────────────────────────┘
 
@@ -56,7 +56,7 @@
 ### 테이블 정의
 ```sql
 CREATE TABLE recruit_metadata (
-    id UUID PRIMARY KEY,
+    id UUID PRIMARY KEY,  -- UUID v7/ULID 권장 (시간순 정렬)
     company_name TEXT NOT NULL,
     exp_years INT NOT NULL,
     english_level TEXT,
@@ -67,11 +67,71 @@ CREATE TABLE recruit_metadata (
 CREATE INDEX idx_metadata_updated_at ON recruit_metadata(updated_at);
 ```
 
+### UUID 기반 PK 전략 (NEW)
+
+#### AutoIncrement 대신 UUID를 사용하는 이유
+
+**1. 대규모 병렬 Insert 경합 제거**
+```java
+// Bad: AutoIncrement (시퀀스 락 경쟁)
+INSERT INTO recruit_metadata (company_name, ...) VALUES (...);
+// Thread 1, 2, 3이 동시에 시퀀스 획득 대기 → 병목
+
+// Good: UUID (사전 생성, 경합 없음)
+UUID id = UuidCreator.getTimeOrderedEpoch();
+INSERT INTO recruit_metadata (id, company_name, ...) VALUES (?, ...);
+// 각 스레드가 독립적으로 UUID 생성 → 병렬 처리
+```
+
+**2. 분산 시스템 친화적**
+- 여러 Batch 서버 인스턴스가 동시에 데이터 삽입 가능
+- 클러스터 환경에서도 ID 충돌 없음
+
+**3. Python 서버와의 일관성**
+- Python에서 생성한 UUID를 Batch 서버가 그대로 사용
+- 데이터 추적 및 디버깅 용이
+
+#### UUID v7 / ULID 사용 권장
+
+**일반 UUID v4의 문제점:**
+- 완전 랜덤 → 인덱스 fragmentation 심각
+- B-Tree 인덱스 성능 저하 (비순차 삽입)
+
+**UUID v7 / ULID의 이점:**
+- **시간순 정렬 가능**: 첫 48bit가 timestamp
+- **인덱스 성능 향상**: 순차 삽입과 유사한 효과
+- **Fragmentation 감소**: B-Tree 분할 최소화
+
+```java
+// UUID v7 생성 (Java)
+import com.github.f4b6a3.uuid.UuidCreator;
+
+UUID uuidV7 = UuidCreator.getTimeOrderedEpoch();
+// 예: 018c-1234-5678-9abc-def012345678
+//     ^^^^       ^
+//     타임스탬프   랜덤
+
+// ULID 생성 (대안)
+import de.huxhorn.sulky.ulid.ULID;
+
+ULID.Value ulid = new ULID().nextValue();
+// 예: 01ARZ3NDEKTSV4RRFFQ69G5FAV
+```
+
+#### 성능 비교
+
+| PK 타입 | Insert 성능 | 인덱스 크기 | 병렬 처리 |
+|---------|-----------|----------|----------|
+| AutoIncrement | ⭐⭐⭐ (시퀀스 경합) | ⭐⭐⭐⭐⭐ | ❌ (락 경쟁) |
+| UUID v4 | ⭐⭐⭐⭐ | ⭐⭐ (fragmentation) | ✅ |
+| UUID v7 | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ✅ |
+| ULID | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ✅ |
+
 ### 컬럼 설명
 
 | 컬럼 | 타입 | 제약 | 설명 |
 |-----|------|------|------|
-| id | UUID | PK | 채용 공고 고유 ID |
+| id | UUID | PK | 채용 공고 고유 ID (UUID v7/ULID 권장) |
 | company_name | TEXT | NOT NULL | 회사명 |
 | exp_years | INT | NOT NULL | 요구 경력 (년) |
 | english_level | TEXT | - | 영어 레벨 (Beginner, Intermediate, Advanced, Native) |
@@ -119,7 +179,7 @@ void upsert(@Param("entity") MetadataEntity entity);
 ```sql
 CREATE TABLE recruit_embedding (
     id UUID PRIMARY KEY REFERENCES recruit_metadata(id) ON DELETE CASCADE,
-    vector VECTOR(1536) NOT NULL,
+    vector VECTOR(384) NOT NULL,
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -136,14 +196,14 @@ CREATE INDEX idx_embedding_updated_at ON recruit_embedding(updated_at);
 | 컬럼 | 타입 | 제약 | 설명 |
 |-----|------|------|------|
 | id | UUID | PK, FK | recruit_metadata.id 참조 |
-| vector | VECTOR(1536) | NOT NULL | Embedding Vector (OpenAI 기준 1536차원) |
+| vector | VECTOR(384) | NOT NULL | Embedding Vector (OpenAI 기준 1536차원) |
 | updated_at | TIMESTAMP | DEFAULT NOW() | 마지막 업데이트 시간 |
 
 ### pgvector 특징
 
 #### Vector 타입
 - PostgreSQL 확장으로 제공
-- 고정 차원 배열 (본 프로젝트: 1536)
+- 고정 차원 배열 (본 프로젝트: 384)
 - 다양한 거리 함수 지원:
   - `<->`: L2 distance (Euclidean)
   - `<#>`: Negative inner product
@@ -163,7 +223,7 @@ public class EmbeddingEntity {
     @Column(name = "id", columnDefinition = "UUID")
     private UUID id;
 
-    @Column(name = "vector", nullable = false, columnDefinition = "vector(1536)")
+    @Column(name = "vector", nullable = false, columnDefinition = "vector(384)")
     private PGvector vector;
 
     // Helper methods
@@ -238,7 +298,7 @@ CREATE INDEX idx_dlq_created_at ON recruit_embedding_dlq(created_at);
 1. **Vector Dimension Mismatch**
    ```sql
    INSERT INTO recruit_embedding_dlq (recruit_id, error_message, payload)
-   VALUES ('uuid', 'Vector dimension mismatch: expected 1536, got 768', '{"data": ...}');
+   VALUES ('uuid', 'Vector dimension mismatch: expected 384, got 768', '{"data": ...}');
    ```
 
 2. **Validation Error**

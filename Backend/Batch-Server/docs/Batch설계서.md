@@ -3,12 +3,15 @@
 *Headhunter-Recruit Matching System — Batch + Python gRPC Streaming*
 
 > 본 문서는 Python 기반 AI 서버에서 생성되는 Recruit Embedding 및 Metadata를
-> 
-> 
+>
+>
 > **대용량 gRPC Streaming + Batch Upsert + pgvector** 구조로 안정적으로 저장하기 위한 Batch 서버 아키텍처 설계서입니다.
-> 
+>
 > Spring Boot 4.0 + Java 21 + Spring Batch + WebFlux + gRPC Client 조합을 기반으로 합니다.
-> 
+>
+
+**최종 업데이트:** 2025-12-11
+**구현 상태:** ✅ gRPC Client 구현 및 통신 검증 완료 (141,897 rows)
 
 ---
 
@@ -127,7 +130,7 @@ Batch 서버에서는 아래처럼 **메타데이터 / 벡터로 분리**해 저
 
 ```sql
 CREATE TABLE recruit_metadata (
-    id UUID PRIMARY KEY,
+    id UUID PRIMARY KEY,  -- UUID v7/ULID 권장 (시간순 정렬)
     company_name TEXT,
     exp_years INT,
     english_level TEXT,
@@ -136,12 +139,31 @@ CREATE TABLE recruit_metadata (
 );
 ```
 
+### UUID 기반 PK 전략 (NEW)
+
+**AutoIncrement 대신 UUID를 PK로 사용하는 이유:**
+- **대규모 병렬 Insert 경합 제거**: 시퀀스/identity 락 경쟁 없음
+- **분산 시스템 친화적**: 클러스터 환경에서도 충돌 없음
+- **Python 서버와의 일관성**: Python에서 생성한 UUID를 그대로 사용
+
+**UUID v7 / ULID 사용 권장:**
+- 시간순 정렬 가능 (timestamp 기반)
+- 인덱스 성능 향상 (순차 삽입과 유사)
+- 일반 UUID v4 대비 인덱스 fragmentation 감소
+
+```java
+// UUID v7 생성 예시 (Java)
+import com.github.f4b6a3.uuid.UuidCreator;
+
+UUID uuidV7 = UuidCreator.getTimeOrderedEpoch();
+```
+
 ## 4.3 recruit_embedding (벡터 데이터)
 
 ```sql
 CREATE TABLE recruit_embedding (
     id UUID PRIMARY KEY REFERENCES recruit_metadata(id) ON DELETE CASCADE,
-    vector VECTOR(1536),
+    vector VECTOR(384),
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -152,7 +174,7 @@ WITH (lists = 100);
 
 ### 🔧 Vector Dimension 관리 전략
 
-- 기본값: 1536
+- 기본값: 384
 - 추후 모델 변경 가능성 대비 → application.yml에 dimension 값 저장
 - 변경 시 자동 Schema Validation 수행 가능
 
@@ -177,6 +199,38 @@ CREATE TABLE recruit_embedding_dlq (
 - chunk 단위 스트리밍 처리
 - Non-blocking 네트워크 IO
 
+## ✔ 청크 재분할 및 병렬 구독 전략 (NEW)
+
+Python 서버에서 받은 청크를 그대로 DB에 전달하지 않고, **Reactive 파이프라인에서 더 작은 단위로 세분화**하여 병렬 처리합니다.
+
+### 청크 재분할 전략
+```java
+// Python에서 받은 큰 청크(예: 300 rows)를 더 작은 배치로 분할
+Flux<RowChunk> largeChunks = grpcClient.streamEmbeddings(null, 300);
+
+largeChunks
+    .flatMap(chunk -> Flux.fromIterable(chunk.getRowsList())
+        .buffer(50)  // 50개씩 재분할
+        .map(rows -> RowChunk.newBuilder().addAllRows(rows).build())
+    )
+    .parallel(4)  // 4개 병렬 스트림
+    .runOn(Schedulers.boundedElastic())  // 병렬 I/O 스레드 분배
+    .flatMap(this::processChunk)
+    .sequential()
+    .subscribe();
+```
+
+### 병렬 구독의 이점
+- **DB 커넥션 풀 활용 극대화**: 여러 스레드가 동시에 DB에 접근
+- **처리량 증가**: I/O 대기 시간 동안 다른 청크 처리
+- **메모리 압박 감소**: 큰 청크를 작은 단위로 분산 처리
+
+### 주의사항
+- 너무 작은 단위 → 컨텍스트 스위칭 비용 증가
+- 너무 큰 단위 → 메모리 압박, 병렬성 저하
+- **권장 배치 사이즈**: 50~100 rows per sub-chunk
+- **병렬도**: CPU 코어 수 또는 DB 커넥션 풀 크기의 1/2 수준
+
 ## ✔ 저장(DB write) → **JPA + pgvector (Blocking)**
 
 - 저장은 CPU IO bound이므로 JPA 사용이 유리
@@ -192,38 +246,47 @@ CREATE TABLE recruit_embedding_dlq (
 ```
 src/main/java/com.alpha.batch
  ├ config
- │    ├ GrpcClientConfig.java
- │    ├ ExecutorConfig.java (VirtualThreadScheduler)
+ │    ├ GrpcClientConfig.java            ✅ 구현 완료
+ │    ├ ExecutorConfig.java              ✅ 구현 완료 (VirtualThreadScheduler)
+ │    └ BatchProperties.java             ✅ 구현 완료
  │
  ├ grpc
- │    ├ EmbeddingGrpcClient.java
- │    └ CacheInvalidateGrpcClient.java
+ │    ├ EmbeddingGrpcClient.java         ✅ 구현 완료 (통신 검증 완료)
+ │    └ CacheInvalidateGrpcClient.java   ✅ 구현 완료
  │
  ├ domain
  │    ├ metadata
- │    │     ├ MetadataEntity.java
- │    │     └ MetadataRepository.java
+ │    │     ├ MetadataEntity.java        ✅ 구현 완료
+ │    │     └ MetadataRepository.java    ✅ 구현 완료
  │    └ embedding
- │          ├ EmbeddingEntity.java
- │          └ EmbeddingRepository.java
+ │          ├ EmbeddingEntity.java       ✅ 구현 완료
+ │          └ EmbeddingRepository.java   ✅ 구현 완료
  │
  ├ application
- │    ├ StreamingService.java  ← gRPC Reactive 소비
- │    ├ ChunkProcessor.java
- │    └ CacheSyncService.java
+ │    ├ GrpcStreamTestService.java      ✅ 구현 완료 (2025-12-11)
+ │    ├ StreamingService.java           ⏳ 예정 (gRPC Reactive 소비)
+ │    ├ ChunkProcessor.java             ⏳ 예정
+ │    └ CacheSyncService.java           ⏳ 예정
+ │
+ ├ runner
+ │    └ GrpcTestRunner.java             ✅ 구현 완료 (2025-12-11)
  │
  ├ batch
- │    ├ job
- │    ├ step
- │    └ listener
+ │    ├ job                              ⏳ 예정
+ │    ├ step                             ⏳ 예정
+ │    └ listener                         ⏳ 예정
  │
  ├ infrastructure
- │    └ CheckpointRepository.java
+ │    └ CheckpointRepository.java       ✅ 구현 완료
  │
  └ scheduler
-       └ BatchScheduler.java
+       └ BatchScheduler.java             ⏳ 예정
 
 ```
+
+### 구현 상태 범례
+- ✅ 구현 완료 및 검증 완료
+- ⏳ 예정 (미구현)
 
 ---
 
@@ -249,6 +312,138 @@ Python AI Server
 
 ## 7.1 Step 1 — gRPC Streaming 소비
 
+### 서버 스트리밍 vs 클라이언트 스트리밍 병행 적용 (NEW)
+
+본 프로젝트는 **두 가지 스트리밍 패턴을 모두 지원**하여 유연한 데이터 처리가 가능합니다.
+
+#### 1) 서버 스트리밍 (Server Streaming) - Quartz 기반 자동 배치
+
+**사용 시나리오**: Quartz 스케줄러가 주기적으로 Batch 서버를 트리거
+
+```mermaid
+sequenceDiagram
+    participant Quartz as Quartz Scheduler
+    participant BS as Batch Server (Client)
+    participant PY as Python AI Server (Server)
+    participant DB as PostgreSQL
+
+    Quartz->>BS: Trigger Job
+    BS->>PY: GetEmbeddings 요청
+    PY-->>BS: Embedding 청크 1
+    PY-->>BS: Embedding 청크 2
+    PY-->>BS: Embedding 청크 N
+    PY-->>BS: onCompleted()
+    BS->>DB: Batch Upsert
+```
+
+**Proto 정의**:
+```protobuf
+service EmbeddingStreamService {
+  rpc GetEmbeddings(StreamEmbeddingRequest)
+      returns (stream RowChunk);  // 서버가 다중 응답
+}
+
+message StreamEmbeddingRequest {
+  string last_processed_uuid = 1;
+  int32 chunk_size = 2;   // default = 300
+}
+```
+
+**클라이언트 구현 (Batch 서버)**:
+```java
+public Flux<RowChunk> streamEmbeddings(UUID lastProcessedUuid, int chunkSize) {
+    Sinks.Many<RowChunk> sink = Sinks.many().unicast().onBackpressureBuffer();
+
+    asyncStub.getEmbeddings(request, new StreamObserver<>() {
+        @Override
+        public void onNext(RowChunk chunk) {
+            sink.tryEmitNext(chunk);  // 청크 수신
+        }
+
+        @Override
+        public void onCompleted() {
+            sink.tryEmitComplete();
+        }
+    });
+
+    return sink.asFlux();
+}
+```
+
+#### 2) 클라이언트 스트리밍 (Client Streaming) - 사용자 요청 기반
+
+**사용 시나리오**: 사용자가 직접 Python 서버에 "Batch 서버로 데이터 전송" 요청
+
+```mermaid
+sequenceDiagram
+    participant User as User Request
+    participant PY as Python Server (Client)
+    participant BS as Batch Server (Server)
+    participant DB as PostgreSQL
+
+    User->>PY: 데이터 전송 요청
+    PY->>BS: Embedding 청크 1
+    PY->>BS: Embedding 청크 2
+    PY->>BS: Embedding 청크 N
+    PY->>BS: onCompleted()
+    BS->>DB: Batch Upsert
+    BS-->>PY: UploadResult
+```
+
+**Proto 정의**:
+```protobuf
+service EmbeddingStreamService {
+  rpc UploadEmbeddings(stream RowChunk)
+      returns (UploadResult);  // 클라이언트가 다중 요청, 서버가 단일 응답
+}
+
+message UploadResult {
+  bool success = 1;
+  int32 total_rows = 2;
+  string message = 3;
+}
+```
+
+**서버 구현 (Batch 서버)**:
+```java
+@Override
+public StreamObserver<RowChunk> uploadEmbeddings(
+        StreamObserver<UploadResult> responseObserver) {
+
+    return new StreamObserver<>() {
+        private int totalRows = 0;
+
+        @Override
+        public void onNext(RowChunk chunk) {
+            // 청크 처리
+            chunkProcessor.processChunk(chunk);
+            totalRows += chunk.getRowsCount();
+        }
+
+        @Override
+        public void onCompleted() {
+            UploadResult result = UploadResult.newBuilder()
+                    .setSuccess(true)
+                    .setTotalRows(totalRows)
+                    .setMessage("Successfully processed all chunks")
+                    .build();
+
+            responseObserver.onNext(result);
+            responseObserver.onCompleted();
+        }
+    };
+}
+```
+
+#### 병행 적용의 이점
+
+| 패턴 | 장점 | 사용 사례 |
+|-----|------|---------|
+| **서버 스트리밍** | Batch 서버가 능동적으로 제어 가능<br>Checkpoint 기반 재시작 용이 | 정기 배치 작업<br>대량 초기 데이터 로딩 |
+| **클라이언트 스트리밍** | Python 서버가 준비된 데이터를 즉시 전송<br>사용자 요청에 즉각 반응 | 실시간 데이터 갱신<br>수동 트리거 작업 |
+
+### 기존 Proto 정의 (서버 스트리밍)
+
 Python이 chunk(수천 rows)를 스트리밍으로 보내면 Batch 서버는 이를 Flux<RowChunk> 형태로 수신한다.
 
 ```protobuf
@@ -263,20 +458,6 @@ message RecruitRow {
   string english_level = 4;
   string primary_keyword = 5;
   repeated float vector = 6;
-}
-```
-
-```protobuf
-message StreamEmbeddingRequest {
-  string last_processed_uuid = 1;
-  int32 chunk_size = 2;   // default = 300
-}
-```
-
-```protobuf
-service EmbeddingStreamService {
-  rpc StreamEmbedding(StreamEmbeddingRequest)
-      returns (stream RowChunk);
 }
 ```
 
