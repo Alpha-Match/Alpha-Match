@@ -22,8 +22,9 @@ public class BatchProperties {
 
     /**
      * Vector 차원 (default: 1536 for OpenAI embeddings)
+     * 현재 샘플데이터 기준 384차원
      */
-    private int vectorDimension = 1536;
+    private int vectorDimension = 384;
 
     /**
      * 재시도 최대 횟수

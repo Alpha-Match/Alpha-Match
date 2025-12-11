@@ -4,9 +4,9 @@ spring:
 
   # PostgreSQL + pgvector 설정
   datasource:
-    url: jdbc:postgresql://localhost:5432/alpha_match
-    username: postgres
-    password: postgres
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:postgres}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 20
@@ -19,7 +19,8 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
+#      ddl-auto: validate
     properties:
       hibernate:
         format_sql: true
@@ -45,6 +46,10 @@ spring:
 
 # gRPC 설정
 grpc:
+  # 테스트 설정 (개발 시에만 true로 설정)
+  test:
+    enabled: true  # CommandLineRunner로 gRPC 통신 테스트 실행
+
   client:
     # Python AI Server (Embedding Stream)
     python-embedding:
@@ -61,7 +66,7 @@ grpc:
 batch:
   embedding:
     chunk-size: 300                    # 한 번에 처리할 row 수
-    vector-dimension: 1536             # Embedding vector 차원
+    vector-dimension: 384             # Embedding vector 차원
     max-retry: 3                       # 실패 시 재시도 횟수
     retry-backoff-ms: 1000            # 재시도 대기 시간 (ms)
 
