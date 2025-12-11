@@ -14,7 +14,7 @@ CREATE TABLE recruit_metadata (
 -- 2. Recruit Embedding 테이블 (pgvector)
 CREATE TABLE recruit_embedding (
     id UUID PRIMARY KEY REFERENCES recruit_metadata(id) ON DELETE CASCADE,
-    vector VECTOR(1536) NOT NULL,
+    vector VECTOR(384) NOT NULL,
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -25,7 +25,7 @@ WITH (lists = 100);
 
 -- 3. Dead Letter Queue 테이블
 CREATE TABLE recruit_embedding_dlq (
-    id SERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     recruit_id UUID,
     error_message TEXT NOT NULL,
     payload JSONB,
@@ -34,7 +34,7 @@ CREATE TABLE recruit_embedding_dlq (
 
 -- 4. Batch Checkpoint 테이블
 CREATE TABLE embedding_batch_checkpoint (
-    id SERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     last_processed_uuid UUID,
     updated_at TIMESTAMP DEFAULT NOW()
 );

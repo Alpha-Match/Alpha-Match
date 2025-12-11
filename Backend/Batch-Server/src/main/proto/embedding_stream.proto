@@ -13,7 +13,7 @@ message RecruitRow {
   int32 exp_years = 3;                // 경력 연수
   string english_level = 4;           // 영어 레벨
   string primary_keyword = 5;         // 주요 키워드
-  repeated float vector = 6;          // Embedding Vector (1536 dimension)
+  repeated float vector = 6;          // Embedding Vector (384 dimension)
 }
 
 // Chunk 단위 전송 (여러 Row를 묶어서)

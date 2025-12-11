@@ -25,7 +25,7 @@ public class EmbeddingEntity {
     @Column(name = "id", columnDefinition = "UUID")
     private UUID id;
 
-    @Column(name = "vector", nullable = false, columnDefinition = "vector(1536)")
+    @Column(name = "vector", nullable = false, columnDefinition = "vector(384)")
     private PGvector vector;
 
     @UpdateTimestamp
