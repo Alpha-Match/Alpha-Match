@@ -49,22 +49,29 @@ Alpha-Match의 AI Backend 데모 서버로, `.pkl` 파일에 저장된 Embedding
 ```
 Demo-Python/
 ├── src/
-│   ├── grpc_server.py          # gRPC 서버 메인 (Server Streaming)
-│   ├── grpc_client.py          # gRPC 클라이언트 (Client Streaming)
-│   ├── data_loader.py          # pkl 파일 로딩
-│   ├── uuid_generator.py       # UUID v7/ULID 생성
-│   ├── chunker.py              # Chunk 분할 로직
-│   ├── config.py               # 환경 설정
-│   └── proto/                  # Proto 파일 (Batch Server에서 복사)
+│   ├── main.py                          # FastAPI 앱 진입점
+│   ├── api/
+│   │   └── endpoints.py                 # FastAPI 엔드포인트
+│   ├── services/
+│   │   └── ingestion_service.py         # 데이터 수집 비즈니스 로직
+│   ├── infrastructure/
+│   │   ├── loaders.py                   # 도메인별 데이터 로더
+│   │   └── grpc_clients.py              # gRPC 클라이언트 (Batch Server 연결)
+│   ├── domain/
+│   │   ├── models.py                    # 도메인 모델
+│   │   └── utils.py                     # UUID 유틸리티
+│   ├── config/
+│   │   └── settings.py                  # 환경 설정
+│   └── proto/                           # Generated protobuf 파일
 │       ├── embedding_stream.proto
 │       ├── embedding_stream_pb2.py
 │       └── embedding_stream_pb2_grpc.py
 │
 ├── data/
-│   ├── processed_recruitment_data.pkl           # Embedding 데이터 (약 500MB)
-│   └── processed_recruitment_data_with_uuid.pkl # UUID 추가된 버전
+│   ├── processed_recruitment_data.pkl   # Recruit Embedding 데이터 (약 500MB)
+│   └── processed_headhunter_data.pkl    # Headhunter Embedding 데이터
 │
-├── docs/                       # 설계 문서
+├── docs/                                # 설계 문서
 │   ├── Python_서버_설계서.md
 │   ├── gRPC_서버_구현_가이드.md
 │   ├── 데이터_로딩_전략.md
@@ -72,84 +79,90 @@ Demo-Python/
 │   ├── UUID_생성_전략.md
 │   └── 프로젝트_구조.md
 │
-├── tests/                      # 테스트 코드
-│   ├── test_data_loader.py
-│   ├── test_uuid_generator.py
-│   ├── test_chunker.py
-│   └── test_grpc_server.py
-│
-├── scripts/                    # 유틸리티 스크립트
-│   ├── add_uuid_to_pkl.py      # pkl 파일에 UUID 추가
-│   ├── create_test_data.py     # 테스트 데이터 생성
-│   └── benchmark.py            # 성능 벤치마크
-│
-├── requirements.txt            # Python 의존성
-├── .env.example                # 환경 변수 예시
-├── README.md                   # 실행 가이드
-└── CLAUDE.md                   # 현재 문서
+├── requirements.txt                     # Python 의존성
+├── start_server.bat                     # 서버 시작 스크립트 (Windows)
+├── README.md                            # 실행 가이드
+└── CLAUDE.md                            # 현재 문서
 ```
 
 **상세 구조**: `/docs/프로젝트_구조.md` 참조
 
 ---
 
-## 🎉 2025-12-11 구현 완료
+## 🎉 2025-12-12 구현 완료: FastAPI + gRPC Client 아키텍처
 
 ### 핵심 성과
-오늘 Demo-Python 서버의 **전체 gRPC 스트리밍 시스템을 완전히 구현**하고 **Batch Server와의 통신 테스트를 성공**했습니다.
+Demo-Python 서버를 **FastAPI + gRPC Client** 아키텍처로 리팩토링하여 **HTTP API 기반 데이터 수집 트리거** 시스템으로 전환했습니다.
+
+### 아키텍처 변경 사항
+
+**변경 전 (2025-12-11):**
+- Python gRPC Server (Port 50051) - Server Streaming
+- Batch Server가 Client로 연결
+
+**변경 후 (2025-12-12):**
+- Python FastAPI Server (Port 8000) - HTTP API
+- Python gRPC Client - Batch Server에 Client Streaming
+- Batch Server가 gRPC Server (Port 50052)
 
 ### 구현된 파일 및 기능
 
-#### 1. `src/grpc_server.py` (220 lines)
-- **StreamEmbedding RPC** 구현 (Server Streaming)
-- Port 50051에서 gRPC 서버 리스닝
-- **실제 테스트 결과:**
-  - 474 chunks 스트리밍 성공
-  - 141,897 rows 전송 완료
-  - Java Batch Server에서 정상 수신 확인
+#### 1. `src/main.py`
+- FastAPI 애플리케이션 진입점
+- HTTP 서버 실행 (Port 8000)
+- 라우터 등록
 
-#### 2. `src/grpc_client.py` (150 lines)
-- 테스트용 gRPC 클라이언트
-- StreamEmbedding RPC 호출 검증
-- 연결 테스트 및 응답 검증
+#### 2. `src/api/endpoints.py`
+- `POST /data/ingest/{domain}`: 데이터 수집 트리거
+- `GET /health`: 헬스 체크
+- Query Parameters: `file_name`, `chunk_size`
 
-#### 3. `src/data_loader.py` (270 lines)
-- `.pkl` 파일 로딩 (`load_data_optimized`)
+#### 3. `src/services/ingestion_service.py`
+- 데이터 수집 비즈니스 로직
+- 도메인별 로더 호출
+- gRPC 클라이언트 연동
+- 통계 정보 반환
+
+#### 4. `src/infrastructure/loaders.py`
+- `load_recruit_data()`: Recruit 도메인 로더
+- `load_headhunter_data()`: Headhunter 도메인 로더
 - **메모리 최적화: 5.3% 절감**
-- **141,897 rows 성공적 로드**
-- Checkpoint 기반 필터링 (`filter_from_checkpoint`)
 - 데이터 타입 최적화 (category, int16, float32)
 
-#### 4. `src/chunker.py` (300 lines)
-- DataFrame을 chunk 단위로 분할
-- 적응형 chunk 크기 계산 (`calculate_optimal_chunk_size`)
-- 메모리 기반 동적 조정
-- RowChunk proto 변환
+#### 5. `src/infrastructure/grpc_clients.py`
+- gRPC Client 구현
+- `IngestDataStream` RPC 호출 (Client Streaming)
+- Batch Server (Port 50052) 연결
+- Chunk 단위 스트리밍
 
-#### 5. `src/config.py` (120 lines)
-- Server 설정 (포트, workers 등)
-- Data 설정 (pkl 경로, chunk 크기)
-- 환경 변수 지원
-- 설정 검증 로직
+#### 6. `src/domain/models.py`
+- 도메인 모델 정의
+- `RecruitRow`, `HeadhunterRow`
+- Pydantic/Dataclass 기반
 
-#### 6. `src/uuid_generator.py` (100 lines)
+#### 7. `src/domain/utils.py`
 - UUID v7 생성 로직
 - PostgreSQL UUID 타입 호환
 - 시간순 정렬 보장
 
-#### 7. Proto 파일 및 컴파일
-- `embedding_stream.proto` 작성 완료
-- Python 코드 생성 (`embedding_stream_pb2.py`, `embedding_stream_pb2_grpc.py`)
-- Java Batch Server와 proto 호환성 확인
+#### 8. `src/config/settings.py`
+- FastAPI 설정 (Host, Port)
+- gRPC Batch Server 설정
+- Data 디렉토리 및 Chunk 크기 설정
 
-#### 8. 실행 스크립트
-- `start_server.bat`: 서버 시작 스크립트
-- `test_client.bat`: 클라이언트 테스트 스크립트
+#### 9. Proto 파일
+- `embedding_stream.proto`: Client Streaming RPC 정의
+- Python 코드 생성 완료
+- Java Batch Server와 호환성 확인
+
+#### 10. 실행 스크립트
+- `start_server.bat`: FastAPI 서버 시작 (main.py 호출)
 
 ### 테스트 결과
 
 #### 성공 메트릭
 ```
+API Server: http://localhost:8000
 Total Rows Loaded: 141,897
 Memory Optimization: 5.3% reduction
 Total Chunks Streamed: 474
@@ -160,33 +173,42 @@ Java Batch Server Reception: Success
 
 #### 실행 로그 샘플
 ```
-[INFO] gRPC Server starting on port 50051
+[INFO] FastAPI starting on http://0.0.0.0:8000
+[INFO] POST /data/ingest/recruit received
+[INFO] Loading recruit data from processed_recruitment_data.pkl
 [INFO] Loaded 141,897 rows from pkl file
-[INFO] Memory before: 546.32 MB
-[INFO] Memory after: 517.35 MB (5.3% reduction)
+[INFO] Memory optimization: 5.3% reduction
+[INFO] Connecting to Batch Server at localhost:50052
+[INFO] Starting gRPC Client Streaming
 [INFO] Streaming 474 chunks to Batch Server
 [INFO] Chunk 1/474 sent (300 rows)
 ...
 [INFO] All chunks successfully streamed
 [INFO] Batch Server confirmed receipt
+[INFO] Response: Successfully sent 141897 rows in 474 chunks
 ```
 
 ### 기술적 하이라이트
 
-1. **메모리 효율성**
+1. **FastAPI + gRPC 하이브리드 아키텍처**
+   - HTTP API로 데이터 수집 트리거 (유연성)
+   - gRPC Client Streaming으로 대용량 전송 (성능)
+   - 도메인별 엔드포인트 분리 (확장성)
+
+2. **메모리 효율성**
    - Category 타입 활용으로 문자열 메모리 절감
    - float32 사용으로 vector 메모리 50% 절감
    - 점진적 chunk 전송으로 메모리 피크 방지
 
-2. **스트리밍 안정성**
-   - gRPC Backpressure 자동 처리
-   - Checkpoint 기반 재시작 지원
-   - 에러 핸들링 및 로깅
+3. **스트리밍 안정성**
+   - gRPC Client Streaming (단방향)
+   - Chunk 기반 데이터 전송
+   - 에러 핸들링 및 상세 로깅
 
-3. **Python-Java 상호 운용성**
+4. **Python-Java 상호 운용성**
    - Protobuf 직렬화 성공
    - NumPy array → proto repeated float 변환
-   - Java 측 파싱 정상 확인
+   - Java Batch Server gRPC Server와 통신 성공
 
 ---
 
@@ -469,46 +491,42 @@ message RecruitRow {
 
 ## ✅ 현재 진행 상황
 
-### 완료 (2025-12-11)
-- ✅ 문서화 구조 완성 (6개 설계 문서)
-- ✅ Python 서버 설계서 작성
-- ✅ gRPC 서버 구현 가이드 작성
-- ✅ 데이터 로딩 전략 문서 작성
-- ✅ 스트리밍 전략 문서 작성
-- ✅ UUID 생성 전략 문서 작성
-- ✅ 프로젝트 구조 문서 작성
-- ✅ Python 프로젝트 초기 설정
-- ✅ Proto 파일 컴파일 (embedding_stream.proto)
-- ✅ **gRPC 서버 구현 완료** (Server Streaming - 220 lines)
-  - StreamEmbedding RPC 구현
-  - Port 50051 리스닝
-  - 474 chunks 스트리밍 성공 (141,897 rows)
-- ✅ **gRPC 클라이언트 구현 완료** (테스트 클라이언트 - 150 lines)
-- ✅ **pkl 로더 구현 완료** (`data_loader.py` - 270 lines)
+### 완료 (2025-12-12)
+- ✅ **FastAPI + gRPC Client 아키텍처 구현 완료**
+  - `main.py`: FastAPI 앱 진입점
+  - `api/endpoints.py`: HTTP API 엔드포인트
+  - `services/ingestion_service.py`: 비즈니스 로직
+  - `infrastructure/grpc_clients.py`: gRPC Client (Client Streaming)
+  - `infrastructure/loaders.py`: 도메인별 데이터 로더
+  - `domain/models.py`: 도메인 모델
+  - `domain/utils.py`: UUID v7 유틸리티
+  - `config/settings.py`: 환경 설정
+- ✅ **데이터 로딩 최적화**
   - 141,897 rows 성공적 로드
   - 메모리 최적화 5.3% 절감
-  - Checkpoint 필터링 지원
-- ✅ **UUID 생성기 구현 완료** (`uuid_generator.py` - 100 lines)
-  - UUID v7 생성 로직
-- ✅ **Chunk 분할 로직 구현 완료** (`chunker.py` - 300 lines)
-  - 적응형 chunk 크기 조정
-  - 메모리 효율적 스트리밍
-- ✅ **환경 설정 구현 완료** (`config.py` - 120 lines)
-  - Server/Data 설정 분리
-  - 환경 변수 지원
-- ✅ **실행 스크립트 작성**
-  - `start_server.bat` (서버 시작)
-  - `test_client.bat` (클라이언트 테스트)
-- ✅ **Batch Server와 통신 테스트 성공**
+  - 도메인별 로더 분리 (recruit, headhunter)
+- ✅ **gRPC Client Streaming 구현**
+  - Batch Server (Port 50052)와 통신
   - 474 chunks 전송 완료
   - Java Batch Server에서 정상 수신 확인
+- ✅ **HTTP API 엔드포인트**
+  - `POST /data/ingest/{domain}`: 데이터 수집 트리거
+  - `GET /health`: 헬스 체크
+- ✅ **Proto 파일 컴파일**
+  - `embedding_stream.proto`: Client Streaming RPC 정의
+  - Python/Java 상호 운용성 확인
+- ✅ **문서 및 스크립트 정리**
+  - README.md 업데이트 (FastAPI 기준)
+  - CLAUDE.md 업데이트
+  - start_server.bat 업데이트 (main.py 호출)
+  - 테스트 전용 코드 제거 (test_client.bat)
 
 ### 예정
-- ⏳ 단위 테스트 작성
+- ⏳ 단위 테스트 작성 (pytest)
 - ⏳ 성능 벤치마크 및 최적화
 - ⏳ 에러 핸들링 강화
-- ⏳ Health Check 엔드포인트 추가
 - ⏳ Monitoring 메트릭 수집
+- ⏳ docs/ 문서들 최신화
 
 **상세 일정**: Batch Server의 `/../../docs/개발_우선순위.md` 참조
 
@@ -531,4 +549,4 @@ message RecruitRow {
 
 ---
 
-**최종 수정일:** 2025-12-11 (gRPC 서버 구현 완료 및 통신 성공)
+**최종 수정일:** 2025-12-12 (FastAPI + gRPC Client 아키텍처 전환 완료)

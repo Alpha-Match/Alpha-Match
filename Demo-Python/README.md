@@ -1,6 +1,13 @@
-# Demo-Python gRPC Embedding Server
+# Demo-Python FastAPI + gRPC Server
 
-Python gRPC server for streaming embedding data from .pkl files to the Batch Server.
+Python server for streaming embedding data from .pkl files to the Java Batch Server via gRPC.
+
+## Architecture
+
+This server provides:
+- **FastAPI HTTP API** for data ingestion requests
+- **gRPC Client** for streaming data to Java Batch Server
+- **Domain-specific data loaders** (recruit, headhunter)
 
 ## Quick Start
 
@@ -13,26 +20,32 @@ pip install -r requirements.txt
 ### 2. Start Server
 
 ```bash
-cd src
-python grpc_server.py
+python src/main.py
 ```
 
-Server will start on `localhost:50051`
-
-### 3. Test with Client (Optional)
-
-In a separate terminal:
-
+Or on Windows:
 ```bash
-cd src
-python grpc_client.py
+start_server.bat
 ```
 
-Or with custom parameters:
+Server will start on `http://localhost:8000`
+
+### 3. Ingest Data
+
+Trigger data ingestion via HTTP API:
 
 ```bash
-python grpc_client.py --chunk-size 500
-python grpc_client.py --checkpoint c0ca96e7-85df-50df-a64e-d934cd02a170
+# Ingest recruit data
+curl -X POST "http://localhost:8000/data/ingest/recruit?file_name=processed_recruitment_data.pkl"
+
+# Ingest headhunter data
+curl -X POST "http://localhost:8000/data/ingest/headhunter?file_name=processed_headhunter_data.pkl"
+```
+
+### 4. Health Check
+
+```bash
+curl http://localhost:8000/health
 ```
 
 ## Project Structure
@@ -40,153 +53,200 @@ python grpc_client.py --checkpoint c0ca96e7-85df-50df-a64e-d934cd02a170
 ```
 Demo-Python/
 ├── src/
-│   ├── grpc_server.py          # Main gRPC server
-│   ├── grpc_client.py          # Test client
-│   ├── data_loader.py          # Optimized .pkl loading
-│   ├── chunker.py              # Chunk splitting logic
-│   ├── config.py               # Configuration
-│   ├── uuid_generator.py       # UUID utilities
-│   └── proto/                  # Generated protobuf files
+│   ├── main.py                          # FastAPI application entry point
+│   ├── api/
+│   │   └── endpoints.py                 # FastAPI endpoints
+│   ├── services/
+│   │   └── ingestion_service.py         # Data ingestion business logic
+│   ├── infrastructure/
+│   │   ├── loaders.py                   # Domain-specific data loaders
+│   │   └── grpc_clients.py              # gRPC client for Batch Server
+│   ├── domain/
+│   │   ├── models.py                    # Domain models
+│   │   └── utils.py                     # UUID utilities
+│   ├── config/
+│   │   └── settings.py                  # Configuration
+│   └── proto/                           # Generated protobuf files
 │       ├── embedding_stream.proto
 │       ├── embedding_stream_pb2.py
 │       └── embedding_stream_pb2_grpc.py
 │
 ├── data/
-│   └── processed_recruitment_data.pkl  # Embedding data (~500MB)
+│   ├── processed_recruitment_data.pkl   # Recruit embedding data (~500MB)
+│   └── processed_headhunter_data.pkl    # Headhunter embedding data
 │
-├── docs/                       # Design documents
+├── docs/                                # Design documents
 ├── requirements.txt
 └── README.md
 ```
 
 ## Data Structure
 
-The .pkl file contains recruitment embedding data:
-
+### Recruit Domain (.pkl file)
 - **Total rows**: ~142,000
 - **Columns**:
-  - `id`: UUID string
   - `Company Name`: Company name
   - `Exp Years`: Experience years (e.g., "2y", "5y")
   - `English Level`: English proficiency level
   - `Primary Keyword`: Primary job keyword
   - `job_post_vectors`: Embedding vector (384 dimensions)
 
+### Headhunter Domain (.pkl file)
+Similar structure with headhunter-specific fields.
+
+## API Endpoints
+
+### POST /data/ingest/{domain}
+
+Trigger data ingestion for a specific domain.
+
+**Path Parameters:**
+- `domain`: Domain name (`recruit` or `headhunter`)
+
+**Query Parameters:**
+- `file_name`: Name of the .pkl file (optional, defaults to domain-specific file)
+- `chunk_size`: Chunk size for streaming (optional, default: 300)
+
+**Example:**
+```bash
+curl -X POST "http://localhost:8000/data/ingest/recruit?file_name=processed_recruitment_data.pkl&chunk_size=500"
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "domain": "recruit",
+  "message": "Successfully sent 141897 rows in 474 chunks",
+  "stats": {
+    "total_rows": 141897,
+    "total_chunks": 474,
+    "chunk_size": 300,
+    "file_name": "processed_recruitment_data.pkl"
+  }
+}
+```
+
+### GET /health
+
+Health check endpoint.
+
+**Response:**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-12-12T10:30:00",
+  "version": "1.0.0"
+}
+```
+
 ## Features
 
 ### Memory Optimization
 
-The data loader uses dtype optimization to reduce memory usage by 40-50%:
+The data loaders use dtype optimization to reduce memory usage by 40-50%:
 
 ```python
-from data_loader import load_data_optimized
+from infrastructure.loaders import load_recruit_data
 
-df = load_data_optimized()  # Uses category dtype for strings
-```
-
-### Checkpoint Support
-
-Resume streaming from a specific UUID:
-
-```python
-# In client
-request = StreamEmbeddingRequest(
-    last_processed_uuid="c0ca96e7-85df-50df-a64e-d934cd02a170",
-    chunk_size=300
-)
+df = load_recruit_data()  # Uses category dtype for strings
 ```
 
 ### Configurable Chunk Size
 
 Adjust chunk size (100-1000 rows):
 
+```bash
+curl -X POST "http://localhost:8000/data/ingest/recruit?chunk_size=500"
+```
+
+### Domain-Specific Loaders
+
+Each domain has its own loader with optimized schema:
+
 ```python
-# In config.py
-DEFAULT_CHUNK_SIZE = 300  # Default
-MIN_CHUNK_SIZE = 100      # Minimum
-MAX_CHUNK_SIZE = 1000     # Maximum
+# Recruit domain
+df = load_recruit_data(file_name="processed_recruitment_data.pkl")
+
+# Headhunter domain
+df = load_headhunter_data(file_name="processed_headhunter_data.pkl")
 ```
 
 ## Configuration
 
-Edit `src/config.py` to customize:
+Edit `src/config/settings.py` to customize:
 
 ```python
 @dataclass
-class ServerConfig:
-    HOST: str = '[::]:50051'
-    MAX_WORKERS: int = 10
-    MAX_MESSAGE_LENGTH: int = 100 * 1024 * 1024  # 100MB
+class Settings:
+    # FastAPI
+    HOST: str = "0.0.0.0"
+    PORT: int = 8000
 
-@dataclass
-class DataConfig:
+    # gRPC Batch Server
+    BATCH_SERVER_HOST: str = "localhost"
+    BATCH_SERVER_PORT: int = 50052
+
+    # Data
+    DATA_DIR: Path = Path(__file__).parent.parent.parent / "data"
     DEFAULT_CHUNK_SIZE: int = 300
     VECTOR_DIMENSION: int = 384
-    LOG_CHUNK_INTERVAL: int = 10
 ```
 
 ## Testing
 
-### Test Individual Modules
+### Test Data Ingestion
+
+1. Start the server:
+```bash
+python src/main.py
+```
+
+2. In another terminal, trigger ingestion:
+```bash
+curl -X POST "http://localhost:8000/data/ingest/recruit"
+```
+
+3. Check Batch Server logs to verify data reception.
+
+### Manual Testing with Different Chunk Sizes
 
 ```bash
-cd src
+# Small chunks (faster streaming)
+curl -X POST "http://localhost:8000/data/ingest/recruit?chunk_size=100"
 
-# Test configuration
-python config.py
-
-# Test data loader
-python data_loader.py
-
-# Test chunker
-python chunker.py
-
-# Test UUID generator
-python uuid_generator.py
+# Large chunks (fewer network calls)
+curl -X POST "http://localhost:8000/data/ingest/recruit?chunk_size=1000"
 ```
 
-### Test Full Server
+## gRPC Communication
 
-1. Start server:
-```bash
-python grpc_server.py
+### Proto Definition
+
+```protobuf
+service EmbeddingStreamService {
+  rpc IngestDataStream(stream RowChunk) returns (StreamResponse);
+}
+
+message RowChunk {
+  string domain = 1;
+  repeated RecruitRow rows = 2;
+}
+
+message RecruitRow {
+  string id = 1;
+  string company_name = 2;
+  int32 exp_years = 3;
+  string english_level = 4;
+  string primary_keyword = 5;
+  repeated float vector = 6;
+}
 ```
 
-2. In another terminal, run client:
-```bash
-python grpc_client.py --chunk-size 100
-```
+### Port Configuration
 
-## gRPC API
-
-### Service: EmbeddingStreamService
-
-#### Method: StreamEmbedding
-
-**Type**: Unary → Server Streaming
-
-**Request**: `StreamEmbeddingRequest`
-- `last_processed_uuid` (string): Checkpoint UUID to resume from (optional)
-- `chunk_size` (int32): Desired chunk size (default: 300)
-
-**Response**: Stream of `RowChunk`
-- Each `RowChunk` contains multiple `RecruitRow` objects
-
-**Example**:
-```python
-import grpc
-from proto import embedding_stream_pb2, embedding_stream_pb2_grpc
-
-channel = grpc.insecure_channel('localhost:50051')
-stub = embedding_stream_pb2_grpc.EmbeddingStreamServiceStub(channel)
-
-request = embedding_stream_pb2.StreamEmbeddingRequest(
-    chunk_size=300
-)
-
-for chunk in stub.StreamEmbedding(request):
-    print(f"Received {len(chunk.rows)} rows")
-```
+- **FastAPI HTTP**: 8000
+- **Java Batch Server gRPC**: 50052 (client connects to this)
 
 ## Performance
 
@@ -208,7 +268,7 @@ for chunk in stub.StreamEmbedding(request):
 
 If you see `ModuleNotFoundError: No module named 'embedding_stream_pb2'`:
 
-The proto file imports have been fixed. Ensure you're using the compiled files in `src/proto/`.
+The proto files should be in `src/proto/`. Ensure they are generated correctly.
 
 ### File Not Found
 
@@ -217,20 +277,30 @@ Ensure the .pkl file exists:
 ls data/processed_recruitment_data.pkl
 ```
 
-### Port Already in Use
+### Connection Refused (gRPC)
 
-Change the port in `src/config.py`:
+Ensure Java Batch Server is running on port 50052:
+```bash
+# Check if Batch Server is running
+netstat -an | grep 50052
+```
+
+### Port Already in Use (FastAPI)
+
+Change the port in `src/config/settings.py`:
 ```python
-HOST: str = '[::]:50052'  # Use different port
+PORT: int = 8001  # Use different port
 ```
 
 ## Integration with Batch Server
 
-The Batch Server (Java) connects as a client:
+The Java Batch Server acts as a gRPC server:
 
-1. Batch Server sends `StreamEmbeddingRequest`
-2. Python server streams `RowChunk` data
-3. Batch Server processes and saves to PostgreSQL
+1. Python server receives HTTP POST to `/data/ingest/{domain}`
+2. Python server loads .pkl file and chunks data
+3. Python server connects to Batch Server as gRPC client
+4. Python server streams `RowChunk` data via `IngestDataStream`
+5. Batch Server processes and saves to PostgreSQL with pgvector
 
 See `Backend/Batch-Server/CLAUDE.md` for Batch Server details.
 
@@ -248,3 +318,4 @@ Internal project - Alpha-Match
 ## Author
 
 Created: 2025-12-11
+Updated: 2025-12-12 (Refactored to FastAPI + gRPC Client)
