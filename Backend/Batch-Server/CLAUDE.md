@@ -38,6 +38,7 @@ Python AI Server로부터 gRPC Streaming으로 Recruit Embedding 및 Metadata를
 - **gRPC 통신 가이드**: `/docs/gRPC_통신_가이드.md` 🔌
 - **Reactive + Blocking 혼합전략**: `/docs/Reactive_Blocking_혼합전략.md` ⚡
 - **동시성 제어**: `/docs/동시성_제어.md` 🔐
+- **서비스 레이어 구현 가이드**: `/docs/서비스_레이어_구현_가이드.md` 💡 (2025-12-12 추가)
 
 ### 📚 히스토리 문서
 - **hist/**: 작업 과정, 의사결정, 변경 이력 (날짜별)
@@ -60,16 +61,22 @@ Python AI Server로부터 gRPC Streaming으로 Recruit Embedding 및 Metadata를
   - GrpcTestRunner: 자동 테스트 러너
   - Python Server와 통신 성공 (141,897 rows 수신)
   - Checkpoint 재개 기능 검증
+- **서비스 레이어 구현 완료** (2025-12-12)
+  - ChunkProcessor: RowChunk → DB 저장 (metadata + embedding 분리)
+  - EmbeddingStreamingService: gRPC Stream → DB 파이프라인 (Reactive → Virtual Thread)
+  - EmbeddingStreamRunner: 통합 테스트 자동 실행
+  - Vector 차원 검증 완료 (384)
+  - 상세 로깅 구현 (스레드, 청크 사이즈, 마지막 UUID, 마지막 데이터)
+  - 빌드 성공 확인
 
 ### 🔄 진행 중
-- Application Services (StreamingService, ChunkProcessor, CacheSyncService)
-  - DB 저장 로직 구현 예정
-  - Batch Job/Step 통합 예정
+- 통합 테스트 (Python Server + Batch Server + PostgreSQL)
 
 ### ⏳ 예정
+- DLQ 처리 로직 (우선순위: 높음)
+- 캐시 무효화 통합 (CacheInvalidateGrpcClient 연동)
 - Batch Configuration (Job, Step, Listener)
-- BatchScheduler
-- DLQ 처리 로직
+- BatchScheduler (Quartz 기반)
 
 **상세 일정**: `/../../docs/개발_우선순위.md` 참조
 
@@ -230,4 +237,4 @@ if (invalidating.compareAndSet(false, true)) {
 
 ---
 
-**최종 수정일:** 2025-12-11
+**최종 수정일:** 2025-12-12 (서비스 레이어 구현 완료)
