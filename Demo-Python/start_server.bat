@@ -1,12 +1,12 @@
 @echo off
-REM Start Demo-Python gRPC Server
+REM Start Demo-Python FastAPI + gRPC Server
 REM Usage: start_server.bat
 
 echo ========================================
-echo Starting Demo-Python gRPC Server
+echo Starting Demo-Python Server (FastAPI + gRPC Client)
 echo ========================================
 
 cd src
-python grpc_server.py
+python main.py
 
 pause
