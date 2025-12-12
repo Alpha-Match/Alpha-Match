@@ -2,11 +2,11 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-from . import embedding_stream_pb2 as embedding__stream__pb2
+import embedding_stream_pb2 as embedding__stream__pb2
 
 
 class EmbeddingStreamServiceStub(object):
-    """Embedding Stream Service
+    """데이터 스트리밍 서비스
     """
 
     def __init__(self, channel):
@@ -16,18 +16,30 @@ class EmbeddingStreamServiceStub(object):
             channel: A grpc.Channel.
         """
         self.StreamEmbedding = channel.unary_stream(
-                '/embedding.EmbeddingStreamService/StreamEmbedding',
+                '/com.alpha.backend.grpc.EmbeddingStreamService/StreamEmbedding',
                 request_serializer=embedding__stream__pb2.StreamEmbeddingRequest.SerializeToString,
                 response_deserializer=embedding__stream__pb2.RowChunk.FromString,
+                )
+        self.IngestDataStream = channel.stream_unary(
+                '/com.alpha.backend.grpc.EmbeddingStreamService/IngestDataStream',
+                request_serializer=embedding__stream__pb2.IngestDataRequest.SerializeToString,
+                response_deserializer=embedding__stream__pb2.IngestDataResponse.FromString,
                 )
 
 
 class EmbeddingStreamServiceServicer(object):
-    """Embedding Stream Service
+    """데이터 스트리밍 서비스
     """
 
     def StreamEmbedding(self, request, context):
-        """Python 서버 → Batch 서버로 Streaming 전송
+        """[기존] 서버 스트리밍 RPC: Batch Server가 요청하면, Python 서버가 Embedding 데이터를 스트림으로 전송
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def IngestDataStream(self, request_iterator, context):
+        """[신규] 클라이언트 스트리밍 RPC: Python 서버가 데이터를 스트림으로 Batch Server에 전송
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -41,15 +53,20 @@ def add_EmbeddingStreamServiceServicer_to_server(servicer, server):
                     request_deserializer=embedding__stream__pb2.StreamEmbeddingRequest.FromString,
                     response_serializer=embedding__stream__pb2.RowChunk.SerializeToString,
             ),
+            'IngestDataStream': grpc.stream_unary_rpc_method_handler(
+                    servicer.IngestDataStream,
+                    request_deserializer=embedding__stream__pb2.IngestDataRequest.FromString,
+                    response_serializer=embedding__stream__pb2.IngestDataResponse.SerializeToString,
+            ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'embedding.EmbeddingStreamService', rpc_method_handlers)
+            'com.alpha.backend.grpc.EmbeddingStreamService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
  # This class is part of an EXPERIMENTAL API.
 class EmbeddingStreamService(object):
-    """Embedding Stream Service
+    """데이터 스트리밍 서비스
     """
 
     @staticmethod
@@ -63,8 +80,25 @@ class EmbeddingStreamService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_stream(request, target, '/embedding.EmbeddingStreamService/StreamEmbedding',
+        return grpc.experimental.unary_stream(request, target, '/com.alpha.backend.grpc.EmbeddingStreamService/StreamEmbedding',
             embedding__stream__pb2.StreamEmbeddingRequest.SerializeToString,
             embedding__stream__pb2.RowChunk.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def IngestDataStream(request_iterator,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.stream_unary(request_iterator, target, '/com.alpha.backend.grpc.EmbeddingStreamService/IngestDataStream',
+            embedding__stream__pb2.IngestDataRequest.SerializeToString,
+            embedding__stream__pb2.IngestDataResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
