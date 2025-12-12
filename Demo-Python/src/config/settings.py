@@ -1,64 +1,80 @@
 """
-Configuration module for Demo-Python gRPC server.
+Demo-Python gRPC 서버를 위한 설정 모듈입니다.
 
-This module centralizes all configuration parameters for:
-- gRPC server settings
-- Data loading and streaming settings
-- File paths and performance tuning
+다음 항목들에 대한 모든 설정 변수를 중앙에서 관리합니다:
+- gRPC 서버 설정
+- 데이터 로딩 및 스트리밍 설정
+- 파일 경로 및 성능 튜닝
 """
 
-import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Dict
 
 
 @dataclass
 class ServerConfig:
-    """gRPC Server configuration"""
-    HOST: str = '[::]:50051'  # Listen on all interfaces, port 50051
-    MAX_WORKERS: int = 10      # ThreadPoolExecutor max workers
-    MAX_MESSAGE_LENGTH: int = 100 * 1024 * 1024  # 100MB max message size
+    """gRPC 및 FastAPI 서버 설정"""
+    # FastAPI 서버가 리슨할 주소
+    HOST: str = '0.0.0.0'
+    PORT: int = 8000
+
+    # gRPC 클라이언트가 접속할 배치 서버 주소
+    BATCH_SERVER_ADDRESS: str = 'localhost:50051'
+
+    # (구) gRPC 서버 설정
+    GRPC_HOST: str = '[::]:50051'  # 모든 인터페이스의 50051 포트에서 리슨
+    MAX_WORKERS: int = 10      # ThreadPoolExecutor의 최대 워커 수
+    MAX_MESSAGE_LENGTH: int = 100 * 1024 * 1024  # 최대 메시지 크기: 100MB
+
+
+@dataclass
+class DomainConfig:
+    """도메인별 개별 설정"""
+    vector_dimension: int
 
 
 @dataclass
 class DataConfig:
-    """Data loading and processing configuration"""
-    # File paths
-    BASE_DIR: Path = Path(__file__).parent.parent
+    """데이터 로딩 및 처리 설정"""
+    # 파일 경로
+    BASE_DIR: Path = Path(__file__).parent.parent.parent # Demo-Python 루트 경로
     DATA_DIR: Path = BASE_DIR / 'data'
-    PKL_FILE: Path = DATA_DIR / 'processed_recruitment_data.pkl'
+    
+    # 스트리밍 설정
+    DEFAULT_CHUNK_SIZE: int = 300  # 청크당 기본 행 수
+    MIN_CHUNK_SIZE: int = 100      # 최소 청크 크기
+    MAX_CHUNK_SIZE: int = 1000     # 최대 청크 크기
 
-    # Streaming settings
-    DEFAULT_CHUNK_SIZE: int = 300  # Default rows per chunk
-    MIN_CHUNK_SIZE: int = 100      # Minimum chunk size
-    MAX_CHUNK_SIZE: int = 1000     # Maximum chunk size
+    # 데이터 최적화
+    OPTIMIZE_DTYPES: bool = True   # 데이터 타입 최적화 활성화
+    USE_CATEGORY: bool = True      # 문자열에 category 타입 사용
 
-    # Vector settings
-    VECTOR_DIMENSION: int = 384    # Actual dimension from data inspection
+    # 로깅
+    LOG_CHUNK_INTERVAL: int = 10   # N개 청크마다 로그 기록
 
-    # Data optimization
-    OPTIMIZE_DTYPES: bool = True   # Enable dtype optimization
-    USE_CATEGORY: bool = True      # Use category dtype for strings
-
-    # Logging
-    LOG_CHUNK_INTERVAL: int = 10   # Log every N chunks
+    # 도메인별 설정을 관리하는 딕셔너리
+    DOMAIN_CONFIGS: Dict[str, DomainConfig] = field(default_factory=lambda: {
+        "recruit": DomainConfig(vector_dimension=384),
+        "candidate": DomainConfig(vector_dimension=768), # 예시: 후보자 도메인은 768차원
+    })
 
 
 @dataclass
 class PerformanceConfig:
-    """Performance tuning configuration"""
-    # Memory management
-    CHUNK_READ_SIZE: int = 1000    # Rows to read at once from DataFrame
+    """성능 튜닝 설정"""
+    # 메모리 관리
+    CHUNK_READ_SIZE: int = 1000    # DataFrame에서 한 번에 읽을 행 수
 
-    # Retry settings
+    # 재시도 설정
     MAX_RETRY_ATTEMPTS: int = 3
     RETRY_DELAY_SECONDS: float = 1.0
 
-    # Timeout settings
-    REQUEST_TIMEOUT_SECONDS: int = 300  # 5 minutes
+    # 타임아웃 설정
+    REQUEST_TIMEOUT_SECONDS: int = 300  # 5분
 
 
-# Global config instances
+# 전역 설정 인스턴스
 server_config = ServerConfig()
 data_config = DataConfig()
 performance_config = PerformanceConfig()
@@ -66,47 +82,38 @@ performance_config = PerformanceConfig()
 
 def validate_config() -> bool:
     """
-    Validate configuration settings.
+    설정 값들을 검증합니다. (파일 경로 등)
 
     Returns:
-        bool: True if all configurations are valid
-
-    Raises:
-        ValueError: If configuration is invalid
-        FileNotFoundError: If data file doesn't exist
+        bool: 모든 설정이 유효하면 True를 반환합니다.
     """
-    # Check data file exists
-    if not data_config.PKL_FILE.exists():
+    # 데이터 디렉토리 존재 여부 확인
+    if not data_config.DATA_DIR.exists():
         raise FileNotFoundError(
-            f"Data file not found: {data_config.PKL_FILE}\n"
-            f"Expected location: {data_config.PKL_FILE.absolute()}"
+            f"데이터 디렉토리를 찾을 수 없습니다: {data_config.DATA_DIR}\n"
+            f"예상 경로: {data_config.DATA_DIR.absolute()}"
         )
 
-    # Validate chunk size
+    # 청크 크기 검증
     if not (data_config.MIN_CHUNK_SIZE <= data_config.DEFAULT_CHUNK_SIZE <= data_config.MAX_CHUNK_SIZE):
         raise ValueError(
-            f"Invalid chunk size configuration: "
-            f"MIN({data_config.MIN_CHUNK_SIZE}) <= DEFAULT({data_config.DEFAULT_CHUNK_SIZE}) <= MAX({data_config.MAX_CHUNK_SIZE})"
+            f"잘못된 청크 크기 설정입니다: "
+            f"최소({data_config.MIN_CHUNK_SIZE}) <= 기본({data_config.DEFAULT_CHUNK_SIZE}) <= 최대({data_config.MAX_CHUNK_SIZE})"
         )
 
-    # Validate vector dimension
-    if data_config.VECTOR_DIMENSION <= 0:
-        raise ValueError(f"Invalid vector dimension: {data_config.VECTOR_DIMENSION}")
-
-    print(f"[Config] Configuration validated successfully")
-    print(f"[Config] Data file: {data_config.PKL_FILE}")
-    print(f"[Config] Server: {server_config.HOST}")
-    print(f"[Config] Default chunk size: {data_config.DEFAULT_CHUNK_SIZE}")
-    print(f"[Config] Vector dimension: {data_config.VECTOR_DIMENSION}")
+    print(f"[Config] 설정 검증 완료")
+    print(f"[Config] 데이터 디렉토리: {data_config.DATA_DIR}")
+    print(f"[Config] 서버 주소: {server_config.HOST}:{server_config.PORT}")
+    print(f"[Config] 기본 청크 크기: {data_config.DEFAULT_CHUNK_SIZE}")
 
     return True
 
 
 if __name__ == '__main__':
-    # Test configuration
+    # 설정 테스트
     try:
         validate_config()
-        print("\nAll configurations are valid!")
+        print("\n모든 설정이 유효합니다!")
     except Exception as e:
-        print(f"Configuration error: {e}")
+        print(f"설정 오류: {e}")
         raise
