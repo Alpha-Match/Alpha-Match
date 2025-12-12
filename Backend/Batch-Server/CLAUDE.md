@@ -34,6 +34,12 @@ Python AI Server로부터 gRPC Streaming으로 Recruit Embedding 및 Metadata를
 - **DB 스키마**: `/docs/DB_스키마.md` 🗄️
 - **Entire Structure**: `/docs/Entire_Structure.md` 🏗️
 
+### 🆕 Backend 공통 문서 (2025-12-12 추가)
+- **DB 스키마 가이드**: `/Backend/docs/DB_스키마_가이드.md` 🗄️
+- **Flyway 마이그레이션 가이드**: `/Backend/docs/Flyway_마이그레이션_가이드.md` 📦
+- **ERD 다이어그램**: `/Backend/docs/ERD_다이어그램.md` 📊
+- **도메인 확장 가이드**: `/docs/도메인_확장_가이드.md` ➕
+
 ### 🔧 기술 상세 문서
 - **gRPC 통신 가이드**: `/docs/gRPC_통신_가이드.md` 🔌
 - **Reactive + Blocking 혼합전략**: `/docs/Reactive_Blocking_혼합전략.md` ⚡
@@ -49,7 +55,7 @@ Python AI Server로부터 gRPC Streaming으로 Recruit Embedding 및 Metadata를
 
 ### ✅ 완료
 - gRPC proto 파일 (embedding_stream.proto, cache_service.proto)
-- DB 스키마 (Flyway migration)
+- DB 스키마 (Flyway migration V1)
 - application.yml 설정
 - build.gradle 의존성 (pgvector 포함)
 - Domain Entities (MetadataEntity, EmbeddingEntity, DlqEntity, CheckpointEntity)
@@ -66,6 +72,11 @@ Python AI Server로부터 gRPC Streaming으로 Recruit Embedding 및 Metadata를
   - Vector 차원 검증 완료 (384)
   - 상세 로깅 구현 (스레드, 청크 사이즈, 마지막 UUID, 마지막 데이터)
   - 빌드 성공 확인
+- **도메인별 DB 스키마 설계 및 Flyway 마이그레이션 정책 수립** (2025-12-12)
+  - Flyway V2~V5 마이그레이션 파일 작성
+  - Base Entity 및 도메인별 Entity 설계 (recruit, candidate)
+  - DLQ, Checkpoint 도메인 범용화
+  - Backend 공통 문서 작성 (DB 스키마 가이드, Flyway 가이드, ERD, 도메인 확장 가이드)
 
 ### 🔄 진행 중
 - 통합 테스트 (Python Server + Batch Server + PostgreSQL)

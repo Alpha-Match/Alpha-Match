@@ -1,8 +1,19 @@
 # 🗄️ Database 스키마
 
 **작성일:** 2025-12-10
-**업데이트:** 2025-12-10
+**업데이트:** 2025-12-12
 **DBMS:** PostgreSQL 14+ with pgvector extension
+
+---
+
+## 🚨 중요 안내
+
+이 문서는 **기본 스키마 개요**입니다. 상세 정보는 다음 문서를 참조하세요:
+
+- **전체 DB 스키마 가이드**: `/Backend/docs/DB_스키마_가이드.md`
+- **Flyway 마이그레이션 정책**: `/Backend/docs/Flyway_마이그레이션_가이드.md`
+- **ERD 다이어그램**: `/Backend/docs/ERD_다이어그램.md`
+- **도메인 확장 가이드**: `/Backend/Batch-Server/docs/도메인_확장_가이드.md`
 
 ---
 
