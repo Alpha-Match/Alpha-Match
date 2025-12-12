@@ -7,7 +7,7 @@ import com.alpha.backend.domain.embedding.EmbeddingRepository;
 import com.alpha.backend.domain.metadata.MetadataEntity;
 import com.alpha.backend.domain.metadata.MetadataRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.pgvector.PGvector;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +32,7 @@ public class RecruitDataProcessor implements DataProcessor<RecruitRowDto> {
     private final MetadataRepository metadataRepository;
     private final EmbeddingRepository embeddingRepository;
     private final BatchProperties batchProperties;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
 
     @Override
     public String getDomain() {
@@ -46,7 +46,7 @@ public class RecruitDataProcessor implements DataProcessor<RecruitRowDto> {
 
             // JSON 배열 문자열을 List<String>으로 파싱
             String jsonArrayString = new String(jsonChunk, "UTF-8");
-            List<String> jsonItems = objectMapper.readValue(
+            List<String> jsonItems = jsonMapper.readValue(
                     jsonArrayString,
                     new TypeReference<List<String>>() {}
             );
@@ -54,7 +54,7 @@ public class RecruitDataProcessor implements DataProcessor<RecruitRowDto> {
             // 각 JSON 문자열을 RecruitRowDto로 파싱
             List<RecruitRowDto> rows = new ArrayList<>();
             for (String jsonItem : jsonItems) {
-                RecruitRowDto dto = objectMapper.readValue(jsonItem, RecruitRowDto.class);
+                RecruitRowDto dto = jsonMapper.readValue(jsonItem, RecruitRowDto.class);
                 rows.add(dto);
             }
 

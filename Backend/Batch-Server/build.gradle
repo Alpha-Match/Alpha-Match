@@ -55,6 +55,9 @@ dependencies {
 	implementation 'io.projectreactor:reactor-core'
 	implementation 'io.projectreactor.addons:reactor-extra'
 
+	// Jackson Datatype Modules (for Java 8 Time API support)
+	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+
 	// Lombok
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'

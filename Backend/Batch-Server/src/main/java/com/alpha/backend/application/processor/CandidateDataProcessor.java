@@ -1,7 +1,7 @@
 package com.alpha.backend.application.processor;
 
 import com.alpha.backend.application.processor.dto.CandidateRowDto;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -25,7 +25,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CandidateDataProcessor implements DataProcessor<CandidateRowDto> {
 
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
 
     @Override
     public String getDomain() {
