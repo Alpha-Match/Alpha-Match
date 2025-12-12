@@ -56,9 +56,7 @@ Python AI Server로부터 gRPC Streaming으로 Recruit Embedding 및 Metadata를
 - Repositories (JPA + Native Query for Upsert)
 - Config 클래스 (BatchProperties, ExecutorConfig, GrpcClientConfig)
 - gRPC Clients (EmbeddingGrpcClient, CacheInvalidateGrpcClient)
-- **gRPC 통신 테스트 완료** (2025-12-11)
-  - GrpcStreamTestService: 스트리밍 테스트 서비스
-  - GrpcTestRunner: 자동 테스트 러너
+- **gRPC 통신 검증 완료** (2025-12-11)
   - Python Server와 통신 성공 (141,897 rows 수신)
   - Checkpoint 재개 기능 검증
 - **서비스 레이어 구현 완료** (2025-12-12)
@@ -90,8 +88,8 @@ src/main/java/com/alpha/backend/
 ├── grpc/           # gRPC 클라이언트 (Embedding, CacheInvalidate)
 ├── domain/         # Entity + Repository (metadata, embedding, dlq)
 ├── infrastructure/ # CheckpointEntity, CheckpointRepository
-├── application/    # Service (GrpcStreamTestService, ChunkProcessor 등)
-├── runner/         # GrpcTestRunner (테스트 자동 실행)
+├── application/    # Service (ChunkProcessor, EmbeddingStreamingService 등)
+├── runner/         # EmbeddingStreamRunner (통합 테스트 자동 실행)
 ├── batch/          # Spring Batch (Job, Step, Listener)
 └── scheduler/      # BatchScheduler
 ```
@@ -112,7 +110,7 @@ src/main/java/com/alpha/backend/
 batch:
   embedding:
     chunk-size: 300               # Chunk 크기
-    vector-dimension: 1536        # Vector 차원
+    vector-dimension: 384         # Vector 차원
     max-retry: 3                  # 재시도 횟수
 
 grpc:
@@ -121,26 +119,36 @@ grpc:
       address: static://localhost:50051
     api-cache:
       address: static://localhost:50052
-  test:
-    enabled: true                 # gRPC 테스트 활성화 (개발 환경)
 ```
 
-### 3. gRPC 통신 테스트
-```bash
-# Python Server 먼저 실행 (Demo-Python)
-cd Demo-Python
-python src/grpc_server.py
+### 3. 통합 테스트
 
-# Batch Server 실행 (테스트 자동 실행)
+#### 3.1 Python 서버 시작
+```bash
+cd Demo-Python
+python src/main.py
+```
+
+#### 3.2 Batch 서버 시작
+```bash
 cd Backend/Batch-Server
 ./gradlew bootRun
 ```
 
-**테스트 결과 예시:**
-- 연결 성공 확인
+#### 3.3 데이터 전송 (Python FastAPI 엔드포인트)
+```bash
+curl -X POST "http://localhost:8000/data/ingest/recruit?file_name=processed_recruitment_data.pkl"
+```
+
+#### 3.4 로그 확인
+- **Python**: 스트리밍 진행 상황 (chunk 전송, row 수)
+- **Batch**: Processor 선택, DB 저장 (스레드, 청크 사이즈, 마지막 UUID)
+- **PostgreSQL**: 데이터 확인 (`recruit_metadata`, `recruit_embedding` 테이블)
+
+**검증 완료 항목:**
 - 141,897 rows 데이터 수신
-- Checkpoint 기능 검증
-- Vector 차원 검증 (1536)
+- Checkpoint 재개 기능
+- Vector 차원 검증 (384)
 
 ---
 
