@@ -90,18 +90,24 @@ C:/Final_2025-12-09/Alpha-Match/
   - Python Server와 통신 성공 (141,897 rows)
   - GrpcStreamTestService, GrpcTestRunner 구현
   - Checkpoint 재개 기능 검증
+- **Batch Server 서비스 레이어 구현 완료** (2025-12-12)
+  - ChunkProcessor (Reactive → Virtual Thread → Blocking JPA)
+  - EmbeddingStreamingService (gRPC Stream → DB 파이프라인)
+  - 도메인별 프로세서 패턴 (Factory + Generic)
+  - 상세 로깅 (스레드 번호, 청크 사이즈, UUID, 데이터 내용)
+- **Python-Java 양방향 gRPC 구현 완료** (2025-12-12)
+  - Server Streaming: Python → Java (데이터 전송)
+  - Client Streaming: Java ← Python (데이터 수신)
+  - 도메인별 제네릭 구조 (recruit, candidate)
 
 ### 🔄 진행 중
-- Batch Server Application Services 구현
-  - ChunkProcessor (DB 저장 로직)
-  - StreamingService (gRPC → DB 파이프라인)
-  - CacheSyncService (캐시 무효화)
-- Python Demo Server 구현
+- Batch Server: Job/Step/Scheduler 구현
+- API Server 설계 및 구현 준비
 
 ### ⏳ 예정
-- Batch Server: Job/Step/Scheduler
-- API Server 구현
+- API Server GraphQL 구현
 - Frontend 구현
+- 통합 테스트 및 성능 최적화
 
 **상세 일정**: `/docs/개발_우선순위.md` 참조
 
@@ -117,6 +123,14 @@ C:/Final_2025-12-09/Alpha-Match/
 - 데이터베이스 스키마 → 참조 경로 추가
 - 문제 해결 방법 → 참조 경로 추가
 - 설정 가이드 → 참조 경로 추가
+
+### Backend 공통 문서 (2025-12-12 추가)
+- **DB 스키마 가이드** → `/Backend/docs/DB_스키마_가이드.md`
+- **Flyway 마이그레이션 가이드** → `/Backend/docs/Flyway_마이그레이션_가이드.md`
+- **ERD 다이어그램** → `/Backend/docs/ERD_다이어그램.md`
+
+### Batch-Server 문서
+- **도메인 확장 가이드** → `/Backend/Batch-Server/docs/도메인_확장_가이드.md`
 
 ### 예시
 - 새로운 gRPC 통신 패턴 → `/docs/gRPC_통신_가이드.md`
@@ -193,9 +207,24 @@ Batch Server가 자동으로 Python Server에 연결하여 데이터를 수신�
 
 ---
 
-## 📋 최근 업데이트 (2025-12-11)
+## 📋 최근 업데이트
 
-### Batch Server - gRPC 통신 구현 완료
+### 2025-12-12 - 서비스 레이어 및 도메인별 제네릭 구조 구현 완료
+- **서비스 레이어 구현**
+  - ChunkProcessor: Reactive → Virtual Thread → Blocking JPA 전환
+  - EmbeddingStreamingService: 3가지 스트리밍 모드 (전체/Checkpoint/병렬)
+  - 상세 로깅: 스레드 번호, 청크 사이즈, 마지막 UUID, 데이터 내용
+- **도메인별 제네릭 구조**
+  - Python의 Protocol 패턴 → Java의 Generic 인터페이스로 매핑
+  - DataProcessor\<T\> + DataProcessorFactory (Factory 패턴)
+  - RecruitDataProcessor, CandidateDataProcessor 구현
+- **양방향 gRPC 구현**
+  - Server Streaming: Batch → Python 데이터 요청
+  - Client Streaming: Python → Batch 데이터 수신
+  - 메타데이터 기반 도메인 라우팅
+- 상세 내역: `/Backend/Batch-Server/docs/구현_요약_2025-12-12.md`
+
+### 2025-12-11 - gRPC 통신 구현 완료
 - Python Server와 gRPC Streaming 통신 성공 (141,897 rows)
 - GrpcStreamTestService, GrpcTestRunner 구현
 - Checkpoint 재개 기능 검증 완료
@@ -203,4 +232,4 @@ Batch Server가 자동으로 Python Server에 연결하여 데이터를 수신�
 
 ---
 
-**최종 수정일:** 2025-12-11
+**최종 수정일:** 2025-12-12
