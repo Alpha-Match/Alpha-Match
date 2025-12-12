@@ -9,16 +9,13 @@ from fastapi import APIRouter, Query, HTTPException, status
 from pydantic import BaseModel
 
 # 프로젝트 내 다른 모듈 임포트
-from services.ingestion_service import ingest_data_from_file
-from proto import embedding_stream_pb2
+from ..services.ingestion_service import ingest_data_from_file
+from ..proto import embedding_stream_pb2
+from ..config.settings import data_config
 
 # 로깅 설정
 import logging
 logger = logging.getLogger(__name__)
-
-# 데이터 폴더 경로 (임시)
-# 실제 환경에서는 이 경로를 설정 파일 등에서 관리해야 합니다.
-DATA_FOLDER_PATH = "./data"
 
 
 # FastAPI 라우터를 생성합니다.
@@ -55,7 +52,7 @@ async def trigger_ingestion(
     domain: str,
     file_name: str = Query(
         ...,
-        description="data 폴더에 위치한 .pkl 파일의 이름 (예: processed_recruitment_data.pkl)",
+        description="data 폴더에 위치한 .pkl 파일의 이름",
         examples=["processed_recruitment_data.pkl"]
     ),
 ):
@@ -65,7 +62,7 @@ async def trigger_ingestion(
     - **domain**: 처리할 데이터의 종류 (예: "recruit", "candidate").
     - **file_name**: 처리할 파일의 이름.
     """
-    full_file_path = f"{DATA_FOLDER_PATH}/{file_name}"
+    full_file_path = f"{data_config.DATA_DIR}/{file_name}"
     logger.info(f"API 요청 수신: POST /data/ingest/{domain}?file_name={file_name}")
 
     try:
@@ -98,5 +95,5 @@ async def trigger_ingestion(
         logger.error(f"내부 서버 오류 발생: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An internal server error occurred: {e}"
+            detail=f"내부 서버 오류가 발생했습니다: {e}"
         )

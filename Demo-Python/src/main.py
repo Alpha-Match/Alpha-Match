@@ -10,7 +10,8 @@ from fastapi import FastAPI
 import logging
 
 # 프로젝트 내 다른 모듈 임포트
-from api import endpoints as ingestion_api
+from .api import endpoints as ingestion_api
+from .config.settings import server_config
 
 # --- 로깅 기본 설정 ---
 # 애플리케이션 시작 시 한 번만 설정합니다.
@@ -44,8 +45,8 @@ async def read_root():
     """
     서버의 상태를 확인하는 기본 엔드포인트입니다.
     """
-    logger.info("Health check endpoint '/' was called.")
-    return {"status": "ok", "message": "Welcome to the Demo-Python Server!"}
+    logger.info("Health check endpoint '/'가 호출되었습니다.")
+    return {"status": "ok", "message": "Demo-Python 서버에 오신 것을 환영합니다!"}
 
 # --- 서버 실행 ---
 # 이 파일이 직접 실행될 때 (예: `python src/main.py`),
@@ -53,5 +54,5 @@ async def read_root():
 # 하지만 보통은 CLI에서 `uvicorn src.main:app --reload` 명령어로 실행합니다.
 if __name__ == "__main__":
     import uvicorn
-    logger.info("애플리케이션을 uvicorn을 통해 직접 실행합니다 (개발용).")
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    logger.info(f"애플리케이션을 uvicorn을 통해 직접 실행합니다 (개발용). 서버 주소: http://{server_config.HOST}:{server_config.PORT}")
+    uvicorn.run(app, host=server_config.HOST, port=server_config.PORT)
