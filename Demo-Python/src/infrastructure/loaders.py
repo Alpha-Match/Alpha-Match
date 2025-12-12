@@ -10,7 +10,7 @@ import pandas as pd
 from typing import List, Protocol, Type, TypeVar, Dict
 
 # 프로젝트 내 다른 모듈 임포트
-from domain.models import BaseData, RecruitData, CandidateData
+from ..domain.models import BaseData, RecruitData, CandidateData
 
 # 공변성을 갖는 제네릭 타입 T_Row를 정의합니다.
 # BaseData를 상속하는 모든 타입을 허용합니다.

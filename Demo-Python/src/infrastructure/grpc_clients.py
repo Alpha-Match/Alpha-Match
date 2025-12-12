@@ -4,23 +4,19 @@ gRPC 클라이언트 (gRPC Clients)
 - 배치 서버(Java)와 통신하는 gRPC 클라이언트 로직을 포함합니다.
 - 비동기 방식으로 gRPC 서버의 RPC를 호출합니다.
 """
-import asyncio
 import json
+# 로깅 설정
+import logging
 from typing import List, AsyncGenerator
 
 import grpc
-from domain.models import RecruitData
-
+from ..config.settings import server_config
+from ..domain.models import RecruitData
 # 프로젝트 내 다른 모듈 및 생성된 proto 파일 임포트
-from proto import embedding_stream_pb2
-from proto import embedding_stream_pb2_grpc
+from ..proto import embedding_stream_pb2
+from ..proto import embedding_stream_pb2_grpc
 
-# 로깅 설정
-import logging
 logger = logging.getLogger(__name__)
-
-# 임시로 배치 서버 주소를 하드코딩합니다. 실제로는 설정 파일에서 관리해야 합니다.
-BATCH_SERVER_ADDRESS = 'localhost:50051' # 실제 Java 배치 서버 주소로 변경 필요
 
 
 async def _prepare_ingest_requests(
@@ -98,13 +94,13 @@ async def stream_data_to_batch_server(
     if not data:
         logger.warning("전송할 데이터가 없습니다.")
         return embedding_stream_pb2.IngestDataResponse(
-            success=False, received_chunks=0, message="No data to send."
+            success=False, received_chunks=0, message="전송할 데이터가 없습니다."
         )
 
     vector_dimension = len(data[0].vector) if data and data[0].vector else 0
 
     try:
-        async with grpc.aio.insecure_channel(BATCH_SERVER_ADDRESS) as channel:
+        async with grpc.aio.insecure_channel(server_config.BATCH_SERVER_ADDRESS) as channel:
             stub = embedding_stream_pb2_grpc.EmbeddingStreamServiceStub(channel)
 
             # 비동기 제너레이터를 생성하여 stub에 전달
@@ -112,7 +108,7 @@ async def stream_data_to_batch_server(
                 domain, file_name, vector_dimension, data, chunk_size
             )
 
-            logger.info("배치 서버로 데이터 스트리밍을 시작합니다...")
+            logger.info(f"배치 서버({server_config.BATCH_SERVER_ADDRESS})로 데이터 스트리밍을 시작합니다...")
             response = await stub.IngestDataStream(request_generator)
             logger.info("배치 서버로부터 최종 응답을 수신했습니다.")
             return response
