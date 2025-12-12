@@ -1,8 +1,8 @@
 package com.alpha.backend.grpc;
 
-import com.alpha.backend.grpc.proto.EmbeddingStreamServiceGrpc;
-import com.alpha.backend.grpc.proto.RowChunk;
-import com.alpha.backend.grpc.proto.StreamEmbeddingRequest;
+import com.alpha.backend.grpc.EmbeddingStreamServiceGrpc;
+import com.alpha.backend.grpc.RowChunk;
+import com.alpha.backend.grpc.StreamEmbeddingRequest;
 import io.grpc.ManagedChannel;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;

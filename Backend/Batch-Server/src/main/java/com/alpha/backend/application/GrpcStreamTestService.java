@@ -2,8 +2,8 @@ package com.alpha.backend.application;
 
 import com.alpha.backend.config.BatchProperties;
 import com.alpha.backend.grpc.EmbeddingGrpcClient;
-import com.alpha.backend.grpc.proto.RecruitRow;
-import com.alpha.backend.grpc.proto.RowChunk;
+import com.alpha.backend.grpc.RecruitRow;
+import com.alpha.backend.grpc.RowChunk;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

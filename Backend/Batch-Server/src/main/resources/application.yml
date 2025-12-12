@@ -50,6 +50,10 @@ grpc:
   test:
     enabled: true  # CommandLineRunner로 gRPC 통신 테스트 실행
 
+  # gRPC 서버 설정 (Python에서 Client Streaming으로 데이터 수신)
+  server:
+    port: 50051  # Python 서버가 접속할 포트
+
   client:
     # Python AI Server (Embedding Stream)
     python-embedding:
@@ -61,6 +65,10 @@ grpc:
     api-cache:
       address: static://localhost:50052
       negotiation-type: plaintext
+
+    #- dns:///service-name → DNS 기반 서비스 디스커버리
+    #- static://host:port → 고정된 주소
+    #- xds:// → Envoy/xDS 기반 서비스 디스커버리
 
 # 커스텀 배치 설정
 batch:
