@@ -1,5 +1,6 @@
 package com.alpha.backend.config;
 
+import com.alpha.backend.infrastructure.config.BatchProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
