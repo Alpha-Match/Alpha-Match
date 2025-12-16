@@ -83,7 +83,9 @@ C:/Final_2025-12-09/Alpha-Match/
 
 ### ✅ 완료
 - gRPC proto 파일 작성
-- DB 스키마 설계 (Flyway)
+- DB 스키마 설계 (Flyway V1-V5)
+  - V1: Recruit 기본 스키마
+  - V2-V5: Candidate, 도메인 범용화, 인덱스, 제약조건 (2025-12-12)
 - Batch Server 기본 구조 (Entity, Repository, Config, gRPC Client)
 - 전체 프로젝트 문서화 구조 완성
 - **Batch Server gRPC 통신 구현 및 검증 완료** (2025-12-11)
@@ -96,9 +98,17 @@ C:/Final_2025-12-09/Alpha-Match/
   - 도메인별 프로세서 패턴 (Factory + Generic)
   - 상세 로깅 (스레드 번호, 청크 사이즈, UUID, 데이터 내용)
 - **Python-Java 양방향 gRPC 구현 완료** (2025-12-12)
-  - Server Streaming: Python → Java (데이터 전송)
-  - Client Streaming: Java ← Python (데이터 수신)
-  - 도메인별 제네릭 구조 (recruit, candidate)
+  - Client Streaming: Python → Java (데이터 전송, IngestDataStream RPC)
+  - 도메인별 제네릭 구조 (recruit 384d, candidate 768d)
+  - FastAPI + gRPC Client 하이브리드 아키텍처
+- **Spring Boot 4.0 마이그레이션 완료** (2025-12-12)
+  - Jackson 3 적용 (ObjectMapper → JsonMapper)
+  - JacksonConfig 구성
+- **Backend 공통 문서화 완료** (2025-12-12)
+  - DB 스키마 가이드, Flyway 마이그레이션 가이드, ERD 다이어그램
+  - API Server와 공유 가능한 단일 문서
+- **계층별 커밋 완료** (2025-12-12)
+  - Batch: 7개 커밋, Python: 7개 커밋
 
 ### 🔄 진행 중
 - Batch Server: Job/Step/Scheduler 구현
@@ -209,19 +219,35 @@ Batch Server가 자동으로 Python Server에 연결하여 데이터를 수신�
 
 ## 📋 최근 업데이트
 
-### 2025-12-12 - 서비스 레이어 및 도메인별 제네릭 구조 구현 완료
+### 2025-12-12 - Python-Java gRPC 시스템 완전 통합 완료
 - **서비스 레이어 구현**
   - ChunkProcessor: Reactive → Virtual Thread → Blocking JPA 전환
   - EmbeddingStreamingService: 3가지 스트리밍 모드 (전체/Checkpoint/병렬)
   - 상세 로깅: 스레드 번호, 청크 사이즈, 마지막 UUID, 데이터 내용
-- **도메인별 제네릭 구조**
-  - Python의 Protocol 패턴 → Java의 Generic 인터페이스로 매핑
-  - DataProcessor\<T\> + DataProcessorFactory (Factory 패턴)
-  - RecruitDataProcessor, CandidateDataProcessor 구현
-- **양방향 gRPC 구현**
-  - Server Streaming: Batch → Python 데이터 요청
-  - Client Streaming: Python → Batch 데이터 수신
-  - 메타데이터 기반 도메인 라우팅
+- **도메인별 제네릭 구조 (Python ↔ Java 매핑)**
+  - Python: Protocol + TypeVar(covariant=True) + Factory
+  - Java: Generic Interface + Factory + Spring Bean 자동 등록
+  - 도메인: recruit (384d), candidate (768d)
+- **Jackson 3 마이그레이션**
+  - Spring Boot 4.0+ 권장 사항 적용
+  - ObjectMapper → JsonMapper 전환
+  - JacksonConfig + jackson-datatype-jsr310 추가
+- **도메인별 DB 스키마 설계 및 Flyway 마이그레이션**
+  - V2: Candidate 스키마 (768d)
+  - V3: Domain 컬럼 추가 (DLQ/Checkpoint 범용화)
+  - V4: 성능 인덱스
+  - V5: 제약조건, 트리거, 헬퍼 함수
+  - Base Entity 패턴 (BaseMetadataEntity, BaseEmbeddingEntity)
+- **Backend 공통 문서 작성**
+  - DB 스키마 가이드, Flyway 마이그레이션 가이드, ERD 다이어그램
+  - API Server와 Batch Server 공유 가능한 단일 문서화
+- **테스트 코드 정리**
+  - Batch: GrpcStreamTestService, GrpcTestRunner 제거 (테스트 전용)
+  - Batch: EmbeddingStreamRunner 유지 (@ConditionalOnProperty)
+  - Python: test_client.bat 제거
+- **계층별 커밋 완료**
+  - Batch Server: 7개 커밋 (Config → Database → Domain → Docs)
+  - Demo Python: 7개 커밋 (문서 → Config → Domain → Infrastructure → Service → API)
 - 상세 내역: `/Backend/Batch-Server/docs/구현_요약_2025-12-12.md`
 
 ### 2025-12-11 - gRPC 통신 구현 완료

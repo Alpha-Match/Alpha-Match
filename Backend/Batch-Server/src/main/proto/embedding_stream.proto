@@ -3,7 +3,7 @@ syntax = "proto3";
 package com.alpha.backend.grpc;
 
 option java_multiple_files = true;
-option java_package = "com.alpha.backend.grpc";
+option java_package = "com.alpha.backend.infrastructure.grpc.proto";
 option java_outer_classname = "EmbeddingStreamProto";
 
 // 데이터 스트리밍 서비스

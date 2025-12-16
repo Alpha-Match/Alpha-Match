@@ -31,11 +31,15 @@ ext {
 
 dependencies {
 	// Spring Boot Starters
-	implementation 'org.springframework.boot:spring-boot-starter-batch'
+	implementation 'org.springframework.boot:spring-boot-starter-batch-jdbc'  // JDBC mode (Spring Boot 4.0 변경사항)
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-graphql'
 	implementation 'org.springframework.boot:spring-boot-starter-quartz'
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+	// Spring Batch (명시적으로 compile 의존성 추가 - Spring Boot 4.0.0 issue)
+	implementation 'org.springframework.batch:spring-batch-core'
+	implementation 'org.springframework.batch:spring-batch-infrastructure'
 
 	// gRPC
 	implementation 'io.grpc:grpc-services'

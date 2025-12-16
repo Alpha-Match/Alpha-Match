@@ -504,22 +504,35 @@ message RecruitRow {
 - ✅ **데이터 로딩 최적화**
   - 141,897 rows 성공적 로드
   - 메모리 최적화 5.3% 절감
-  - 도메인별 로더 분리 (recruit, headhunter)
+  - 도메인별 로더 분리 (recruit, candidate)
 - ✅ **gRPC Client Streaming 구현**
-  - Batch Server (Port 50052)와 통신
+  - Batch Server (Port 50051)와 통신
   - 474 chunks 전송 완료
   - Java Batch Server에서 정상 수신 확인
+  - IngestDataStream RPC (Client Streaming)
 - ✅ **HTTP API 엔드포인트**
   - `POST /data/ingest/{domain}`: 데이터 수집 트리거
   - `GET /health`: 헬스 체크
+  - Query Parameters: `file_name`, `chunk_size`
 - ✅ **Proto 파일 컴파일**
   - `embedding_stream.proto`: Client Streaming RPC 정의
   - Python/Java 상호 운용성 확인
+- ✅ **Protocol 기반 제네릭 구조 구현**
+  - `DataLoader[T_Row]` Protocol (구조적 타입)
+  - TypeVar 공변성(covariant=True) 활용
+  - 팩토리 패턴 (get_loader 함수)
+  - Batch-Server의 DataProcessor<T> 패턴과 매핑
+- ✅ **테스트 코드 정리**
+  - 제거: test_client.bat (테스트 전용)
+  - 유지: 실제 프로덕션 코드 (main.py, endpoints.py 등)
+  - start_server.bat 업데이트 (main.py 호출)
+- ✅ **계층별 커밋 완료** (2025-12-12)
+  - 7개 레이어별 커밋: 문서 → 스크립트 → Config → Domain → Infrastructure → Service → API
+  - 각 레이어별 기능/역할 명확화
 - ✅ **문서 및 스크립트 정리**
   - README.md 업데이트 (FastAPI 기준)
   - CLAUDE.md 업데이트
   - start_server.bat 업데이트 (main.py 호출)
-  - 테스트 전용 코드 제거 (test_client.bat)
 
 ### 예정
 - ⏳ 단위 테스트 작성 (pytest)

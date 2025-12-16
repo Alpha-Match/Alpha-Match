@@ -70,9 +70,17 @@ grpc:
 batch:
   embedding:
     chunk-size: 300                    # 한 번에 처리할 row 수
-    vector-dimension: 384             # Embedding vector 차원
     max-retry: 3                       # 실패 시 재시도 횟수
     retry-backoff-ms: 1000            # 재시도 대기 시간 (ms)
+
+    # 도메인별 설정
+    domains:
+      recruit:
+        vector-dimension: 384          # Recruit Embedding 차원
+        table-prefix: recruit          # 테이블 접두사
+      candidate:
+        vector-dimension: 768          # Candidate Embedding 차원
+        table-prefix: candidate        # 테이블 접두사
 
   scheduler:
     enabled: true                      # 스케줄러 활성화

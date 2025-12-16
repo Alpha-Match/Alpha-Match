@@ -68,15 +68,59 @@ Python AI Server로부터 gRPC Streaming으로 Recruit Embedding 및 Metadata를
 - **서비스 레이어 구현 완료** (2025-12-12)
   - ChunkProcessor: RowChunk → DB 저장 (metadata + embedding 분리)
   - EmbeddingStreamingService: gRPC Stream → DB 파이프라인 (Reactive → Virtual Thread)
-  - EmbeddingStreamRunner: 통합 테스트 자동 실행
+  - EmbeddingStreamRunner: 통합 테스트 자동 실행 (조건부 실행)
   - Vector 차원 검증 완료 (384)
   - 상세 로깅 구현 (스레드, 청크 사이즈, 마지막 UUID, 마지막 데이터)
   - 빌드 성공 확인
 - **도메인별 DB 스키마 설계 및 Flyway 마이그레이션 정책 수립** (2025-12-12)
   - Flyway V2~V5 마이그레이션 파일 작성
+    - V2: Candidate 스키마 (768 dimensions)
+    - V3: Domain 컬럼 추가 (DLQ, Checkpoint 범용화)
+    - V4: 성능 인덱스 추가
+    - V5: 제약조건, 트리거, 헬퍼 함수
   - Base Entity 및 도메인별 Entity 설계 (recruit, candidate)
+    - BaseMetadataEntity, BaseEmbeddingEntity (@MappedSuperclass)
+    - RecruitMetadataEntity (384d), CandidateMetadataEntity (768d)
   - DLQ, Checkpoint 도메인 범용화
   - Backend 공통 문서 작성 (DB 스키마 가이드, Flyway 가이드, ERD, 도메인 확장 가이드)
+- **Jackson 3 마이그레이션 완료** (2025-12-12)
+  - Spring Boot 4.0+ 권장 사항 적용
+  - ObjectMapper → JsonMapper 전환 (JacksonConfig)
+  - RecruitDataProcessor, CandidateDataProcessor 업데이트
+  - jackson-datatype-jsr310 의존성 추가
+  - 빌드 성공 확인
+- **도메인별 제네릭 프로세서 패턴 구현** (2025-12-12)
+  - DataProcessor<T> 인터페이스 (Python의 DataLoader 패턴 매핑)
+  - DataProcessorFactory (Spring Bean 자동 등록)
+  - RecruitDataProcessor, CandidateDataProcessor 구현
+  - JSON → Entity 변환 및 DB 저장 분리
+- **테스트 코드 정리** (2025-12-12)
+  - 제거: GrpcStreamTestService, GrpcTestRunner (테스트 전용)
+  - 유지: EmbeddingStreamRunner (@ConditionalOnProperty 사용)
+    - 실제 프로덕션 코드 테스트 (EmbeddingStreamingService)
+    - 기본 비활성화 (grpc.test.enabled: true로 활성화)
+- **계층별 커밋 완료** (2025-12-12)
+  - 7개 레이어별 커밋: Config → Database → Domain → Backend Docs → Batch Docs
+- **도메인별 리팩토링 완료** (2025-12-15)
+  - BatchProperties: 도메인별 Map 구조 (Map<domain, DomainConfig>)
+  - Base Entity 패턴 (BaseMetadataEntity, BaseEmbeddingEntity)
+  - 도메인별 Entity/Repository (Recruit, Candidate)
+  - ChunkProcessorInterface + Factory 패턴 (자동 Spring Bean 등록)
+  - 각 도메인별 Native Query Upsert 구현
+  - 도메인 확장성 향상 (새 도메인 추가 간소화)
+- **Clean Architecture 리팩토링 완료** (2025-12-16)
+  - Domain 계층과 Infrastructure 계층 분리 (Port & Adapter 패턴)
+  - Domain Repository 인터페이스 정의 (비즈니스 로직 명세)
+    - RecruitMetadataRepository, RecruitEmbeddingRepository
+    - CandidateMetadataRepository, CandidateEmbeddingRepository
+    - DlqRepository, CheckpointRepository
+  - Infrastructure JpaRepository 구현체 생성 (기술 구현)
+    - RecruitMetadataJpaRepository, RecruitEmbeddingJpaRepository
+    - CandidateMetadataJpaRepository, CandidateEmbeddingJpaRepository
+    - DlqJpaRepository, CheckpointJpaRepository
+  - 도메인 디렉토리 구조 통일 (entity/, repository/)
+  - Spring Data JPA 의존성을 Infrastructure로 격리
+  - 빌드 성공 확인
 
 ### 🔄 진행 중
 - 통합 테스트 (Python Server + Batch Server + PostgreSQL)
@@ -91,18 +135,67 @@ Python AI Server로부터 gRPC Streaming으로 Recruit Embedding 및 Metadata를
 
 ---
 
-## 📂 간단 구조
+## 📂 간단 구조 (Clean Architecture)
 
 ```
 src/main/java/com/alpha/backend/
-├── config/         # 설정 (BatchProperties, ExecutorConfig, GrpcClientConfig)
-├── grpc/           # gRPC 클라이언트 (Embedding, CacheInvalidate)
-├── domain/         # Entity + Repository (metadata, embedding, dlq)
-├── infrastructure/ # CheckpointEntity, CheckpointRepository
-├── application/    # Service (ChunkProcessor, EmbeddingStreamingService 등)
-├── runner/         # EmbeddingStreamRunner (통합 테스트 자동 실행)
-├── batch/          # Spring Batch (Job, Step, Listener)
-└── scheduler/      # BatchScheduler
+├── infrastructure/                # 인프라 계층 (Adapter)
+│   ├── config/                    # 설정
+│   │   ├── BatchProperties        # 도메인별 설정 (Map<domain, DomainConfig>)
+│   │   ├── ExecutorConfig         # Virtual Thread Executor
+│   │   ├── GrpcClientConfig       # gRPC 클라이언트 설정
+│   │   └── JacksonConfig          # Jackson 설정
+│   ├── grpc/                      # gRPC 클라이언트
+│   │   └── client/
+│   │       ├── EmbeddingGrpcClient        # Python AI Server 연동
+│   │       └── CacheInvalidateGrpcClient  # API Server 캐시 무효화
+│   └── persistence/               # JPA Repository 구현체 (Adapter)
+│       ├── RecruitMetadataJpaRepository
+│       ├── RecruitEmbeddingJpaRepository
+│       ├── CandidateMetadataJpaRepository
+│       ├── CandidateEmbeddingJpaRepository
+│       ├── DlqJpaRepository
+│       └── CheckpointJpaRepository
+├── domain/                        # 도메인 계층 (Business Logic)
+│   ├── common/                    # 공통 Base Entity
+│   │   ├── BaseMetadataEntity     # 모든 Metadata Entity의 부모
+│   │   └── BaseEmbeddingEntity    # 모든 Embedding Entity의 부모
+│   ├── recruit/                   # Recruit 도메인
+│   │   ├── entity/
+│   │   │   ├── RecruitMetadataEntity
+│   │   │   └── RecruitEmbeddingEntity
+│   │   └── repository/            # Repository 인터페이스 (Port)
+│   │       ├── RecruitMetadataRepository
+│   │       └── RecruitEmbeddingRepository
+│   ├── candidate/                 # Candidate 도메인
+│   │   ├── entity/
+│   │   │   ├── CandidateMetadataEntity
+│   │   │   └── CandidateEmbeddingEntity
+│   │   └── repository/            # Repository 인터페이스 (Port)
+│   │       ├── CandidateMetadataRepository
+│   │       └── CandidateEmbeddingRepository
+│   ├── dlq/                       # DLQ (Dead Letter Queue)
+│   │   ├── entity/
+│   │   │   └── DlqEntity          # 도메인 범용화 완료
+│   │   └── repository/            # Repository 인터페이스 (Port)
+│   │       └── DlqRepository
+│   └── checkpoint/                # Checkpoint
+│       ├── entity/
+│       │   └── CheckpointEntity   # 도메인 범용화 완료
+│       └── repository/            # Repository 인터페이스 (Port)
+│           └── CheckpointRepository
+├── application/                   # 애플리케이션 계층 (Use Case)
+│   ├── batch/
+│   │   ├── dto/
+│   │   ├── processor/
+│   │   ├── reader/
+│   │   └── writer/
+│   └── usecase/
+│       └── DlqServiceImpl
+└── batch/                         # Spring Batch
+    ├── job/
+    │   └── BatchJobConfig
+    └── listener/
 ```
 
 **상세 구조**: `/docs/프로젝트_구조.md` 참조
@@ -121,8 +214,15 @@ src/main/java/com/alpha/backend/
 batch:
   embedding:
     chunk-size: 300               # Chunk 크기
-    vector-dimension: 384         # Vector 차원
     max-retry: 3                  # 재시도 횟수
+    retry-backoff-ms: 1000        # 재시도 대기 시간 (밀리초)
+    domains:                      # 도메인별 설정
+      recruit:
+        vector-dimension: 384     # Recruit Vector 차원
+        table-prefix: recruit     # 테이블 접두사
+      candidate:
+        vector-dimension: 768     # Candidate Vector 차원
+        table-prefix: candidate   # 테이블 접두사
 
 grpc:
   client:
@@ -256,4 +356,102 @@ if (invalidating.compareAndSet(false, true)) {
 
 ---
 
-**최종 수정일:** 2025-12-12 (서비스 레이어 구현 완료)
+---
+
+## 📚 핵심 패턴 및 설계
+
+### 1. ChunkProcessor Factory 패턴
+
+도메인별로 다른 처리 로직을 사용하기 위한 Factory 패턴 구현:
+
+```java
+// 1. 인터페이스 정의
+public interface ChunkProcessorInterface {
+    ChunkProcessingResult processChunk(RowChunk chunk);
+    String getDomain();
+}
+
+// 2. 도메인별 구현체 (Spring Bean으로 자동 등록)
+@Service
+public class RecruitChunkProcessor implements ChunkProcessorInterface {
+    public String getDomain() { return "recruit"; }
+    // ...
+}
+
+// 3. Factory가 자동으로 모든 구현체를 Map으로 관리
+@Component
+public class ChunkProcessorFactory {
+    private final Map<String, ChunkProcessorInterface> processorMap;
+
+    public ChunkProcessorFactory(List<ChunkProcessorInterface> processors) {
+        this.processorMap = processors.stream()
+            .collect(Collectors.toMap(
+                ChunkProcessorInterface::getDomain,
+                Function.identity()
+            ));
+    }
+}
+```
+
+**장점:**
+- 새 도메인 추가 시 ChunkProcessorInterface 구현체만 작성하면 자동 등록
+- 도메인별 처리 로직 분리 (단일 책임 원칙)
+- 런타임에 도메인별 Processor 동적 선택
+
+### 2. Base Entity 패턴
+
+공통 필드를 Base Entity로 추출하여 중복 제거:
+
+```java
+// 공통 메타데이터 필드
+@MappedSuperclass
+public abstract class BaseMetadataEntity {
+    @Id
+    @Column(name = "id", columnDefinition = "UUID")
+    private UUID id;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt = LocalDateTime.now();
+}
+
+// 도메인별 Entity는 Base를 상속
+@Entity
+@Table(name = "recruit_metadata")
+public class RecruitMetadataEntity extends BaseMetadataEntity {
+    // 도메인 특화 필드만 정의
+    private String companyName;
+    private Integer expYears;
+}
+```
+
+### 3. BatchProperties 도메인별 설정
+
+도메인마다 다른 설정을 Map 구조로 관리:
+
+```java
+@ConfigurationProperties(prefix = "batch.embedding")
+public class BatchProperties {
+    private Map<String, DomainConfig> domains = new HashMap<>();
+
+    public DomainConfig getDomainConfig(String domain) {
+        return domains.getOrDefault(domain, getDefaultDomainConfig());
+    }
+
+    public static class DomainConfig {
+        private int vectorDimension;    // 도메인별 Vector 차원
+        private String tablePrefix;      // 도메인별 테이블 접두사
+    }
+}
+```
+
+**장점:**
+- 도메인별 설정 중앙 관리
+- YAML 파일에서 직관적으로 설정 가능
+- 존재하지 않는 도메인은 기본값 반환 (Fail-safe)
+
+---
+
+**최종 수정일:** 2025-12-16 (Clean Architecture 리팩토링 완료)
