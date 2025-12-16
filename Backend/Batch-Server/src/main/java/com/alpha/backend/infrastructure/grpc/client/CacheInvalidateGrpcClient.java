@@ -1,8 +1,8 @@
-package com.alpha.backend.grpc;
+package com.alpha.backend.infrastructure.grpc.client;
 
-import com.alpha.backend.grpc.proto.CacheInvalidateRequest;
-import com.alpha.backend.grpc.proto.CacheInvalidateResponse;
-import com.alpha.backend.grpc.proto.CacheServiceGrpc;
+import com.alpha.backend.infrastructure.grpc.proto.CacheInvalidateRequest;
+import com.alpha.backend.infrastructure.grpc.proto.CacheInvalidateResponse;
+import com.alpha.backend.infrastructure.grpc.proto.CacheServiceGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.StatusRuntimeException;
 import lombok.extern.slf4j.Slf4j;
