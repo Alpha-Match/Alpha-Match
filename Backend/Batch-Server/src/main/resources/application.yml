@@ -1,0 +1,96 @@
+spring:
+  application:
+    name: batch-service
+
+  # PostgreSQL + pgvector 설정
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:postgres}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # JPA 설정
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+#      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+        jdbc:
+          batch_size: 300
+        order_inserts: true
+        order_updates: true
+    show-sql: true
+
+  # Batch 설정
+  batch:
+    job:
+      enabled: false  # 자동 실행 방지 (스케줄러로 제어)
+    jdbc:
+      initialize-schema: always
+
+  # Flyway 설정 (DB 마이그레이션)
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+# gRPC 설정
+grpc:
+  # gRPC 서버 설정 (Python에서 Client Streaming으로 데이터 수신)
+  server:
+    port: 50051  # Python 서버가 접속할 포트
+
+  client:
+    # Python AI Server (Embedding Stream)
+    python-embedding:
+      address: static://localhost:50051
+      negotiation-type: plaintext
+      max-inbound-message-size: 104857600  # 100MB
+
+    # API Server (Cache Invalidate)
+    api-cache:
+      address: static://localhost:50052
+      negotiation-type: plaintext
+
+    #- dns:///service-name → DNS 기반 서비스 디스커버리
+    #- static://host:port → 고정된 주소
+    #- xds:// → Envoy/xDS 기반 서비스 디스커버리
+
+# 커스텀 배치 설정
+batch:
+  embedding:
+    chunk-size: 300                    # 한 번에 처리할 row 수
+    max-retry: 3                       # 실패 시 재시도 횟수
+    retry-backoff-ms: 1000            # 재시도 대기 시간 (ms)
+
+    # 도메인별 설정
+    domains:
+      recruit:
+        vector-dimension: 384          # Recruit Embedding 차원
+        table-prefix: recruit          # 테이블 접두사
+      candidate:
+        vector-dimension: 768          # Candidate Embedding 차원
+        table-prefix: candidate        # 테이블 접두사
+
+  scheduler:
+    enabled: true                      # 스케줄러 활성화
+    cron: "0 0 2 * * ?"               # 매일 새벽 2시 실행
+
+# Logging 설정
+logging:
+  level:
+    com.alpha.backend: DEBUG
+    org.springframework.batch: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    io.grpc: INFO
