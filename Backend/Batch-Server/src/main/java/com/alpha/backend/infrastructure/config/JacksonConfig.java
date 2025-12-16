@@ -1,4 +1,4 @@
-package com.alpha.backend.config;
+package com.alpha.backend.infrastructure.config;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.SerializationFeature;

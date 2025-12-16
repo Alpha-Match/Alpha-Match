@@ -1,4 +1,4 @@
-package com.alpha.backend.config;
+package com.alpha.backend.infrastructure.config;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;

@@ -1,4 +1,4 @@
-package com.alpha.backend.config;
+package com.alpha.backend.infrastructure.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
