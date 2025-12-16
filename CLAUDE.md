@@ -109,12 +109,18 @@ C:/Final_2025-12-09/Alpha-Match/
   - API Server와 공유 가능한 단일 문서
 - **계층별 커밋 완료** (2025-12-12)
   - Batch: 7개 커밋, Python: 7개 커밋
+- **Batch Server Factory 패턴 + Quartz Scheduler 구현 완료** (2025-12-16)
+  - DomainJobFactory (Factory Method 패턴)
+  - BatchJobConfig 리팩토링 (Factory 위임)
+  - QuartzConfig (JDBC JobStore)
+  - BatchSchedulerConfig (Cron 기반 자동 실행)
+  - Recruit Job 스케줄 (매일 새벽 2시)
 
 ### 🔄 진행 중
-- Batch Server: Job/Step/Scheduler 구현
 - API Server 설계 및 구현 준비
 
 ### ⏳ 예정
+- Batch Server: Candidate Job 추가, gRPC Server 구현
 - API Server GraphQL 구현
 - Frontend 구현
 - 통합 테스트 및 성능 최적화
@@ -187,6 +193,127 @@ Batch Server가 자동으로 Python Server에 연결하여 데이터를 수신�
 
 ---
 
+## 📖 문서 관리 프로세스 (중요!)
+
+**🚨 문서와 코드 간 괴리 방지를 위한 필수 프로세스**
+
+### 1. 코드 변경 시 즉시 문서 업데이트 (강제 규칙)
+
+#### 새 기능 구현 시 체크리스트
+```
+✅ 코드 작성
+✅ 테스트 작성
+✅ CLAUDE.md 업데이트 (필수!)
+  - "⏳ 예정" → "✅ 완료" 이동
+  - 실제 구조 섹션 업데이트
+  - "최근 업데이트" 섹션에 날짜 + 변경 사항 기록
+✅ 커밋
+```
+
+#### 예시: DomainJobFactory 구현 완료 시
+**Batch-Server/CLAUDE.md 업데이트:**
+```markdown
+## ⏳ 구현 예정
+- ⏳ DomainJobFactory  ← 삭제
+
+## ✅ 완료된 기능
+- ✅ DomainJobFactory - 도메인별 Job/Step 동적 생성  ← 추가
+
+## 📋 최근 업데이트
+### 2025-12-17 - DomainJobFactory 구현 완료  ← 추가
+- ✅ 도메인별 Job/Step 동적 생성
+- ✅ YAML 설정만으로 새 도메인 추가 가능
+```
+
+### 2. 커밋 메시지에 문서 업데이트 명시
+
+```bash
+# Good ✅
+git commit -m "feat(batch): DomainJobFactory 구현
+
+- 도메인별 Job/Step 동적 생성
+- YAML 기반 설정 활용
+- CLAUDE.md 업데이트 완료 ✅
+"
+
+# Bad ❌
+git commit -m "feat(batch): DomainJobFactory 구현"
+# 문서 업데이트 없음!
+```
+
+### 3. 문서 계층 구조 유지
+
+#### Tier 1 문서 (항상 실제 코드와 일치해야 함)
+```
+🔴 최우선 동기화 필요
+├── /CLAUDE.md                           (루트 프로젝트 개요)
+├── /Backend/Batch-Server/CLAUDE.md      (Batch Server 상세)
+├── /Backend/Api-Server/CLAUDE.md        (API Server 상세)
+├── /Demo-Python/CLAUDE.md               (Python Server 상세)
+└── /Frontend/Front-Server/CLAUDE.md     (Frontend 상세)
+```
+
+#### Tier 2 문서 (아키텍처 변경 시 업데이트)
+```
+🟡 필요 시 업데이트
+├── /docs/시스템_아키텍처.md
+├── /docs/데이터_플로우.md
+├── /Backend/docs/DB_스키마_가이드.md
+└── /Backend/docs/Flyway_마이그레이션_가이드.md
+```
+
+#### Tier 3 문서 (히스토리 - 추가만 가능, 수정 불가)
+```
+🟢 히스토리 (Read-Only)
+└── /Backend/Batch-Server/docs/hist/
+    ├── 2025-12-11_01_gRPC_Client_구현_및_통신_검증.md
+    └── 2025-12-12_01_서비스_레이어_구현.md
+```
+
+### 4. 간단한 규칙: "1 Feature = 1 CLAUDE.md Update"
+
+```
+✅ Good:
+- DomainJobFactory 구현 → CLAUDE.md 즉시 업데이트
+- Quartz Scheduler 추가 → CLAUDE.md 즉시 업데이트
+- 각 기능마다 문서 업데이트
+
+❌ Bad:
+- 여러 기능 구현 후 문서 한번에 업데이트 (동기화 어려움)
+- 문서 업데이트 없이 커밋 (괴리 발생)
+```
+
+### 5. AI 에이전트 활용 (권장)
+
+#### 매 작업 세션 시작 시
+1. AI 에이전트가 CLAUDE.md를 읽고 실제 코드와 일치하는지 검증
+2. 불일치 발견 시 즉시 알림
+3. 사용자 확인 후 문서 업데이트
+
+#### 기능 구현 완료 시
+1. 사용자: "DomainJobFactory 구현 완료"
+2. AI 에이전트: 자동으로 CLAUDE.md 업데이트 제안
+   - "⏳ 예정" → "✅ 완료" 이동
+   - "최근 업데이트" 섹션 추가
+3. 사용자 리뷰 후 커밋
+
+### 6. 문서 검증 체크리스트 (커밋 전)
+
+- [ ] 새 기능이 "✅ 완료" 섹션에 추가되었는가?
+- [ ] "⏳ 예정" 섹션에서 해당 항목이 삭제되었는가?
+- [ ] "📂 실제 프로젝트 구조"에 새 파일이 추가되었는가?
+- [ ] "📋 최근 업데이트" 섹션에 날짜와 내용이 기록되었는가?
+- [ ] 커밋 메시지에 "CLAUDE.md 업데이트 완료 ✅" 명시되었는가?
+
+### 7. 문서 우선순위 (중요도 순)
+
+1. **CLAUDE.md** - 각 서버의 실제 구현 상태 (최우선)
+2. **코드 주석** - 복잡한 로직 설명
+3. **ERD/아키텍처 다이어그램** - 구조 변경 시
+4. **히스토리 문서** - 의사결정 기록 (선택)
+
+---
+
 ## ⚠️ 주의사항
 
 1. **Demo-Python의 .pkl 파일 직접 조회 금지**
@@ -218,6 +345,25 @@ Batch Server가 자동으로 Python Server에 연결하여 데이터를 수신�
 ---
 
 ## 📋 최근 업데이트
+
+### 2025-12-16 - Batch Server Factory 패턴 + Quartz Scheduler 구현 완료
+- ✅ **DomainJobFactory 구현** - Factory Method 패턴으로 도메인별 Job/Step 동적 생성
+- ✅ **BatchJobConfig 리팩토링** - 하드코딩된 Job 생성 → Factory 위임
+- ✅ **QuartzConfig 구현** - JDBC JobStore, ThreadPool 10개, Misfire 60초
+- ✅ **BatchSchedulerConfig 구현** - Quartz + Spring Batch 통합
+- ✅ **Recruit Job 스케줄** - Cron 기반 자동 실행 (기본: 매일 새벽 2시)
+- ✅ **YAML 설정** - batch.scheduler.jobs.recruit.cron으로 스케줄 관리
+- ✅ **문서 동기화** - Batch-Server CLAUDE.md 업데이트 완료
+
+### 2025-12-16 - 문서 관리 프로세스 정립
+- ✅ **문서와 코드 간 괴리 방지 프로세스 수립**
+  - "1 Feature = 1 CLAUDE.md Update" 규칙
+  - Tier 1/2/3 문서 계층 구조 명시
+  - 커밋 전 문서 검증 체크리스트
+- ✅ **Batch-Server CLAUDE.md 전면 재작성**
+  - 실제 코드 기준으로 작성
+  - 구현된 기능 vs 예정 기능 명확히 분리
+  - AI 에이전트용 필독 사항 추가
 
 ### 2025-12-12 - Python-Java gRPC 시스템 완전 통합 완료
 - **서비스 레이어 구현**
@@ -258,4 +404,4 @@ Batch Server가 자동으로 Python Server에 연결하여 데이터를 수신�
 
 ---
 
-**최종 수정일:** 2025-12-12
+**최종 수정일:** 2025-12-16
