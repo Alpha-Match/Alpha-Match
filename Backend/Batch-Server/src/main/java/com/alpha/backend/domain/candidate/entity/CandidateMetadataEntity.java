@@ -1,4 +1,4 @@
-package com.alpha.backend.domain.candidate;
+package com.alpha.backend.domain.candidate.entity;
 
 import com.alpha.backend.domain.common.BaseMetadataEntity;
 import jakarta.persistence.*;

@@ -1,4 +1,4 @@
-package com.alpha.backend.domain.recruit;
+package com.alpha.backend.domain.candidate.entity;
 
 import com.alpha.backend.domain.common.BaseEmbeddingEntity;
 import com.pgvector.PGvector;
@@ -8,23 +8,22 @@ import lombok.*;
 import java.util.UUID;
 
 /**
- * Recruit Embedding Entity
- * 채용 공고의 Embedding Vector를 저장하는 엔티티 (pgvector 사용)
+ * Candidate Embedding Entity
+ * 후보자의 Embedding Vector를 저장하는 엔티티 (pgvector 사용)
  */
 @Entity
-@Table(name = "recruit_embedding")
+@Table(name = "candidate_embedding")
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 @Builder
-public class RecruitEmbeddingEntity extends BaseEmbeddingEntity {
+public class CandidateEmbeddingEntity extends BaseEmbeddingEntity {
 
-    public static final int VECTOR_DIMENSION = 384;
+    public static final int VECTOR_DIMENSION = 768;
 
     @Override
     public String getDomainType() {
-        return "recruit";
+        return "candidate";
     }
 
     @Override
@@ -33,9 +32,9 @@ public class RecruitEmbeddingEntity extends BaseEmbeddingEntity {
     }
 
     /**
-     * float 배열로부터 RecruitEmbeddingEntity 생성
+     * float 배열로부터 CandidateEmbeddingEntity 생성
      */
-    public static RecruitEmbeddingEntity fromFloatArray(UUID id, float[] vectorArray) {
+    public static CandidateEmbeddingEntity fromFloatArray(UUID id, float[] vectorArray) {
         if (vectorArray.length != VECTOR_DIMENSION) {
             throw new IllegalArgumentException(
                     String.format("Vector dimension mismatch: expected %d, got %d",
@@ -43,7 +42,7 @@ public class RecruitEmbeddingEntity extends BaseEmbeddingEntity {
             );
         }
 
-        RecruitEmbeddingEntity entity = new RecruitEmbeddingEntity();
+        CandidateEmbeddingEntity entity = new CandidateEmbeddingEntity();
         entity.setId(id);
         entity.setVector(new PGvector(vectorArray));
         return entity;

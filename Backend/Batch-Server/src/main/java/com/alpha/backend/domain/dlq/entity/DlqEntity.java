@@ -1,4 +1,4 @@
-package com.alpha.backend.domain.dlq;
+package com.alpha.backend.domain.dlq.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

@@ -1,10 +1,9 @@
-package com.alpha.backend.domain.metadata;
+package com.alpha.backend.domain.recruit.entity;
 
+import com.alpha.backend.domain.common.BaseMetadataEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -18,11 +17,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class MetadataEntity {
-
-    @Id
-    @Column(name = "id", columnDefinition = "UUID")
-    private UUID id;
+public class RecruitMetadataEntity extends BaseMetadataEntity {
 
     @Column(name = "company_name", nullable = false, columnDefinition = "TEXT")
     private String companyName;
@@ -36,7 +31,19 @@ public class MetadataEntity {
     @Column(name = "primary_keyword", columnDefinition = "TEXT")
     private String primaryKeyword;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    @Override
+    public String getDomainType() {
+        return "recruit";
+    }
+
+    /**
+     * Builder에 ID 설정 추가
+     */
+    public static class RecruitMetadataEntityBuilder {
+        public RecruitMetadataEntityBuilder id(UUID id) {
+            RecruitMetadataEntity entity = new RecruitMetadataEntity();
+            entity.setId(id);
+            return this;
+        }
+    }
 }

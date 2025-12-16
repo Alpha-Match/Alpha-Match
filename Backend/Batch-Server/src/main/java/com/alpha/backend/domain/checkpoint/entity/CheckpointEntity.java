@@ -1,4 +1,4 @@
-package com.alpha.backend.infrastructure;
+package com.alpha.backend.domain.checkpoint.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
