@@ -1,32 +1,42 @@
 # Demo-Python (AI Backend) - Claude Instructions
 
 **프로젝트명:** Alpha-Match Demo Python Server
-**작성일자:** 2025-12-10
-**기술 스택:** Python 3.11+ + gRPC + Pandas + NumPy
+**작성일자:** 2025-12-17
+**기술 스택:** Python 3.11+ + gRPC + FastAPI + Pandas + NumPy + PyArrow
 
 ---
 
 ## 📋 프로젝트 개요
 
-Alpha-Match의 AI Backend 데모 서버로, `.pkl` 파일에 저장된 Embedding 데이터를 gRPC Streaming을 통해 Batch Server로 전송하는 역할을 수행합니다.
+Alpha-Match의 AI Backend 데모 서버로, 다양한 포맷(`.pkl`, `.csv`, `.parquet`)의 Embedding 데이터를 gRPC Streaming을 통해 Batch Server로 전송하는 역할을 수행합니다.
 
-**중요:** 이 프로젝트는 데모 목적이므로, 실제 AI 모델 학습/추론은 포함하지 않고 **pkl 파일 로딩 → Chunk 분할 → gRPC 스트리밍 전송**만 구현합니다.
+**중요:** 이 프로젝트는 데모 목적이므로, 실제 AI 모델 학습/추론은 포함하지 않고 **파일 로딩 → Chunk 분할 → gRPC 스트리밍 전송**만 구현합니다.
 
 ---
 
 ## 🎯 핵심 역할
 
-1. **pkl 파일 로딩**
-   - `data/*.pkl` 파일에서 Embedding 데이터 읽기
-   - Pandas DataFrame으로 변환
+1. **다중 포맷 파일 로딩** (2025-12-17)
+   - **pkl**: Pickle 파일 (Pandas 직렬화)
+   - **csv**: CSV 파일 (Vector/Array 파싱 지원)
+   - **parquet**: Parquet 파일 (PyArrow 기반)
+   - 도메인별 자동 로더 선택 (2-tier registry)
 
-2. **Chunk 단위 분할**
-   - 대용량 데이터를 Chunk(기본 300 rows)로 분할
-   - 메모리 효율성 확보
+2. **Chunk 단위 분할** (Iterator 패턴)
+   - 대용량 데이터를 Chunk(기본 1000 rows)로 분할
+   - 메모리 효율성 확보 (전체 로딩 방지)
+   - Iterator 패턴으로 점진적 처리
 
-3. **gRPC Streaming 전송**
-   - Batch Server로 `RowChunk` 스트리밍 전송
-   - Checkpoint 기반 재시작 지원 (`last_processed_uuid`)
+3. **gRPC Client Streaming 전송**
+   - Batch Server로 `IngestDataStream` RPC 호출
+   - Chunk 단위 스트리밍
+   - 도메인별 데이터 검증 (Pydantic)
+
+4. **도메인별 확장성**
+   - Recruit (384d vector)
+   - Candidate (768d vector)
+   - SkillEmbeddingDic (768d vector)
+   - Protocol 기반 제네릭 구조
 
 ---
 
@@ -34,9 +44,12 @@ Alpha-Match의 AI Backend 데모 서버로, `.pkl` 파일에 저장된 Embedding
 
 ### Core
 - **Python 3.11+**: 최신 Python 버전
+- **FastAPI**: HTTP API 서버 (비동기)
 - **gRPC**: 고성능 RPC 프레임워크
 - **Pandas**: 데이터 처리
 - **NumPy**: 수치 연산
+- **Pydantic**: 데이터 검증 (Field Validator)
+- **PyArrow**: Parquet 파일 처리
 
 ### Optional (추후)
 - **PyTorch**: 실제 Embedding 생성 시
@@ -72,12 +85,12 @@ Demo-Python/
 │   └── processed_headhunter_data.pkl    # Headhunter Embedding 데이터
 │
 ├── docs/                                # 설계 문서
-│   ├── Python_서버_설계서.md
-│   ├── gRPC_서버_구현_가이드.md
-│   ├── 데이터_로딩_전략.md
-│   ├── 스트리밍_전략.md
-│   ├── UUID_생성_전략.md
-│   └── 프로젝트_구조.md
+│   ├── Python_서버_개발_가이드.md       # 메인 개발 가이드 ⭐
+│   ├── 데이터_처리_가이드.md            # Chunk Loader + 도메인 모델
+│   ├── gRPC_통신_가이드.md              # Client Streaming
+│   └── hist/                           # 작업 히스토리 (Read-Only)
+│       ├── 2025-12-12_01_FastAPI_및_클라이언트_스트리밍_구현.md
+│       └── 구현_완료_보고서_2025-12-11.md
 │
 ├── requirements.txt                     # Python 의존성
 ├── start_server.bat                     # 서버 시작 스크립트 (Windows)
@@ -471,15 +484,24 @@ message RecruitRow {
 
 ## 🗺️ 핵심 문서 참조
 
-### 🚨 먼저 읽어야 할 문서
-- **Python 서버 설계서**: `/docs/Python_서버_설계서.md` 📘
-- **프로젝트 구조**: `/docs/프로젝트_구조.md` 📂
+### 🚨 먼저 읽어야 할 문서 (2025-12-17 통합 완료)
+- **Python 서버 개발 가이드**: `/docs/Python_서버_개발_가이드.md` ⭐ - 전체 아키텍처, 개발 가이드
+- **데이터 처리 가이드**: `/docs/데이터_처리_가이드.md` 📊 - Chunk Loader, 도메인 모델
+- **gRPC 통신 가이드**: `/docs/gRPC_통신_가이드.md` 🔌 - Client Streaming, Proto 파일
 
-### 🔧 기술 상세 문서
-- **gRPC 서버 구현 가이드**: `/docs/gRPC_서버_구현_가이드.md` 🔌
-- **데이터 로딩 전략**: `/docs/데이터_로딩_전략.md` 📊
-- **스트리밍 전략**: `/docs/스트리밍_전략.md` 🌊
-- **UUID 생성 전략**: `/docs/UUID_생성_전략.md` 🆔
+> **📝 문서 통합 완료**: 기존 분산된 6개 문서를 3개 핵심 문서로 통합했습니다.
+> - 구식 문서 (Server Streaming 기준) 제거
+> - 최신 아키텍처 (FastAPI + gRPC Client, Chunk Loader) 반영
+> - 중복 내용 제거 및 명확한 역할 분리
+
+### 🗄️ Backend 공통 문서 (DB 스키마 참조 시 필수)
+- **DB 스키마 가이드**: `/Backend/docs/DB_스키마_가이드.md` ⭐
+- **테이블 명세서**: `/Backend/docs/table_specification.md` ⭐
+- **ERD 다이어그램**: `/Backend/docs/ERD_다이어그램.md`
+
+> **🚨 Proto 파일 작성 시 주의:**
+> 도메인 모델 작성, Proto 메시지 정의 시 반드시 `/Backend/docs/table_specification.md`를 먼저 확인하세요.
+> DB 스키마와 Proto 메시지 구조가 일치해야 합니다.
 
 ### 📚 관련 프로젝트 문서
 - [루트 CLAUDE.md](../CLAUDE.md)
@@ -490,6 +512,29 @@ message RecruitRow {
 ---
 
 ## ✅ 현재 진행 상황
+
+### 완료 (2025-12-17)
+- ✅ **Chunk Loader 완전 구현** - 3가지 파일 포맷 지원
+  - `BaseChunkLoader[T_Row]` - Protocol 기반 제네릭 추상 클래스
+  - `PklChunkLoader` - Pickle 파일 Chunk 로딩
+  - `CsvChunkLoader` - CSV 파일 Chunk 로딩 (Vector/Array 파싱)
+  - `ParquetChunkLoader` - Parquet 파일 배치 로딩 (PyArrow)
+  - 2-tier registry: `(domain, format)` → Loader 매핑
+  - Auto-detection: 파일 확장자로 자동 포맷 감지
+- ✅ **도메인 모델 확장** - 3개 도메인 지원
+  - `RecruitData` - 384d vector (기존)
+  - `CandidateData` - 768d vector (신규)
+  - `SkillEmbeddingDicData` - 768d vector (신규)
+  - Pydantic Field Validator로 벡터 차원 검증
+  - skills 배열 검증 (최소 1개 이상)
+- ✅ **Proto 파일 확장** - oneof 패턴
+  - 3개 도메인 메시지 (RecruitRow, CandidateRow, SkillEmbeddingDicRow)
+  - oneof chunk_data로 도메인 분기
+  - Java Batch Server와 호환성 확인
+- ✅ **Ingestion Service 업데이트**
+  - Chunk Iterator 기반 처리
+  - 도메인별 벡터 차원 검증
+  - 메타데이터 전송 (domain, file_name, vector_dimension)
 
 ### 완료 (2025-12-12)
 - ✅ **FastAPI + gRPC Client 아키텍처 구현 완료**
@@ -562,4 +607,42 @@ message RecruitRow {
 
 ---
 
-**최종 수정일:** 2025-12-12 (FastAPI + gRPC Client 아키텍처 전환 완료)
+## 📋 최근 업데이트
+
+### 2025-12-17 - Chunk Loader 완전 구현 + 도메인 확장
+- ✅ **Chunk Loader 3가지 구현** - 메모리 효율적 Iterator 패턴
+  - `BaseChunkLoader[T_Row]` - ABC + Generic 추상 클래스
+  - `PklChunkLoader` - Pandas read_pickle + iloc slicing
+  - `CsvChunkLoader` - Pandas read_csv(chunksize) + Vector 파싱
+  - `ParquetChunkLoader` - PyArrow iter_batches + batch_size
+- ✅ **2-Tier Registry 패턴** - (domain, format) tuple key
+  - `_loader_class_registry: Dict[Tuple[str, DataFormat], Type[BaseChunkLoader]]`
+  - `get_loader(domain, format)` - 명시적 로더 획득
+  - `get_loader_auto(domain, file_path)` - 확장자 기반 자동 감지
+- ✅ **Vector/Array 파싱** - CSV 문자열 → Python List
+  - `_parse_vector()` - JSON 파싱 또는 공백 분리
+  - `_parse_array()` - skills 배열 파싱
+  - JSON/문자열 형태 모두 지원
+- ✅ **도메인 모델 확장** - 2개 도메인 추가
+  - `CandidateData` - candidate_id, position_category, experience_years, original_resume, skills[], vector(768d)
+  - `SkillEmbeddingDicData` - skill(PK), position_category, vector(768d)
+  - @field_validator로 차원 검증 및 필수 필드 검증
+- ✅ **Proto 파일 확장** - oneof 패턴으로 3개 도메인 지원
+  - `oneof chunk_data { RecruitRowChunk | CandidateRowChunk | SkillEmbeddingDicRowChunk }`
+  - 도메인별 Row 메시지 정의
+  - Java Batch Server와 상호 운용성 검증
+- ✅ **Ingestion Service 리팩토링**
+  - Chunk Iterator 기반 처리 (전체 로딩 제거)
+  - 첫 번째 Chunk로 벡터 차원 검증
+  - 도메인 설정 기반 검증 강화
+
+### 2025-12-12 - FastAPI + gRPC Client 아키텍처 구현 완료
+- ✅ Python gRPC Server → FastAPI + gRPC Client 전환
+- ✅ HTTP API 기반 데이터 수집 트리거 (`POST /data/ingest/{domain}`)
+- ✅ Client Streaming RPC (`IngestDataStream`)
+- ✅ 메모리 최적화 5.3% 절감
+- ✅ 141,897 rows 성공적 전송
+
+---
+
+**최종 수정일:** 2025-12-17
