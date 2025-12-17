@@ -33,6 +33,20 @@
 - **개발 우선순위**: `/docs/개발_우선순위.md` 🚀
 - **전체 구조 설계**: `/Backend/Batch-Server/docs/Entire_Structure.md` 📘
 
+### 🗄️ Backend 공통 문서 (DB 작업 시 필수) ⭐
+> **중요**: API Server, Batch Server, Demo-Python 작업 시 반드시 아래 문서를 먼저 확인하세요.
+
+- **DB 스키마 가이드**: `/Backend/docs/DB_스키마_가이드.md` - DB 스키마 전체 구조
+- **테이블 명세서**: `/Backend/docs/table_specification.md` - 단일 소스 (Single Source of Truth)
+- **ERD 다이어그램**: `/Backend/docs/ERD_다이어그램.md` - 시각적 ERD
+- **Flyway 마이그레이션 가이드**: `/Backend/docs/Flyway_마이그레이션_가이드.md` - DB 변경 정책
+
+**DB 작업 체크리스트:**
+- ✅ Entity 작성 전: `table_specification.md` 확인
+- ✅ Repository 구현 전: `DB_스키마_가이드.md` 확인
+- ✅ Proto 메시지 정의 전: `table_specification.md` 확인
+- ✅ DB 스키마 변경 시: `Flyway_마이그레이션_가이드.md` 확인
+
 ### 서버별 상세 문서
 - **Frontend**: `/Frontend/Front-Server/CLAUDE.md`
 - **API Server**: `/Backend/Api-Server/CLAUDE.md`
@@ -265,12 +279,63 @@ git commit -m "feat(batch): DomainJobFactory 구현"
 #### Tier 3 문서 (히스토리 - 추가만 가능, 수정 불가)
 ```
 🟢 히스토리 (Read-Only)
-└── /Backend/Batch-Server/docs/hist/
-    ├── 2025-12-11_01_gRPC_Client_구현_및_통신_검증.md
-    └── 2025-12-12_01_서비스_레이어_구현.md
+├── /Backend/Batch-Server/docs/hist/
+│   ├── 2025-12-11_01_gRPC_Client_구현_및_통신_검증.md
+│   ├── 2025-12-12_01_서비스_레이어_구현.md
+│   └── 2025-12-17_01_문서_구조_개선.md
+└── /Demo-Python/docs/hist/
+    └── 2025-12-12_01_FastAPI_및_클라이언트_스트리밍_구현.md
 ```
 
-### 4. 간단한 규칙: "1 Feature = 1 CLAUDE.md Update"
+### 4. 고정 문서 vs 히스토리 문서 (2025-12-17 정립)
+
+#### 고정 문서 (Fixed Documents)
+각 서버의 핵심 참조 문서로, 항상 최신 상태를 유지해야 합니다:
+
+**Batch-Server 고정 문서 (3개):**
+1. `Spring_Batch_개발_가이드.md` - 아키텍처 및 개발 패턴
+2. `도메인_확장_가이드.md` - 도메인 추가 절차
+3. `동시성_제어.md` - 동시성 제어 전략
+
+**Demo-Python 고정 문서 (3개):**
+1. `Python_서버_개발_가이드.md` - 전체 아키텍처
+2. `데이터_처리_가이드.md` - Chunk Loader, 도메인 모델
+3. `gRPC_통신_가이드.md` - Client Streaming
+
+**특징:**
+- 코드 변경 시 즉시 업데이트
+- 참조는 고정 문서로만 진행
+- 중복 없이 명확한 역할 분리
+
+#### 히스토리 문서 (History Documents)
+날짜별 작업 이력을 기록하는 Read-Only 문서:
+
+**파일명 규칙:**
+```
+/docs/hist/YYYY-MM-DD_NN_간략한_제목.md
+예: 2025-12-17_01_문서_구조_개선.md
+```
+
+**특징:**
+- 작성 후 수정 불가 (Read-Only)
+- 중요한 기술 결정 사항 기록
+- 문제 해결 과정 문서화
+- 고정 문서에 반영할 내용 정리
+
+#### 작업 프로세스
+```
+코드 작성 및 테스트
+  ↓
+히스토리 문서 작성 (/docs/hist/YYYY-MM-DD_NN_제목.md)
+  ↓
+고정 문서 업데이트 (필요 시)
+  ↓
+CLAUDE.md 업데이트 (구현 상태 반영)
+  ↓
+Commit
+```
+
+### 5. 간단한 규칙: "1 Feature = 1 CLAUDE.md Update"
 
 ```
 ✅ Good:
@@ -346,6 +411,28 @@ git commit -m "feat(batch): DomainJobFactory 구현"
 
 ## 📋 최근 업데이트
 
+### 2025-12-17 - Candidate 도메인 완전 구현 완료
+- ✅ **Proto 파일 확장** - 3개 도메인 지원 (Recruit, Candidate, SkillEmbeddingDic)
+  - oneof로 도메인별 분기 처리
+  - CandidateRow (Flat DTO), SkillEmbeddingDicRow 추가
+- ✅ **Java Entity 5개 생성** - SQL 스키마 정확 매핑
+  - CandidateEntity, CandidateSkillEntity (복합 PK)
+  - CandidateSkillsEmbeddingEntity (PostgreSQL 배열)
+  - SkillEmbeddingDicEntity
+- ✅ **Java Repository 8개 구현** - Clean Architecture
+  - Domain Interface 4개 (Port)
+  - Infrastructure JpaRepository 4개 (Adapter + Upsert Native Query)
+- ✅ **Batch Processor/Writer** - Candidate 3개 테이블 분산 저장
+  - CandidateItemProcessor (Proto → 3개 Entity 변환)
+  - CandidateItemWriter (candidate, candidate_skill, candidate_skills_embedding)
+- ✅ **Python Chunk Loader** - 메모리 효율적 대용량 파일 처리
+  - BaseChunkLoader + Iterator 패턴
+  - 3가지 포맷 지원 (pkl, csv, parquet)
+  - 도메인별 + 포맷별 확장 가능 구조
+- ✅ **Python 도메인 모델** - Pydantic Validation 강화
+  - CandidateData, SkillEmbeddingDicData 추가
+  - 벡터 차원 검증 (384d, 768d)
+
 ### 2025-12-16 - Batch Server Factory 패턴 + Quartz Scheduler 구현 완료
 - ✅ **DomainJobFactory 구현** - Factory Method 패턴으로 도메인별 Job/Step 동적 생성
 - ✅ **BatchJobConfig 리팩토링** - 하드코딩된 Job 생성 → Factory 위임
@@ -404,4 +491,4 @@ git commit -m "feat(batch): DomainJobFactory 구현"
 
 ---
 
-**최종 수정일:** 2025-12-16
+**최종 수정일:** 2025-12-17
