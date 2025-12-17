@@ -1,7 +1,7 @@
 # Batch Server - Claude Instructions
 
 **프로젝트명:** Alpha-Match Batch Server
-**최종 업데이트:** 2025-12-16
+**최종 업데이트:** 2025-12-17
 **기술 스택:** Spring Boot 4.0 + Java 21 + Spring Batch + gRPC + PostgreSQL(pgvector)
 
 ---
@@ -41,15 +41,144 @@ Python AI Server로부터 gRPC Streaming으로 Embedding 데이터를 수신하�
 3. **BatchProperties.java** - 도메인별 설정 구조
 
 ### 🟡 Tier 2: 참조 문서 (필요 시 참조)
-- **Backend 공통 문서**
-  - `/Backend/docs/DB_스키마_가이드.md` - DB 스키마 전체 구조
-  - `/Backend/docs/Flyway_마이그레이션_가이드.md` - 마이그레이션 정책
-  - `/Backend/docs/ERD_다이어그램.md` - ERD
-- **Batch-Server 전용 문서**
-  - `/docs/도메인_확장_가이드.md` - 새 도메인 추가 방법
 
-### 🟢 Tier 3: 히스토리 문서
-- `/docs/hist/` - 과거 작업 이력 (컨텍스트 참조용)
+#### Backend 공통 문서 (DB 작업 시 필수 참조)
+- `/Backend/docs/DB_스키마_가이드.md` - DB 스키마 전체 구조 ⭐
+- `/Backend/docs/table_specification.md` - 테이블 명세서 (단일 소스) ⭐
+- `/Backend/docs/ERD_다이어그램.md` - ERD 다이어그램
+- `/Backend/docs/Flyway_마이그레이션_가이드.md` - 마이그레이션 정책
+
+#### Batch-Server 고정 문서 (최신 상태 유지 필수)
+1. **Spring_Batch_개발_가이드.md** - Spring Batch 6.0 아키텍처 및 패턴
+   - ItemReader/Processor/Writer 구현 방법
+   - DomainJobFactory 패턴
+   - Quartz Scheduler 통합
+   - Proto 파일 정의
+   - gRPC Client 구현
+2. **도메인_확장_가이드.md** - 새 도메인 추가 절차
+   - Entity/Repository 작성
+   - Spring Batch 컴포넌트 구현
+   - DomainJobFactory 등록
+   - Quartz Scheduler 설정
+3. **동시성_제어.md** - Race Condition 대응
+   - Checkpoint 경쟁 방지
+   - Upsert 순서 보장
+   - UUID 기반 병렬 처리
+   - DLQ 패턴
+
+> **🚨 DB 작업 시 주의:**
+> Entity 작성, Repository 구현, Batch Writer 개발 시 반드시 `/Backend/docs/` 문서를 먼저 확인하세요.
+> 특히 `table_specification.md`는 DB 스키마의 단일 소스(Single Source of Truth)입니다.
+
+### 🟢 Tier 3: 히스토리 문서 (작업 이력)
+- `/docs/hist/` - 날짜별 작업 이력 (Read-Only)
+  - 중요한 기술 결정 사항 기록
+  - 문제 해결 과정 문서화
+  - 고정 문서에 반영할 내용 정리
+
+---
+
+## 📝 문서화 규칙 (2025-12-17 정립)
+
+### 1. 고정 문서 vs 히스토리 문서
+
+#### 고정 문서 (3개)
+- **Spring_Batch_개발_가이드.md** - 아키텍처 및 개발 패턴
+- **도메인_확장_가이드.md** - 도메인 추가 절차
+- **동시성_제어.md** - 동시성 제어 전략
+
+**특징:**
+- 항상 최신 상태 유지
+- 코드 변경 시 즉시 업데이트
+- 참조는 이 3개 문서로만 진행
+
+#### 히스토리 문서 (`/docs/hist/`)
+- **2025-12-11_01_gRPC_Client_구현_및_통신_검증.md**
+- **2025-12-12_01_도메인별_스키마_설계_및_Flyway_정책.md**
+- **2025-12-16_01_Spring_Batch_6.0_마이그레이션_및_스케줄러_구현.md**
+- ... (날짜별 추가)
+
+**특징:**
+- Read-Only (작성 후 수정 불가)
+- 날짜별 작업 이력 기록
+- `YYYY-MM-DD_NN_제목.md` 형식
+
+### 2. 작업 프로세스
+
+#### 새 기능 구현 시
+1. **코드 작성 및 테스트**
+2. **히스토리 문서 작성** (`/docs/hist/YYYY-MM-DD_NN_제목.md`)
+   - 구현 내용
+   - 기술 결정 사항
+   - 문제 해결 과정
+3. **고정 문서 업데이트** (필요 시)
+   - 아키텍처 변경 → Spring_Batch_개발_가이드.md
+   - 도메인 추가 절차 변경 → 도메인_확장_가이드.md
+   - 동시성 패턴 추가 → 동시성_제어.md
+4. **CLAUDE.md 업데이트** (구현 상태 반영)
+5. **Commit**
+
+#### 예시: Candidate Job 구현 완료 시
+```bash
+# 1. 히스토리 문서 작성
+docs/hist/2025-12-18_01_Candidate_Job_구현_완료.md
+
+# 2. 고정 문서 업데이트
+Spring_Batch_개발_가이드.md
+  - Section 6: Candidate Job 예시 추가
+도메인_확장_가이드.md
+  - Section 5: Candidate 구현 예시 업데이트
+
+# 3. CLAUDE.md 업데이트
+- "⏳ 구현 예정" → "✅ 완료된 기능"
+- "최근 업데이트" 섹션에 날짜 + 내용 추가
+```
+
+### 3. 문서 참조 원칙
+
+#### Good ✅
+```markdown
+자세한 내용은 [Spring Batch 개발 가이드](./Spring_Batch_개발_가이드.md)를 참조하세요.
+```
+
+#### Bad ❌
+```markdown
+자세한 내용은 [Batch 설계서](./Batch설계서.md)를 참조하세요.  # 삭제된 문서
+자세한 내용은 [gRPC 통신 가이드](./gRPC_통신_가이드.md)를 참조하세요.  # 삭제된 문서
+```
+
+### 4. 히스토리 문서 작성 가이드
+
+**파일명 규칙:**
+```
+YYYY-MM-DD_NN_간략한_제목.md
+예: 2025-12-17_01_문서_구조_개선.md
+```
+
+**내용 구조:**
+```markdown
+# [제목]
+
+**날짜:** YYYY-MM-DD
+**작업 범위:** [간략 설명]
+
+---
+
+## 배경
+[왜 이 작업을 했는가?]
+
+## 구현 내용
+[무엇을 구현했는가?]
+
+## 기술 결정 사항
+[어떤 선택을 했고, 왜 그렇게 했는가?]
+
+## 문제 해결
+[어떤 문제를 만났고, 어떻게 해결했는가?]
+
+## 고정 문서 반영 사항
+[어떤 고정 문서를 업데이트했는가?]
+```
 
 ---
 
@@ -71,11 +200,19 @@ src/main/java/com/alpha/backend/
 │   │       └── RecruitEmbeddingRepository   # ✅ Port (인터페이스)
 │   ├── candidate/
 │   │   ├── entity/
-│   │   │   ├── CandidateMetadataEntity    # ✅ Candidate 메타데이터
-│   │   │   └── CandidateEmbeddingEntity   # ✅ Candidate 임베딩 (768d)
+│   │   │   ├── CandidateEntity              # ✅ Candidate 기본 정보
+│   │   │   ├── CandidateSkillEntity         # ✅ Candidate 스킬 (1:N)
+│   │   │   ├── CandidateSkillId             # ✅ Composite PK (candidateId, skill)
+│   │   │   └── CandidateSkillsEmbeddingEntity # ✅ Candidate 벡터 (768d)
 │   │   └── repository/
-│   │       ├── CandidateMetadataRepository    # ✅ Port (인터페이스)
-│   │       └── CandidateEmbeddingRepository   # ✅ Port (인터페이스)
+│   │       ├── CandidateRepository          # ✅ Port (인터페이스)
+│   │       ├── CandidateSkillRepository     # ✅ Port (인터페이스)
+│   │       └── CandidateSkillsEmbeddingRepository # ✅ Port (인터페이스)
+│   ├── skilldic/
+│   │   ├── entity/
+│   │   │   └── SkillEmbeddingDicEntity      # ✅ Skill Dictionary (String PK, 768d)
+│   │   └── repository/
+│   │       └── SkillEmbeddingDicRepository  # ✅ Port (인터페이스)
 │   ├── dlq/
 │   │   ├── entity/
 │   │   │   └── DlqEntity                # ✅ 실패 레코드 (도메인 범용)
@@ -101,23 +238,28 @@ src/main/java/com/alpha/backend/
 │   └── persistence/                 # Adapter (JPA 구현체)
 │       ├── RecruitMetadataJpaRepository
 │       ├── RecruitEmbeddingJpaRepository
-│       ├── CandidateMetadataJpaRepository
-│       ├── CandidateEmbeddingJpaRepository
+│       ├── CandidateJpaRepository               # ✅ Candidate 기본 정보 (2025-12-17)
+│       ├── CandidateSkillJpaRepository          # ✅ Composite PK Upsert (2025-12-17)
+│       ├── CandidateSkillsEmbeddingJpaRepository # ✅ PostgreSQL Array + Vector (2025-12-17)
+│       ├── SkillEmbeddingDicJpaRepository       # ✅ String PK Upsert (2025-12-17)
 │       ├── DlqJpaRepository
 │       └── CheckpointJpaRepository
 │
 ├── application/                     # 애플리케이션 계층 (Use Case)
 │   ├── batch/
 │   │   ├── dto/
-│   │   │   └── DomainItem<M, E>             # ✅ Metadata + Embedding 묶음
+│   │   │   ├── DomainItem<M, E>             # ✅ Metadata + Embedding 묶음
+│   │   │   └── CandidateItem                # ✅ Candidate 전용 DTO (3-table split)
 │   │   ├── reader/
 │   │   │   ├── DomainItemReader<T>          # ✅ 추상 Reader (gRPC Stream → Queue)
 │   │   │   └── RecruitItemReader            # ✅ Recruit 구현체
 │   │   ├── processor/
 │   │   │   ├── DomainItemProcessor<I,M,E>   # ✅ 추상 Processor (Proto → Entity)
-│   │   │   └── RecruitItemProcessor         # ✅ Recruit 구현체
+│   │   │   ├── RecruitItemProcessor         # ✅ Recruit 구현체
+│   │   │   └── CandidateItemProcessor       # ✅ Candidate 구현체 (2025-12-17)
 │   │   └── writer/
-│   │       └── DomainItemWriter<M,E>        # ✅ Generic Writer (Batch Upsert)
+│   │       ├── DomainItemWriter<M,E>        # ✅ Generic Writer (Batch Upsert)
+│   │       └── CandidateItemWriter          # ✅ Candidate 전용 Writer (3-table split, 2025-12-17)
 │   └── usecase/
 │       ├── DlqService                       # ✅ 인터페이스
 │       ├── DlqServiceImpl                   # ✅ DLQ 저장 로직
@@ -184,24 +326,41 @@ src/main/java/com/alpha/backend/
 
 ## ⏳ 구현 예정 (명시적으로 미구현)
 
-### 1. Candidate Job
-- ⏳ **CandidateItemReader** - Candidate용 Reader
-- ⏳ **CandidateItemProcessor** - Candidate용 Processor
-- ⏳ **candidateEmbeddingProcessingJob** - BatchJobConfig에 추가 필요
-- ⏳ **CandidateRow proto** - proto 파일에 정의 필요
+### 1. Candidate Job 통합 (Phase 1 & 2 완료, Phase 3 대기)
+- ✅ **Phase 1: Repository Infrastructure** - 완료 (2025-12-17)
+  - CandidateJpaRepository (Upsert with ON CONFLICT)
+  - CandidateSkillJpaRepository (Composite PK Upsert)
+  - CandidateSkillsEmbeddingJpaRepository (PostgreSQL Array + Vector)
+- ✅ **Phase 2: Batch Processor/Writer** - 완료 (2025-12-17)
+  - CandidateItem DTO (3-table aggregation)
+  - CandidateItemProcessor (Proto → 3 Entities split)
+  - CandidateItemWriter (Ordered Upsert: candidate → candidate_skill → candidate_skills_embedding)
+- ⏳ **Phase 3: Job Integration** - 대기
+  - CandidateItemReader (gRPC Stream → CandidateRow 변환)
+  - DomainJobFactory에 candidateEmbeddingProcessingJob 추가
+  - BatchSchedulerConfig에 Candidate Job 스케줄 추가
 
-### 2. Factory 패턴 (고도화 필요)
-- ⏳ **ChunkProcessorFactory** - (테스트 코드만 존재)
-- ⏳ **ChunkProcessorInterface** - (문서에만 언급됨, 실제 구현 없음)
+### 2. SkillEmbeddingDic Job
+- ✅ **Phase 1: Repository Infrastructure** - 완료 (2025-12-17)
+  - SkillEmbeddingDicJpaRepository (String PK Upsert)
+- ⏳ **Phase 2: Batch Processor/Writer** - 구현 필요
+  - SkillEmbeddingDicItemProcessor
+  - SkillEmbeddingDicItemWriter
+- ⏳ **Phase 3: Job Integration** - 구현 필요
+  - DomainJobFactory에 skillEmbeddingDicProcessingJob 추가
 
-### 3. gRPC Server
+### 3. gRPC Server (양방향 통신)
 - ⏳ **IngestDataStream Server** - Python → Batch (Client Streaming 수신)
-  - 현재: EmbeddingGrpcClient만 있음 (Batch → Python)
+  - 현재: EmbeddingGrpcClient만 있음 (Batch → Python 요청)
   - 필요: gRPC Server 구현 (Python의 Client Streaming 수신)
 
-### 4. Checkpoint 자동 업데이트
+### 4. Checkpoint 자동화
 - ⏳ Writer에서 마지막 UUID 자동 저장
 - ⏳ Job 재시작 시 자동 재개
+
+### 5. Factory 패턴 고도화 (선택)
+- ⏳ **ChunkProcessorFactory** - (테스트 코드만 존재)
+- ⏳ **ChunkProcessorInterface** - (문서에만 언급됨)
 
 ---
 
@@ -348,7 +507,89 @@ public class BatchJobConfig {
 }
 ```
 
-### 5. Quartz Scheduler 패턴 ✅
+### 5. Candidate 3-Table Split 패턴 ✅ (2025-12-17)
+
+**목적:** 복잡한 도메인을 여러 테이블로 분산 저장
+
+**배경:**
+- Candidate 도메인은 DDD Aggregate 패턴으로 4개 테이블에 분산 저장
+  - candidate (기본 정보)
+  - candidate_skill (1:N 관계, Composite PK)
+  - candidate_skills_embedding (벡터)
+  - skill_embedding_dic (별도 도메인, String PK)
+
+**구현 패턴:**
+```java
+// 1. Flat DTO for gRPC transmission (Proto)
+message CandidateRow {
+  string candidate_id = 1;
+  string position_category = 2;
+  int32 experience_years = 3;
+  string original_resume = 4;
+  repeated string skills = 5;           // Array
+  repeated float skills_vector = 6;     // 768d
+}
+
+// 2. Aggregation DTO for processing (CandidateItem.java)
+@Builder
+public class CandidateItem {
+    private CandidateEntity candidate;                  // candidate 테이블
+    private List<CandidateSkillEntity> skills;          // candidate_skill 테이블 (1:N)
+    private CandidateSkillsEmbeddingEntity embedding;   // candidate_skills_embedding 테이블
+}
+
+// 3. Processor: Proto → 3 Entities (CandidateItemProcessor.java)
+public CandidateItem process(CandidateRow protoRow) {
+    UUID candidateId = UUID.fromString(protoRow.getCandidateId());
+
+    // 1:N 관계 처리
+    List<CandidateSkillEntity> skills = protoRow.getSkillsList().stream()
+        .map(skillName -> {
+            CandidateSkillEntity skill = new CandidateSkillEntity();
+            skill.setCandidateId(candidateId);
+            skill.setSkill(skillName);
+            return skill;
+        })
+        .collect(Collectors.toList());
+
+    return CandidateItem.builder()
+        .candidate(createCandidate(protoRow, candidateId))
+        .skills(skills)
+        .embedding(createEmbedding(protoRow, candidateId))
+        .build();
+}
+
+// 4. Writer: Ordered Upsert (FK 제약 고려)
+@Transactional
+public void write(Chunk<? extends CandidateItem> chunk) {
+    // 1. candidate 테이블 (PK 먼저)
+    candidateRepository.upsertAll(candidates);
+
+    // 2. candidate_skill 테이블 (FK → candidate)
+    candidateSkillRepository.upsertAll(allSkills);
+
+    // 3. candidate_skills_embedding 테이블 (FK → candidate)
+    candidateSkillsEmbeddingRepository.upsertAll(embeddings);
+}
+
+// 5. Composite PK Upsert (CandidateSkillJpaRepository.java)
+@Query(value = """
+    INSERT INTO candidate_skill (candidate_id, skill, updated_at)
+    VALUES (:#{#entity.candidateId}, :#{#entity.skill}, NOW())
+    ON CONFLICT (candidate_id, skill)
+    DO UPDATE SET updated_at = NOW()
+    """, nativeQuery = true)
+void upsert(@Param("entity") CandidateSkillEntity entity);
+```
+
+**핵심 포인트:**
+1. **Flat DTO 전송** - gRPC는 Flat 구조 (성능 최적화)
+2. **Aggregation 처리** - Processor에서 1:N 관계 분해
+3. **Ordered Upsert** - FK 제약 조건 순서 보장
+4. **Composite PK** - @IdClass 패턴으로 복합 키 처리
+5. **PostgreSQL Array** - skills VARCHAR(50)[] 처리
+
+### 6. Quartz Scheduler 패턴 ✅
 
 **목적:** Spring Batch Job을 Cron 기반으로 자동 실행
 
@@ -569,6 +810,46 @@ embeddingRepository.upsertAll(embeddingList);
 
 ## 📋 최근 업데이트
 
+### 2025-12-17 - 문서 구조 전면 개선 완료
+- ✅ **문서화 규칙 정립** - 고정 문서 vs 히스토리 문서 개념 확립
+  - 고정 문서 3개: Spring_Batch_개발_가이드.md, 도메인_확장_가이드.md, 동시성_제어.md
+  - 히스토리 문서: `/docs/hist/` (날짜별 작업 이력)
+  - 작업 프로세스 정의 (코드 작성 → 히스토리 문서 작성 → 고정 문서 업데이트)
+- ✅ **obsolete 문서 9개 삭제**
+  - Batch설계서.md, Entire_Structure.md, gRPC_클라이언트_구현.md
+  - gRPC_통신_가이드.md, Reactive_Blocking_혼합전략.md
+  - 구현_요약_2025-12-12.md, 도메인별_제네릭_구조_구현.md
+  - 서비스_레이어_구현_가이드.md, 프로젝트_구조.md
+- ✅ **고정 문서 3개 업데이트**
+  - Spring_Batch_개발_가이드.md (새로 작성, 616 lines)
+  - 도메인_확장_가이드.md (Spring Batch 패턴으로 전면 수정)
+  - 동시성_제어.md (Section 2-7 Spring Batch 패턴으로 업데이트)
+- ✅ **CLAUDE.md 업데이트**
+  - 문서 계층 구조 섹션 확장 (고정 문서 3개 명시)
+  - 문서화 규칙 섹션 추가 (작업 프로세스, 참조 원칙, 히스토리 가이드)
+- **결과:** 11개 문서 (5,000+ 줄) → 3개 고정 문서 (~2,000 줄), 문서 중복 73% 제거
+
+### 2025-12-17 - Candidate 도메인 Phase 1 & 2 구현 완료
+- ✅ **Proto 파일 확장** - 3개 도메인 (Recruit, Candidate, SkillEmbeddingDic)
+  - oneof chunk_data로 도메인 분기
+  - CandidateRow - Flat DTO (skills 배열 포함)
+  - SkillEmbeddingDicRow - String PK
+- ✅ **Phase 1: Repository Infrastructure** - 4개 JpaRepository 구현
+  - CandidateJpaRepository - ON CONFLICT (candidate_id) Upsert
+  - CandidateSkillJpaRepository - Composite PK (candidate_id, skill) Upsert
+  - CandidateSkillsEmbeddingJpaRepository - PostgreSQL Array + pgvector 처리
+  - SkillEmbeddingDicJpaRepository - String PK Upsert
+- ✅ **Phase 2: Batch Processor/Writer** - 3-table split 패턴 구현
+  - CandidateItem DTO - Aggregation (candidate + skills + embedding)
+  - CandidateItemProcessor - Proto → 3 Entities 변환, skills 배열 분해
+  - CandidateItemWriter - Ordered Upsert (FK 제약 순서 보장)
+- ✅ **Entity 설계** - DDD Aggregate 패턴
+  - CandidateEntity - @AttributeOverride로 candidate_id 매핑
+  - CandidateSkillEntity - @IdClass로 Composite PK 처리
+  - CandidateSkillsEmbeddingEntity - PostgreSQL Array (String[]) + PGvector
+  - SkillEmbeddingDicEntity - skill String PK
+- ✅ **문서 업데이트** - CLAUDE.md 구조 섹션 반영
+
 ### 2025-12-16 - Spring Batch 6.0 완전 마이그레이션 완료
 - ✅ **JobOperator.start(String, Properties) deprecated 해결**
   - 이전: `jobOperator.start("jobName", properties)` (deprecated)
@@ -648,5 +929,5 @@ embeddingRepository.upsertAll(embeddingList);
 
 ---
 
-**최종 수정일:** 2025-12-16
+**최종 수정일:** 2025-12-17
 **CLAUDE.md 업데이트 완료 ✅**
