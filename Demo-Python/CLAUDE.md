@@ -592,18 +592,16 @@ message RecruitRow {
 
 ---
 
-## 📚 CRITICAL DOCUMENTATION PATTERN
+## 📝 문서화 규칙
 
-**🚨 중요한 문서 작성 시 반드시 여기에 추가하세요!**
+> **문서화 규칙은 루트 CLAUDE.md를 참조하세요**: [/CLAUDE.md - 문서 관리 프로세스](../CLAUDE.md#-문서-관리-프로세스-중요)
 
-- 아키텍처 변경 → `/docs/` 에 문서 추가 후 여기에 참조 추가
-- 문제 해결 방법 → `/docs/` 에 트러블슈팅 문서 추가
-- 성능 최적화 → `/docs/` 에 최적화 결과 문서 추가
+**Demo-Python 고정 문서 (3개):**
+1. **Python_서버_개발_가이드.md** - 전체 아키텍처 및 개발 가이드
+2. **데이터_처리_가이드.md** - Chunk Loader, 도메인 모델
+3. **gRPC_통신_가이드.md** - Client Streaming, Proto 파일
 
-### 예시
-- gRPC 통신 패턴 추가 → `/docs/gRPC_서버_구현_가이드.md`
-- UUID 생성 전략 변경 → `/docs/UUID_생성_전략.md`
-- 성능 테스트 결과 → `/docs/성능_테스트_결과.md`
+**히스토리 문서:** `/docs/hist/` (날짜별 작업 이력, Read-Only)
 
 ---
 
