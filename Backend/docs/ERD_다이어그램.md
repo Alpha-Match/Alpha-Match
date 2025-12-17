@@ -1,14 +1,23 @@
 # ERD 다이어그램
 
-**작성일**: 2025-12-12
-**대상**: Backend 전체 (Batch-Server, API-Server)
+**작성일**: 2025-12-17
+**대상**: Backend 전체 (Batch-Server, API-Server, Demo-Python)
 **DB**: PostgreSQL + pgvector
+
+> **중요**: 이 문서는 Backend 전체 프로젝트의 ERD 단일 소스입니다.
+> API Server, Batch Server, Demo-Python 작업 시 반드시 이 문서를 참조하세요.
 
 ---
 
 ## 개요
 
-Alpha-Match 프로젝트의 데이터베이스 ERD (Entity Relationship Diagram)입니다. 텍스트 기반 다이어그램으로 테이블 관계를 시각화합니다.
+Alpha-Match 프로젝트의 데이터베이스 ERD (Entity Relationship Diagram)입니다.
+텍스트 기반 다이어그램으로 테이블 관계를 시각화합니다.
+
+**주요 도메인:**
+- **Recruit**: 채용 공고 (2-table, Simple 1:1)
+- **Candidate**: 후보자 (4-table, DDD Aggregate Pattern)
+- **SkillEmbeddingDic**: 스킬 사전 (별도 도메인, String PK)
 
 ---
 
@@ -45,31 +54,46 @@ Alpha-Match 프로젝트의 데이터베이스 ERD (Entity Relationship Diagram)
                           🔍 ivfflat index
 
 
-                       CANDIDATE DOMAIN (768차원)
+              CANDIDATE DOMAIN (768차원, 4-table DDD Aggregate)
+
         ┌────────────────────────────────────────────────────┐
-        │         candidate_metadata (메타데이터)            │
+        │    skill_embedding_dic (스킬 사전, 별도 도메인)     │
         ├────────────────────────────────────────────────────┤
-        │ 🔑 id                   UUID (PK)                  │
-        │    name                 VARCHAR(255)               │
-        │    skills               TEXT[]                     │
-        │    experience_years     INT                        │
-        │    education_level      VARCHAR(100)               │
-        │    preferred_location   VARCHAR(255)               │
-        │    expected_salary      INT                        │
+        │ 🔑 skill                VARCHAR(50) (PK)           │
+        │    position_category    VARCHAR(50)                │
+        │    skill_vector         VECTOR(768)                │
         │    created_at           TIMESTAMP                  │
         │    updated_at           TIMESTAMP                  │
-        └─────────────────┬──────────────────────────────────┘
-                          │ 1:1
-                          │ ON DELETE CASCADE
-                          ▼
+        └───────────────────┬────────────────────────────────┘
+                            │ N:1 (RESTRICT)
+                            │
+                    ┌───────┴───────────────────────────────┐
+                    │                                        │
+                    ▼                                        │
         ┌────────────────────────────────────────────────────┐
-        │        candidate_embedding (벡터 데이터)           │
+        │         candidate (Aggregate Root)                 │
         ├────────────────────────────────────────────────────┤
-        │ 🔑 id                   UUID (PK, FK)              │
-        │    vector               VECTOR(768)                │
+        │ 🔑 candidate_id         UUID (PK)                  │
+        │    position_category    VARCHAR(50)                │
+        │    experience_years     INT                        │
+        │    original_resume      TEXT                       │
+        │    created_at           TIMESTAMP                  │
         │    updated_at           TIMESTAMP                  │
-        └────────────────────────────────────────────────────┘
-                          🔍 ivfflat index
+        └─────────┬───────────────────┬──────────────────────┘
+                  │ 1:N                │ 1:1
+                  │ CASCADE            │ CASCADE
+                  ▼                    ▼
+        ┌──────────────────────┐   ┌───────────────────────────────┐
+        │  candidate_skill     │   │ candidate_skills_embedding    │
+        │  (스킬 목록, 1:N)     │   │ (벡터 저장)                    │
+        ├──────────────────────┤   ├───────────────────────────────┤
+        │ 🔑 candidate_id  PK  │   │ 🔑 candidate_id      UUID PK  │
+        │ 🔑 skill         PK  │   │    skills            VARCHAR[] │
+        │    created_at        │   │    skills_vector     VECTOR   │
+        │    updated_at        │   │    updated_at        TIMESTAMP │
+        └──────────────────────┘   └───────────────────────────────┘
+           Composite PK:                🔍 ivfflat index
+           (candidate_id, skill)
 
 
                            COMMON TABLES
@@ -170,68 +194,148 @@ LIMIT 10;
 
 ---
 
-## 상세 ERD (Candidate Domain)
+## 상세 ERD (Candidate Domain - 4 Tables)
+
+### 1. skill_embedding_dic (스킬 사전 - 별도 도메인)
 
 ```
 ┌───────────────────────────────────────────────────────────────────┐
-│                   candidate_metadata                              │
+│                   skill_embedding_dic                             │
+│              (기술 스택별 임베딩 정보 저장)                         │
 ├───────────────────────────────────────────────────────────────────┤
 │ Column Name          │ Type           │ Constraints                │
 ├──────────────────────┼────────────────┼────────────────────────────┤
-│ 🔑 id                │ UUID           │ PRIMARY KEY                │
-│ name                 │ VARCHAR(255)   │ NOT NULL                   │
-│ skills               │ TEXT[]         │ PostgreSQL Array           │
-│ experience_years     │ INTEGER        │ NOT NULL, CHECK(>= 0)      │
-│ education_level      │ VARCHAR(100)   │                            │
-│ preferred_location   │ VARCHAR(255)   │                            │
-│ expected_salary      │ INTEGER        │ CHECK(> 0 OR NULL)         │
+│ 🔑 skill             │ VARCHAR(50)    │ PRIMARY KEY                │
+│ position_category    │ VARCHAR(50)    │ NOT NULL                   │
+│ skill_vector         │ VECTOR(768)    │ NOT NULL                   │
 │ created_at           │ TIMESTAMP      │ NOT NULL, DEFAULT NOW()    │
 │ updated_at           │ TIMESTAMP      │ NOT NULL, AUTO UPDATE      │
 ├───────────────────────────────────────────────────────────────────┤
 │ Indexes:                                                          │
-│   - idx_candidate_metadata_updated_at (updated_at)                │
-│   - idx_candidate_metadata_name (name)                            │
-│   - idx_candidate_metadata_exp_edu (experience_years, education)  │
-│   - idx_candidate_metadata_skills_gin (skills) USING GIN          │
-│   - idx_candidate_metadata_recent_updates (updated_at DESC)       │
-│     WHERE updated_at > NOW() - INTERVAL '7 days'                  │
-├───────────────────────────────────────────────────────────────────┤
-│ Triggers:                                                         │
-│   - trigger_candidate_metadata_updated_at                         │
-│     BEFORE UPDATE → update_updated_at_column()                    │
+│   - idx_skill_vector (skill_vector)                               │
+│     USING ivfflat (vector_cosine_ops) WITH (lists = 100)          │
+│   - idx_skill_embedding_dic_updated_at (updated_at)               │
 └───────────────────────────────────────────────────────────────────┘
-                                    │
-                                    │ 1:1 Relationship
-                                    │ ON DELETE CASCADE
-                                    ▼
+```
+
+### 2. candidate (Aggregate Root - 기본 정보)
+
+```
 ┌───────────────────────────────────────────────────────────────────┐
-│                   candidate_embedding                             │
+│                       candidate                                   │
+│                   (DDD Aggregate Root)                            │
 ├───────────────────────────────────────────────────────────────────┤
-│ Column Name       │ Type           │ Constraints                   │
-├───────────────────┼────────────────┼───────────────────────────────┤
-│ 🔑 id             │ UUID           │ PRIMARY KEY, FOREIGN KEY      │
-│                   │                │ REFERENCES candidate_metadata │
-│                   │                │ ON DELETE CASCADE             │
-│ vector            │ VECTOR(768)    │ NOT NULL                      │
-│ updated_at        │ TIMESTAMP      │ NOT NULL, AUTO UPDATE         │
+│ Column Name          │ Type           │ Constraints                │
+├──────────────────────┼────────────────┼────────────────────────────┤
+│ 🔑 candidate_id      │ UUID           │ PRIMARY KEY                │
+│ position_category    │ VARCHAR(50)    │ NOT NULL                   │
+│ experience_years     │ INTEGER        │ NOT NULL, DEFAULT 0        │
+│                      │                │ CHECK(>= 0)                │
+│ original_resume      │ TEXT           │ NOT NULL                   │
+│ created_at           │ TIMESTAMP      │ NOT NULL, DEFAULT NOW()    │
+│ updated_at           │ TIMESTAMP      │ NOT NULL, AUTO UPDATE      │
 ├───────────────────────────────────────────────────────────────────┤
 │ Indexes:                                                          │
-│   - candidate_embedding_ivfflat (vector)                          │
-│     USING ivfflat (vector vector_l2_ops) WITH (lists = 100)       │
-│   - idx_candidate_embedding_updated_at (updated_at)               │
+│   - idx_candidate_updated_at (updated_at)                         │
+│   - idx_candidate_position_exp (position_category,                │
+│                                  experience_years)                │
+└───────────────────────────────────────────────────────────────────┘
+                                    │
+                    ┌───────────────┴──────────────┐
+                    │ 1:N                          │ 1:1
+                    │ CASCADE                      │ CASCADE
+                    ▼                              ▼
+```
+
+### 3. candidate_skill (스킬 목록 - 1:N 관계)
+
+```
+┌───────────────────────────────────────────────────────────────────┐
+│                     candidate_skill                               │
+│            (한 후보자의 이력서가 가진 기술 스택 모음)               │
 ├───────────────────────────────────────────────────────────────────┤
-│ Triggers:                                                         │
-│   - trigger_candidate_embedding_updated_at                        │
-│     BEFORE UPDATE → update_updated_at_column()                    │
+│ Column Name          │ Type           │ Constraints                │
+├──────────────────────┼────────────────┼────────────────────────────┤
+│ 🔑 candidate_id      │ UUID           │ PRIMARY KEY (Composite)    │
+│                      │                │ FOREIGN KEY REFERENCES     │
+│                      │                │ candidate(candidate_id)    │
+│                      │                │ ON DELETE CASCADE          │
+│ 🔑 skill             │ VARCHAR(50)    │ PRIMARY KEY (Composite)    │
+│                      │                │ FOREIGN KEY REFERENCES     │
+│                      │                │ skill_embedding_dic(skill) │
+│                      │                │ ON DELETE RESTRICT         │
+│ created_at           │ TIMESTAMP      │ NOT NULL, DEFAULT NOW()    │
+│ updated_at           │ TIMESTAMP      │ NOT NULL, AUTO UPDATE      │
+├───────────────────────────────────────────────────────────────────┤
+│ Constraints:                                                      │
+│   - PRIMARY KEY (candidate_id, skill) -- DDD Aggregate 패턴       │
+├───────────────────────────────────────────────────────────────────┤
+│ Indexes:                                                          │
+│   - Composite PK automatically indexed                            │
+│   - idx_candidate_skill_skill (skill) -- FK 조회 최적화           │
 └───────────────────────────────────────────────────────────────────┘
 
-Array Search Query Example:
+Query Examples:
 ```sql
--- skills 배열에 'Java' 포함
-SELECT * FROM candidate_metadata WHERE 'Java' = ANY(skills);
+-- 특정 후보자의 스킬 목록
+SELECT skill FROM candidate_skill WHERE candidate_id = 'uuid-here';
+
+-- 특정 스킬을 보유한 후보자 목록
+SELECT candidate_id FROM candidate_skill WHERE skill = 'Java';
+
+-- 여러 스킬을 모두 보유한 후보자 (교집합)
+SELECT candidate_id
+FROM candidate_skill
+WHERE skill IN ('Java', 'Spring', 'PostgreSQL')
+GROUP BY candidate_id
+HAVING COUNT(DISTINCT skill) = 3;
+```
+```
+
+### 4. candidate_skills_embedding (스킬 벡터 - 1:1 관계)
+
+```
+┌───────────────────────────────────────────────────────────────────┐
+│                candidate_skills_embedding                         │
+│          (한 후보자의 기술 스택 뭉치 임베딩 벡터 저장)              │
+├───────────────────────────────────────────────────────────────────┤
+│ Column Name          │ Type           │ Constraints                │
+├──────────────────────┼────────────────┼────────────────────────────┤
+│ 🔑 candidate_id      │ UUID           │ PRIMARY KEY, FOREIGN KEY   │
+│                      │                │ REFERENCES candidate       │
+│                      │                │ (candidate_id)             │
+│                      │                │ ON DELETE CASCADE          │
+│ skills               │ VARCHAR(50)[]  │ NOT NULL                   │
+│                      │                │ PostgreSQL Array           │
+│ skills_vector        │ VECTOR(768)    │ NOT NULL                   │
+│ created_at           │ TIMESTAMP      │ NOT NULL, DEFAULT NOW()    │
+│ updated_at           │ TIMESTAMP      │ NOT NULL, AUTO UPDATE      │
+├───────────────────────────────────────────────────────────────────┤
+│ Indexes:                                                          │
+│   - idx_candidate_skills_embedding_vector (skills_vector)         │
+│     USING ivfflat (vector_cosine_ops) WITH (lists = 100)          │
+│   - idx_candidate_skills_embedding_updated_at (updated_at)        │
+│   - idx_candidate_skills_gin (skills) USING GIN -- 배열 검색      │
+└───────────────────────────────────────────────────────────────────┘
+
+Vector Search Examples:
+```sql
+-- 유사한 스킬셋을 가진 후보자 찾기 (코사인 유사도)
+SELECT candidate_id, skills,
+       1 - (skills_vector <=> '[0.1, 0.2, ...]'::vector) AS similarity
+FROM candidate_skills_embedding
+ORDER BY skills_vector <=> '[0.1, 0.2, ...]'::vector
+LIMIT 10;
+```
+
+Array Search Examples:
+```sql
+-- skills 배열에 'Java' 포함된 후보자
+SELECT candidate_id FROM candidate_skills_embedding WHERE 'Java' = ANY(skills);
 
 -- skills 배열에 'Java' 또는 'Python' 포함
-SELECT * FROM candidate_metadata WHERE skills && ARRAY['Java', 'Python'];
+SELECT candidate_id FROM candidate_skills_embedding
+WHERE skills && ARRAY['Java', 'Python'];
 ```
 ```
 
@@ -323,24 +427,38 @@ recruit_metadata (1) ──── (1) recruit_embedding
     PK: id                      PK/FK: id
                                 ON DELETE CASCADE
 
-candidate_metadata (1) ──── (1) candidate_embedding
-    PK: id                      PK/FK: id
+candidate (1) ──── (1) candidate_skills_embedding
+    PK: candidate_id            PK/FK: candidate_id
                                 ON DELETE CASCADE
+```
+
+### 1:N 관계 (DDD Aggregate)
+```
+candidate (1) ──── (N) candidate_skill
+    PK: candidate_id            PK/FK: (candidate_id, skill)
+                                ON DELETE CASCADE
+```
+
+### N:1 관계
+```
+candidate_skill (N) ──── (1) skill_embedding_dic
+    PK/FK: skill                    PK: skill
+                                    ON DELETE RESTRICT
 ```
 
 ### 논리적 관계 (FK 없음)
 
 ```
 recruit_metadata (N) ──── (M) dlq
-    id                         entity_id (WHERE domain = 'recruit')
+    id                         failed_id (WHERE domain = 'recruit')
 
-candidate_metadata (N) ──── (M) dlq
-    id                         entity_id (WHERE domain = 'candidate')
+candidate (N) ──── (M) dlq
+    candidate_id               failed_id (WHERE domain = 'candidate')
 
 recruit_metadata (N) ──── (1) checkpoint
                                last_processed_uuid (WHERE domain = 'recruit')
 
-candidate_metadata (N) ──── (1) checkpoint
+candidate (N) ──── (1) checkpoint
                                last_processed_uuid (WHERE domain = 'candidate')
 ```
 
@@ -488,4 +606,4 @@ SELECT * FROM v_all_domain_stats;
 
 ---
 
-**최종 수정일**: 2025-12-12
+**최종 수정일**: 2025-12-17

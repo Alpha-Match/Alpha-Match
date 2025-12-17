@@ -1,8 +1,11 @@
 # Flyway 마이그레이션 가이드
 
-**작성일**: 2025-12-12
-**대상**: Backend 전체 (Batch-Server, API-Server)
+**작성일**: 2025-12-17
+**대상**: Backend 전체 (Batch-Server, API-Server, Demo-Python)
 **Flyway 버전**: 최신 (Spring Boot 4.0 기본 제공)
+
+> **중요**: 이 문서는 Backend 전체 프로젝트의 Flyway 마이그레이션 단일 가이드입니다.
+> DB 스키마 변경 시 반드시 이 문서를 참조하세요.
 
 ---
 
@@ -23,13 +26,22 @@ Flyway는 데이터베이스 스키마 버전 관리 도구입니다. SQL 마이
 
 ```
 Backend/Batch-Server/src/main/resources/db/migration/
-├── V1__init_schema.sql
-├── V2__add_candidate_schema.sql
-├── V3__add_domain_to_common_tables.sql
-├── V4__add_performance_indexes.sql
-├── V5__add_constraints_and_functions.sql
-└── V6__add_new_domain.sql (예시)
+├── V1__init_database_schema.sql        # 통합 초기 스키마 (457 lines)
+└── V2__add_new_domain.sql (향후 추가 시)
 ```
+
+**2025-12-16 통합:**
+기존 V1~V5 파일을 단일 V1__init_database_schema.sql로 통합했습니다.
+
+**포함 내역:**
+- Extensions (pgvector, uuid-ossp)
+- Candidate 도메인 (4 tables: skill_embedding_dic, candidate, candidate_skill, candidate_skills_embedding)
+- Recruit 도메인 (2 tables: recruit_metadata, recruit_embedding)
+- 공통 테이블 (dlq, checkpoint)
+- Spring Batch 메타데이터 테이블 (v6.0 공식 스키마)
+- Quartz 스케줄러 테이블 (v2.3.2 공식 스키마)
+- 성능 인덱스 (IVFFlat for vector columns)
+- 제약조건, 트리거, 헬퍼 함수
 
 ---
 
@@ -52,13 +64,11 @@ V{버전}__{설명}.sql
 
 **올바른 예시:**
 ```
-V1__init_schema.sql
-V2__add_candidate_schema.sql
-V3__add_domain_to_common_tables.sql
-V4__add_performance_indexes.sql
-V5__add_constraints_and_functions.sql
-V6__alter_dlq_add_domain.sql
-V7__create_index_metadata_uuid.sql
+V1__init_database_schema.sql             # 실제 사용 중
+V2__add_company_domain.sql                # 향후 예시
+V3__add_headhunter_domain.sql             # 향후 예시
+V4__alter_dlq_add_company_domain.sql      # 향후 예시
+V5__create_index_company_vector.sql       # 향후 예시
 ```
 
 **잘못된 예시:**
@@ -545,4 +555,4 @@ SELECT * FROM flyway_schema_history ORDER BY installed_rank;
 
 ---
 
-**최종 수정일**: 2025-12-12
+**최종 수정일**: 2025-12-17
