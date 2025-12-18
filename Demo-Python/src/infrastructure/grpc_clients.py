@@ -57,16 +57,16 @@ async def _prepare_ingest_requests(
     for i in range(0, len(data), chunk_size):
         chunk_data = data[i:i + chunk_size]
 
-        # Pydantic 모델 리스트를 JSON 문자열 리스트로 변환
-        # 각 모델의 dict 표현을 json.dumps로 직렬화
-        json_chunk = [item.model_dump_json() for item in chunk_data]
+        # Pydantic 모델 리스트를 dict 리스트로 변환
+        # model_dump()를 사용하여 각 모델을 Python dict로 변환
+        json_chunk = [item.model_dump() for item in chunk_data]
 
-        # JSON 문자열 리스트를 하나의 JSON 배열 문자열로 합치고 UTF-8 바이트로 인코딩
-        # 예: '["{...}", "{...}"]'
+        # dict 리스트를 JSON 배열 문자열로 직렬화하고 UTF-8 바이트로 인코딩
+        # 결과: [{"id": "...", ...}, {"id": "...", ...}]
         encoded_chunk = json.dumps(json_chunk).encode('utf-8')
 
         yield embedding_stream_pb2.IngestDataRequest(data_chunk=encoded_chunk)
-        logger.debug(f"데이터 청크 {i//chunk_size + 1}/{total_chunks} 전송")
+        logger.debug(f"데이터 청크 {i//chunk_size + 1}/{total_chunks} 전송 ({len(chunk_data)} rows)")
         # 실제 운영 환경에서는 부하를 줄이기 위해 짧은 대기를 추가할 수 있습니다.
         # await asyncio.sleep(0.01)
 
