@@ -128,10 +128,11 @@ batch:
     jobs:
       recruit:
         cron: "0 0 2 * * ?"           # Recruit Job 실행 시간 (매일 새벽 2시)
-        enabled: true                  # Recruit Job 활성화 (Pattern 1 사용)
+        enabled: false                 # Pattern 1 비활성화 (기본: Pattern 2만 사용)
+                                       # Pattern 1이 필요하면 true로 변경
       candidate:
         cron: "0 0 3 * * ?"           # Candidate Job 실행 시간 (매일 새벽 3시)
-        enabled: false                 # Candidate Job 비활성화 (Pattern 2만 사용)
+        enabled: false                 # Pattern 1 비활성화 (기본: Pattern 2만 사용)
                                        # Pattern 1이 필요하면 true로 변경
 
 # Logging 설정
