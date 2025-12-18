@@ -25,15 +25,15 @@ public class DlqServiceImpl implements DlqService {
 
     @Override
     @Transactional
-    public DlqEntity saveToDlq(String domain, UUID entityId, String errorMessage, String payloadJson) {
-        log.warn("[DLQ_SAVE] Domain: {} | Entity ID: {} | Error: {}",
-                domain, entityId, errorMessage);
+    public DlqEntity saveToDlq(String domain, UUID failedId, String errorMessage, String payloadJson) {
+        log.warn("[DLQ_SAVE] Domain: {} | Failed ID: {} | Error: {}",
+                domain, failedId, errorMessage);
 
-        DlqEntity dlqEntity = DlqEntity.create(domain, entityId, errorMessage, payloadJson);
+        DlqEntity dlqEntity = DlqEntity.create(domain, failedId, errorMessage, payloadJson);
         DlqEntity saved = dlqRepository.save(dlqEntity);
 
-        log.info("[DLQ_SAVED] DLQ ID: {} | Domain: {} | Entity ID: {}",
-                saved.getId(), domain, entityId);
+        log.info("[DLQ_SAVED] DLQ ID: {} | Domain: {} | Failed ID: {}",
+                saved.getId(), domain, failedId);
 
         return saved;
     }
@@ -49,9 +49,9 @@ public class DlqServiceImpl implements DlqService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<DlqEntity> findByDomainAndEntityId(String domain, UUID entityId) {
-        log.debug("[DLQ_FIND_BY_DOMAIN_AND_ID] Domain: {} | Entity ID: {}", domain, entityId);
-        List<DlqEntity> results = dlqRepository.findByDomainAndEntityId(domain, entityId);
+    public List<DlqEntity> findByDomainAndFailedId(String domain, UUID failedId) {
+        log.debug("[DLQ_FIND_BY_DOMAIN_AND_ID] Domain: {} | Failed ID: {}", domain, failedId);
+        List<DlqEntity> results = dlqRepository.findByDomainAndFailedId(domain, failedId);
         log.debug("[DLQ_FIND_BY_DOMAIN_AND_ID] Found {} records", results.size());
         return results;
     }

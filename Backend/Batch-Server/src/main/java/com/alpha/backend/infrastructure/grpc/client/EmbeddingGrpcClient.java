@@ -63,7 +63,15 @@ public class EmbeddingGrpcClient {
             @Override
             public void onNext(RowChunk rowChunk) {
                 chunkCount++;
-                log.debug("Received chunk #{} with {} rows", chunkCount, rowChunk.getRowsCount());
+                int rowCount = 0;
+                if (rowChunk.hasRecruit()) {
+                    rowCount = rowChunk.getRecruit().getRowsCount();
+                } else if (rowChunk.hasCandidate()) {
+                    rowCount = rowChunk.getCandidate().getRowsCount();
+                } else if (rowChunk.hasSkillDic()) {
+                    rowCount = rowChunk.getSkillDic().getRowsCount();
+                }
+                log.debug("Received chunk #{} with {} rows", chunkCount, rowCount);
                 sink.tryEmitNext(rowChunk);
             }
 

@@ -23,7 +23,7 @@ public interface DlqRepository {
     /**
      * 특정 엔티티 ID에 대한 DLQ 레코드 조회
      */
-    List<DlqEntity> findByEntityId(UUID entityId);
+    List<DlqEntity> findByFailedId(UUID failedId);
 
     /**
      * 특정 기간 내 DLQ 레코드 조회
@@ -43,7 +43,7 @@ public interface DlqRepository {
     /**
      * 특정 도메인 및 엔티티 ID에 대한 DLQ 레코드 조회
      */
-    List<DlqEntity> findByDomainAndEntityId(String domain, UUID entityId);
+    List<DlqEntity> findByDomainAndFailedId(String domain, UUID failedId);
 
     /**
      * 특정 도메인의 특정 기간 내 DLQ 레코드 조회

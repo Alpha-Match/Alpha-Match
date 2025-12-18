@@ -11,12 +11,18 @@ import java.util.UUID;
  * Dead Letter Queue Entity (Domain-agnostic)
  * 처리 실패한 레코드를 저장하는 엔티티 (도메인별 구분)
  *
- * 테이블명이 V3 마이그레이션에서 'dlq'로 변경됨
+ * 실제 DB 구조 (V1__init_database_schema.sql 기준):
+ * - id: BIGSERIAL (PK, 자동 증가)
+ * - domain: VARCHAR(50) (도메인 구분)
+ * - failed_id: UUID (실패한 레코드 ID)
+ * - error_message: TEXT (에러 메시지)
+ * - payload: TEXT (원본 데이터 JSON)
+ * - created_at: TIMESTAMP (생성 시간)
  */
 @Entity
 @Table(name = "dlq", indexes = {
         @Index(name = "idx_dlq_domain", columnList = "domain"),
-        @Index(name = "idx_dlq_entity_id", columnList = "entity_id"),
+        @Index(name = "idx_dlq_failed_id", columnList = "failed_id"),
         @Index(name = "idx_dlq_domain_created_at", columnList = "domain, created_at")
 })
 @Getter
@@ -34,13 +40,13 @@ public class DlqEntity {
     @Column(name = "domain", nullable = false, length = 50)
     private String domain;  // 'recruit', 'candidate', etc.
 
-    @Column(name = "entity_id", columnDefinition = "UUID")
-    private UUID entityId;  // 실패한 엔티티의 UUID
+    @Column(name = "failed_id", columnDefinition = "UUID")
+    private UUID failedId;  // 실패한 엔티티의 UUID
 
     @Column(name = "error_message", nullable = false, columnDefinition = "TEXT")
     private String errorMessage;
 
-    @Column(name = "payload", columnDefinition = "JSONB")
+    @Column(name = "payload", columnDefinition = "TEXT")
     private String payload;
 
     @CreationTimestamp
@@ -50,10 +56,10 @@ public class DlqEntity {
     /**
      * DLQ 엔티티 생성 (도메인별)
      */
-    public static DlqEntity create(String domain, UUID entityId, String errorMessage, String payloadJson) {
+    public static DlqEntity create(String domain, UUID failedId, String errorMessage, String payloadJson) {
         return DlqEntity.builder()
                 .domain(domain)
-                .entityId(entityId)
+                .failedId(failedId)
                 .errorMessage(errorMessage)
                 .payload(payloadJson)
                 .build();

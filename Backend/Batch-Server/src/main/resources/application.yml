@@ -19,8 +19,7 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: update
-#      ddl-auto: validate
+      ddl-auto: validate
     properties:
       hibernate:
         format_sql: true
@@ -36,7 +35,7 @@ spring:
     job:
       enabled: false  # 자동 실행 방지 (스케줄러로 제어)
     jdbc:
-      initialize-schema: always
+      initialize-schema: never  # Flyway로 관리
 
   # Flyway 설정 (DB 마이그레이션)
   flyway:
@@ -44,16 +43,42 @@ spring:
     baseline-on-migrate: true
     locations: classpath:db/migration
 
+  # Quartz 설정 - 스케줄링 라이브러리
+  quartz:
+    job-store-type: jdbc   # Quartz JobStore를 JDBC 기반으로 사용. DB에 Job/Trigger 상태 저장
+    jdbc:
+      initialize-schema: never   # Flyway로 관리
+    properties:
+      org.quartz.scheduler.instanceName: BatchScheduler   # 스케줄러 인스턴스 이름
+      org.quartz.scheduler.instanceId: AUTO               # 인스턴스 ID 자동 생성 (클러스터 환경에서 유용)
+      org.quartz.threadPool.class: org.quartz.simpl.SimpleThreadPool   # Quartz가 사용할 스레드풀 구현체
+      org.quartz.threadPool.threadCount: 10       # 동시에 실행 가능한 Job 수 (스레드 개수)
+      org.quartz.threadPool.threadPriority: 5     # 스레드 우선순위 (기본값 5)
+
+      org.quartz.jobStore.class: org.quartz.impl.jdbcjobstore.JobStoreTX   # JDBC JobStore 구현체 (트랜잭션 지원)
+      org.quartz.jobStore.driverDelegateClass: org.quartz.impl.jdbcjobstore.PostgreSQLDelegate
+      org.quartz.jobStore.useProperties: false    # JobDataMap을 직렬화 방식으로 저장 (false면 BLOB 사용)
+      org.quartz.jobStore.tablePrefix: QRTZ_      # Quartz 테이블 접두사 (예: QRTZ_JOB_DETAILS)
+      org.quartz.jobStore.isClustered: false      # 단일 인스턴스 모드
+      org.quartz.jobStore.misfireThreshold: 60000 # Misfire(지연 실행) 판단 기준 시간(ms). 60초 이상 지연되면 Misfire 처리
+    # Quartz 전용 DataSource 명시
+    datasource:
+      quartzDataSource:
+        url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:postgres}
+        username: ${DB_USER:postgres}
+        password: ${DB_PASSWORD:postgres}
+        driver-class-name: org.postgresql.Driver
+
 # gRPC 설정
 grpc:
   # gRPC 서버 설정 (Python에서 Client Streaming으로 데이터 수신)
   server:
-    port: 50051  # Python 서버가 접속할 포트
+    port: 50051  # Batch Server (IngestDataStream 수신)
 
   client:
     # Python AI Server (Embedding Stream)
     python-embedding:
-      address: static://localhost:50051
+      address: static://localhost:50053  # Python 서버 주소
       negotiation-type: plaintext
       max-inbound-message-size: 104857600  # 100MB
 
@@ -82,9 +107,33 @@ batch:
         vector-dimension: 768          # Candidate Embedding 차원
         table-prefix: candidate        # 테이블 접두사
 
+  # ============================================
+  # 스케줄러 설정 (Pattern 1: Server Streaming)
+  # ============================================
+  # Pattern 1 (Server Streaming): Batch가 Python에 요청하여 데이터 수신
+  #   - Batch Server (gRPC Client) → Python Server (gRPC Server)
+  #   - 정기적으로 스케줄러가 실행
+  #   - 용도: 배치 작업으로 정기적 데이터 동기화
+  #
+  # Pattern 2 (Client Streaming): Python이 Batch에 데이터 전송
+  #   - Python Server (gRPC Client) → Batch Server (gRPC Server)
+  #   - FastAPI 엔드포인트 트리거 시 실행
+  #   - 용도: 사용자 요청 시 즉시 처리
+  #   - 스케줄러 불필요!
+  #
+  # 현재 전략: 두 패턴 모두 지원, Pattern 1 스케줄러는 기본 비활성화
+  # ============================================
   scheduler:
-    enabled: true                      # 스케줄러 활성화
-    cron: "0 0 2 * * ?"               # 매일 새벽 2시 실행
+    enabled: true                      # 스케줄러 전체 활성화 (false로 설정 시 모든 Job 비활성화)
+    jobs:
+      recruit:
+        cron: "0 0 2 * * ?"           # Recruit Job 실행 시간 (매일 새벽 2시)
+        enabled: false                 # Pattern 1 비활성화 (기본: Pattern 2만 사용)
+                                       # Pattern 1이 필요하면 true로 변경
+      candidate:
+        cron: "0 0 3 * * ?"           # Candidate Job 실행 시간 (매일 새벽 3시)
+        enabled: false                 # Pattern 1 비활성화 (기본: Pattern 2만 사용)
+                                       # Pattern 1이 필요하면 true로 변경
 
 # Logging 설정
 logging:

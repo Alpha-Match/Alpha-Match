@@ -1,321 +1,350 @@
-# Demo-Python FastAPI + gRPC Server
+# Demo-Python Server
 
-Python server for streaming embedding data from .pkl files to the Java Batch Server via gRPC.
+> **Embedding 데이터 스트리밍 서버 (gRPC + FastAPI)**
 
-## Architecture
+Python 기반 데모 서버로, 다양한 포맷의 Embedding 데이터 파일을 Chunk 단위로 분할하여 gRPC Streaming으로 Batch Server에 전송합니다.
 
-This server provides:
-- **FastAPI HTTP API** for data ingestion requests
-- **gRPC Client** for streaming data to Java Batch Server
-- **Domain-specific data loaders** (recruit, headhunter)
+---
 
-## Quick Start
+## 📋 주요 기능
 
-### 1. Install Dependencies
+- 📂 **다중 포맷 지원**: pkl, csv, parquet 파일 로딩
+- 🔄 **Chunk 기반 Iterator**: 메모리 효율적 대용량 파일 처리
+- 📡 **gRPC Client Streaming**: Batch Server로 데이터 전송
+- 🏗️ **도메인별 제네릭 구조**: Recruit, Candidate, SkillEmbeddingDic
+- ✅ **Pydantic 검증**: 벡터 차원 및 데이터 유효성 검증
+- 🌐 **FastAPI HTTP API**: 상태 확인 및 트리거 엔드포인트
+
+---
+
+## 🏗️ 아키텍처
+
+### 계층 구조
+
+```
+┌─────────────────────────────────┐
+│       API Layer                 │
+│     (FastAPI HTTP)              │
+│  - Health Check                 │
+│  - Ingest Trigger               │
+└──────────────┬──────────────────┘
+               │
+┌──────────────┴──────────────────┐
+│     Service Layer               │
+│  - gRPC Client Service          │
+│  - File Service                 │
+└──────────────┬──────────────────┘
+               │
+┌──────────────┴──────────────────┐
+│  Infrastructure Layer           │
+│  - Chunk Loader (Iterator)      │
+│  - Loader Factory               │
+└──────────────┬──────────────────┘
+               │
+┌──────────────┴──────────────────┐
+│     Domain Layer                │
+│  - Pydantic Models              │
+│  - BaseData Protocol            │
+└─────────────────────────────────┘
+```
+
+### 데이터 처리 플로우
+
+```
+Data Files (.pkl/.csv/.parquet)
+    ↓
+LoaderFactory (도메인 + 포맷 선택)
+    ↓
+ChunkLoader (Iterator 패턴)
+    ↓
+Pydantic Validation (벡터 차원 검증)
+    ↓
+gRPC Client Streaming
+    ↓
+Batch Server (Java)
+```
+
+---
+
+## 🛠️ 기술 스택
+
+- **Python 3.11+**: 최신 Python
+- **FastAPI**: 비동기 HTTP 서버
+- **gRPC**: 고성능 RPC (Client)
+- **Pydantic**: 데이터 검증
+- **Pandas**: 데이터 처리
+- **PyArrow**: Parquet 파일 지원
+
+---
+
+## 📂 프로젝트 구조
+
+```
+Demo-Python/
+│
+├── src/
+│   ├── grpc_server.py              # gRPC Server 엔트리포인트
+│   ├── main.py                     # FastAPI 엔트리포인트
+│   │
+│   ├── config/
+│   │   ├── grpc_config.py          # gRPC Client 설정
+│   │   └── settings.py             # 환경 변수
+│   │
+│   ├── domain/                     # Pydantic 모델
+│   │   ├── base_data.py            # BaseData Protocol
+│   │   ├── recruit_data.py         # RecruitData (384d)
+│   │   ├── candidate_data.py       # CandidateData (768d)
+│   │   └── skill_embedding_dic_data.py  # SkillEmbeddingDicData (768d)
+│   │
+│   ├── infrastructure/
+│   │   └── chunk_loader/
+│   │       ├── base_chunk_loader.py     # 추상 클래스
+│   │       ├── loader_factory.py        # Factory
+│   │       ├── recruit/                 # Recruit Loader (pkl/csv/parquet)
+│   │       ├── candidate/               # Candidate Loader
+│   │       └── skill_embedding_dic/     # SkillEmbeddingDic Loader
+│   │
+│   ├── service/
+│   │   ├── grpc_client_service.py       # gRPC Client
+│   │   └── file_service.py              # 파일 처리
+│   │
+│   └── api/
+│       ├── health.py                    # Health Check
+│       └── ingest.py                    # 데이터 전송 트리거
+│
+├── data/                           # 데이터 파일
+│   ├── recruit/
+│   ├── candidate/
+│   └── skill_embedding_dic/
+│
+├── requirements.txt
+├── pyproject.toml
+├── CLAUDE.md                       # AI 개발 가이드
+└── README.md                       # 이 문서
+```
+
+---
+
+## 🚀 빠른 시작
+
+### 사전 요구사항
+
+- **Python** 3.11+
+- **Batch Server** 실행 중 (gRPC 수신 대기)
+
+### 1. 가상 환경 설정
+
+```bash
+cd Demo-Python
+
+# 가상 환경 생성
+python -m venv venv
+
+# 활성화
+# Windows
+venv\Scripts\activate
+
+# Linux/Mac
+source venv/bin/activate
+```
+
+### 2. 의존성 설치
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Start Server
+### 3. Proto 파일 컴파일
 
+```bash
+# gRPC Python 코드 생성
+python -m grpc_tools.protoc \
+    -I../Backend/Batch-Server/src/main/proto \
+    --python_out=./src/generated \
+    --grpc_python_out=./src/generated \
+    ../Backend/Batch-Server/src/main/proto/embedding_service.proto
+```
+
+### 4. 서버 실행
+
+**gRPC Server (Python → Java 수신):**
+```bash
+python src/grpc_server.py
+```
+
+**FastAPI Server (HTTP API):**
 ```bash
 python src/main.py
 ```
 
-Or on Windows:
-```bash
-start_server.bat
-```
+---
 
-Server will start on `http://localhost:8000`
+## 📝 코드 컨벤션
 
-### 3. Ingest Data
+### 1. Protocol 기반 제네릭
 
-Trigger data ingestion via HTTP API:
-
-```bash
-# Ingest recruit data
-curl -X POST "http://localhost:8000/data/ingest/recruit?file_name=processed_recruitment_data.pkl"
-
-# Ingest headhunter data
-curl -X POST "http://localhost:8000/data/ingest/headhunter?file_name=processed_headhunter_data.pkl"
-```
-
-### 4. Health Check
-
-```bash
-curl http://localhost:8000/health
-```
-
-## Project Structure
-
-```
-Demo-Python/
-├── src/
-│   ├── main.py                          # FastAPI application entry point
-│   ├── api/
-│   │   └── endpoints.py                 # FastAPI endpoints
-│   ├── services/
-│   │   └── ingestion_service.py         # Data ingestion business logic
-│   ├── infrastructure/
-│   │   ├── loaders.py                   # Domain-specific data loaders
-│   │   └── grpc_clients.py              # gRPC client for Batch Server
-│   ├── domain/
-│   │   ├── models.py                    # Domain models
-│   │   └── utils.py                     # UUID utilities
-│   ├── config/
-│   │   └── settings.py                  # Configuration
-│   └── proto/                           # Generated protobuf files
-│       ├── embedding_stream.proto
-│       ├── embedding_stream_pb2.py
-│       └── embedding_stream_pb2_grpc.py
-│
-├── data/
-│   ├── processed_recruitment_data.pkl   # Recruit embedding data (~500MB)
-│   └── processed_headhunter_data.pkl    # Headhunter embedding data
-│
-├── docs/                                # Design documents
-├── requirements.txt
-└── README.md
-```
-
-## Data Structure
-
-### Recruit Domain (.pkl file)
-- **Total rows**: ~142,000
-- **Columns**:
-  - `Company Name`: Company name
-  - `Exp Years`: Experience years (e.g., "2y", "5y")
-  - `English Level`: English proficiency level
-  - `Primary Keyword`: Primary job keyword
-  - `job_post_vectors`: Embedding vector (384 dimensions)
-
-### Headhunter Domain (.pkl file)
-Similar structure with headhunter-specific fields.
-
-## API Endpoints
-
-### POST /data/ingest/{domain}
-
-Trigger data ingestion for a specific domain.
-
-**Path Parameters:**
-- `domain`: Domain name (`recruit` or `headhunter`)
-
-**Query Parameters:**
-- `file_name`: Name of the .pkl file (optional, defaults to domain-specific file)
-- `chunk_size`: Chunk size for streaming (optional, default: 300)
-
-**Example:**
-```bash
-curl -X POST "http://localhost:8000/data/ingest/recruit?file_name=processed_recruitment_data.pkl&chunk_size=500"
-```
-
-**Response:**
-```json
-{
-  "status": "success",
-  "domain": "recruit",
-  "message": "Successfully sent 141897 rows in 474 chunks",
-  "stats": {
-    "total_rows": 141897,
-    "total_chunks": 474,
-    "chunk_size": 300,
-    "file_name": "processed_recruitment_data.pkl"
-  }
-}
-```
-
-### GET /health
-
-Health check endpoint.
-
-**Response:**
-```json
-{
-  "status": "healthy",
-  "timestamp": "2025-12-12T10:30:00",
-  "version": "1.0.0"
-}
-```
-
-## Features
-
-### Memory Optimization
-
-The data loaders use dtype optimization to reduce memory usage by 40-50%:
+도메인 모델은 `BaseData` Protocol을 준수:
 
 ```python
-from infrastructure.loaders import load_recruit_data
+from typing import Protocol, TypeVar
 
-df = load_recruit_data()  # Uses category dtype for strings
+class BaseData(Protocol):
+    def to_proto_message(self) -> Any:
+        ...
+
+T_co = TypeVar('T_co', bound=BaseData, covariant=True)
 ```
 
-### Configurable Chunk Size
-
-Adjust chunk size (100-1000 rows):
-
-```bash
-curl -X POST "http://localhost:8000/data/ingest/recruit?chunk_size=500"
-```
-
-### Domain-Specific Loaders
-
-Each domain has its own loader with optimized schema:
+### 2. Chunk Loader (Iterator 패턴)
 
 ```python
-# Recruit domain
-df = load_recruit_data(file_name="processed_recruitment_data.pkl")
-
-# Headhunter domain
-df = load_headhunter_data(file_name="processed_headhunter_data.pkl")
+class BaseChunkLoader(ABC, Generic[T_co]):
+    def __iter__(self) -> Iterator[List[T_co]]:
+        for chunk in self._load_chunks():
+            yield chunk
 ```
 
-## Configuration
-
-Edit `src/config/settings.py` to customize:
+### 3. Pydantic 검증
 
 ```python
-@dataclass
-class Settings:
-    # FastAPI
-    HOST: str = "0.0.0.0"
-    PORT: int = 8000
+from pydantic import BaseModel, field_validator
 
-    # gRPC Batch Server
-    BATCH_SERVER_HOST: str = "localhost"
-    BATCH_SERVER_PORT: int = 50052
+class RecruitData(BaseModel):
+    vector: List[float]
 
-    # Data
-    DATA_DIR: Path = Path(__file__).parent.parent.parent / "data"
-    DEFAULT_CHUNK_SIZE: int = 300
-    VECTOR_DIMENSION: int = 384
+    @field_validator('vector')
+    def validate_vector_dimension(cls, v):
+        if len(v) != 384:
+            raise ValueError("Recruit vector must be 384-dim")
+        return v
 ```
 
-## Testing
+### 4. Loader Factory
 
-### Test Data Ingestion
+도메인 + 포맷별 Loader 선택:
 
-1. Start the server:
-```bash
-python src/main.py
-```
-
-2. In another terminal, trigger ingestion:
-```bash
-curl -X POST "http://localhost:8000/data/ingest/recruit"
-```
-
-3. Check Batch Server logs to verify data reception.
-
-### Manual Testing with Different Chunk Sizes
-
-```bash
-# Small chunks (faster streaming)
-curl -X POST "http://localhost:8000/data/ingest/recruit?chunk_size=100"
-
-# Large chunks (fewer network calls)
-curl -X POST "http://localhost:8000/data/ingest/recruit?chunk_size=1000"
-```
-
-## gRPC Communication
-
-### Proto Definition
-
-```protobuf
-service EmbeddingStreamService {
-  rpc IngestDataStream(stream RowChunk) returns (StreamResponse);
-}
-
-message RowChunk {
-  string domain = 1;
-  repeated RecruitRow rows = 2;
-}
-
-message RecruitRow {
-  string id = 1;
-  string company_name = 2;
-  int32 exp_years = 3;
-  string english_level = 4;
-  string primary_keyword = 5;
-  repeated float vector = 6;
-}
-```
-
-### Port Configuration
-
-- **FastAPI HTTP**: 8000
-- **Java Batch Server gRPC**: 50052 (client connects to this)
-
-## Performance
-
-### Memory Usage
-
-- **Basic loading**: ~471 MB
-- **Optimized loading**: ~447 MB (5.3% savings)
-- **Streaming**: Low memory (processes chunks)
-
-### Throughput
-
-- **Chunk size 100**: ~14 chunks/sec
-- **Chunk size 300**: ~10 chunks/sec (optimal)
-- **Chunk size 1000**: ~5 chunks/sec
-
-## Troubleshooting
-
-### Import Errors
-
-If you see `ModuleNotFoundError: No module named 'embedding_stream_pb2'`:
-
-The proto files should be in `src/proto/`. Ensure they are generated correctly.
-
-### File Not Found
-
-Ensure the .pkl file exists:
-```bash
-ls data/processed_recruitment_data.pkl
-```
-
-### Connection Refused (gRPC)
-
-Ensure Java Batch Server is running on port 50052:
-```bash
-# Check if Batch Server is running
-netstat -an | grep 50052
-```
-
-### Port Already in Use (FastAPI)
-
-Change the port in `src/config/settings.py`:
 ```python
-PORT: int = 8001  # Use different port
+def get_loader(domain: str, format: str, file_path: str) -> BaseChunkLoader:
+    loader_map = {
+        ("recruit", "pkl"): RecruitPklLoader,
+        ("recruit", "csv"): RecruitCsvLoader,
+        # ...
+    }
+    return loader_map[(domain, format)](file_path)
 ```
 
-## Integration with Batch Server
+---
 
-The Java Batch Server acts as a gRPC server:
+## 🔧 설정 가이드
 
-1. Python server receives HTTP POST to `/data/ingest/{domain}`
-2. Python server loads .pkl file and chunks data
-3. Python server connects to Batch Server as gRPC client
-4. Python server streams `RowChunk` data via `IngestDataStream`
-5. Batch Server processes and saves to PostgreSQL with pgvector
+### 환경 변수 (.env)
 
-See `Backend/Batch-Server/CLAUDE.md` for Batch Server details.
+```.env
+# gRPC Batch Server 주소
+BATCH_SERVER_HOST=localhost
+BATCH_SERVER_PORT=50051
 
-## Documentation
+# Chunk 크기
+CHUNK_SIZE=1000
 
-- **Design Documents**: `docs/`
-- **Server Instructions**: `CLAUDE.md`
-- **Batch Server**: `../Backend/Batch-Server/CLAUDE.md`
-- **Project Root**: `../CLAUDE.md`
+# 데이터 디렉토리
+DATA_DIR=./data
+```
 
-## License
+---
 
-Internal project - Alpha-Match
+## 📚 개발 가이드
 
-## Author
+### 새로운 도메인 추가
 
-Created: 2025-12-11
-Updated: 2025-12-12 (Refactored to FastAPI + gRPC Client)
+1. **Pydantic 모델 생성** (`domain/{domain}_data.py`)
+2. **Chunk Loader 구현** (`infrastructure/chunk_loader/{domain}/`)
+   - `{domain}_pkl_loader.py`
+   - `{domain}_csv_loader.py`
+   - `{domain}_parquet_loader.py`
+3. **Factory 등록** (`loader_factory.py`)
+
+### 벡터 차원 규칙
+
+- **Recruit**: 384d
+- **Candidate**: 768d
+- **SkillEmbeddingDic**: 768d
+
+Pydantic validator로 검증 필수!
+
+---
+
+## 🧪 테스트
+
+### gRPC 통신 테스트
+
+```bash
+# Batch Server 먼저 실행
+cd Backend/Batch-Server
+./gradlew bootRun
+
+# Python Server 실행
+cd Demo-Python
+python src/grpc_server.py
+```
+
+### HTTP API 테스트
+
+```bash
+# Health Check
+curl http://localhost:8000/api/health
+
+# 데이터 전송 트리거
+curl -X POST http://localhost:8000/api/ingest \
+  -H "Content-Type: application/json" \
+  -d '{"domain": "recruit", "format": "pkl"}'
+```
+
+---
+
+## 📖 관련 문서
+
+- [Python 서버 개발 가이드](docs/Python_서버_개발_가이드.md)
+- [데이터 처리 가이드](docs/데이터_처리_가이드.md)
+- [gRPC 통신 가이드](docs/gRPC_통신_가이드.md)
+- [gRPC Proto 정의](/Backend/Batch-Server/src/main/proto/embedding_service.proto)
+
+---
+
+## 🐛 트러블슈팅
+
+### gRPC 연결 실패
+
+```
+Error: grpc._channel._InactiveRpcError
+```
+
+**해결:**
+1. Batch Server 실행 확인
+2. 포트 50051 확인
+3. `grpc_config.py`에서 주소 확인
+
+### pkl 파일 로딩 실패
+
+```
+Error: MemoryError
+```
+
+**해결:**
+- Chunk 크기 감소 (기본 1000 → 500)
+- 절대 pkl 파일을 한번에 로드하지 말 것!
+- 반드시 ChunkLoader 사용
+
+### 벡터 차원 불일치
+
+```
+ValidationError: Recruit vector must be 384-dim
+```
+
+**해결:**
+- 데이터 파일의 벡터 차원 확인
+- Pydantic 모델의 차원 검증 규칙 확인
+
+---
+
+**최종 수정일:** 2025-12-18

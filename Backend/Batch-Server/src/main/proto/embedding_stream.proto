@@ -17,26 +17,72 @@ service EmbeddingStreamService {
 
 // 스트리밍 요청
 message StreamEmbeddingRequest {
+  // 도메인 구분 (recruit, candidate, skill_dic)
+  string domain = 1;
   // 마지막으로 처리된 UUID (체크포인트)
   // 이 값이 비어있으면 처음부터 전송
-  optional string last_processed_uuid = 1;
+  optional string last_processed_uuid = 2;
   // 요청할 청크 크기 (0이면 서버 기본값 사용)
-  optional int32 chunk_size = 2;
+  optional int32 chunk_size = 3;
 }
 
-// 데이터 청크
+// ============================================================================
+// 도메인별 데이터 청크 (oneof로 타입 구분)
+// ============================================================================
+
+// 데이터 청크 (도메인별 분기)
 message RowChunk {
+  oneof chunk_data {
+    RecruitRowChunk recruit = 1;
+    CandidateRowChunk candidate = 2;
+    SkillEmbeddingDicRowChunk skill_dic = 3;
+  }
+}
+
+// Recruit 청크
+message RecruitRowChunk {
   repeated RecruitRow rows = 1;
 }
 
-// 개별 행 데이터
+// Candidate 청크
+message CandidateRowChunk {
+  repeated CandidateRow rows = 1;
+}
+
+// SkillEmbeddingDic 청크
+message SkillEmbeddingDicRowChunk {
+  repeated SkillEmbeddingDicRow rows = 1;
+}
+
+// ============================================================================
+// 도메인별 Row 정의
+// ============================================================================
+
+// Recruit 도메인 (채용 공고)
 message RecruitRow {
-  string id = 1; // UUID v7
-  string company_name = 2;
-  int32 exp_years = 3;
-  string english_level = 4;
-  string primary_keyword = 5;
-  repeated float vector = 6;
+  string id = 1;                    // UUID v7
+  string company_name = 2;          // 회사명
+  int32 exp_years = 3;              // 요구 경력 (연)
+  string english_level = 4;         // 영어 레벨
+  string primary_keyword = 5;       // 주요 키워드
+  repeated float vector = 6;        // 임베딩 벡터 (384d)
+}
+
+// Candidate 도메인 (후보자) - Flat DTO 구조
+message CandidateRow {
+  string candidate_id = 1;          // UUID v7
+  string position_category = 2;     // 직종 카테고리
+  int32 experience_years = 3;       // 경력 (연)
+  string original_resume = 4;       // 원문 이력서
+  repeated string skills = 5;       // 보유 스킬 배열 (e.g., ["Java", "Python"])
+  repeated float skills_vector = 6; // 기술 스택 벡터 (768d)
+}
+
+// SkillEmbeddingDic 도메인 (기술 사전)
+message SkillEmbeddingDicRow {
+  string skill = 1;                 // 스킬명 (PK)
+  string position_category = 2;     // 직종 카테고리
+  repeated float skill_vector = 3;  // 스킬 벡터 (768d)
 }
 
 // --- 신규 메시지 정의 ---

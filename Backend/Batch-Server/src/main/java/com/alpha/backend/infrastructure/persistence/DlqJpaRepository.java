@@ -30,7 +30,7 @@ public interface DlqJpaRepository extends JpaRepository<DlqEntity, Long>, DlqRep
      * 특정 엔티티 ID에 대한 DLQ 레코드 조회
      */
     @Override
-    List<DlqEntity> findByEntityId(UUID entityId);
+    List<DlqEntity> findByFailedId(UUID failedId);
 
     /**
      * 특정 기간 내 DLQ 레코드 조회
@@ -58,8 +58,8 @@ public interface DlqJpaRepository extends JpaRepository<DlqEntity, Long>, DlqRep
      * 특정 도메인 및 엔티티 ID에 대한 DLQ 레코드 조회
      */
     @Override
-    @Query("SELECT d FROM DlqEntity d WHERE d.domain = :domain AND d.entityId = :entityId")
-    List<DlqEntity> findByDomainAndEntityId(@Param("domain") String domain, @Param("entityId") UUID entityId);
+    @Query("SELECT d FROM DlqEntity d WHERE d.domain = :domain AND d.failedId = :failedId")
+    List<DlqEntity> findByDomainAndFailedId(@Param("domain") String domain, @Param("failedId") UUID failedId);
 
     /**
      * 특정 도메인의 특정 기간 내 DLQ 레코드 조회
