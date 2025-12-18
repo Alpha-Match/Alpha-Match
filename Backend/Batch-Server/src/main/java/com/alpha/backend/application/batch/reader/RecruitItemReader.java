@@ -39,11 +39,17 @@ public class RecruitItemReader extends DomainItemReader<RecruitRow> {
         // 백그라운드 스레드에서 스트림 처리
         stream
             .doOnNext(chunk -> {
+                // Proto 구조: RowChunk에서 Recruit 데이터 추출
+                if (!chunk.hasRecruit()) {
+                    log.warn("Received chunk without recruit data, skipping");
+                    return;
+                }
+
                 log.debug("[READER] Domain: {} | Received chunk with {} rows",
-                        getDomainName(), chunk.getRowsCount());
+                        getDomainName(), chunk.getRecruit().getRowsCount());
 
                 // RowChunk를 개별 RecruitRow로 분해하여 Queue에 추가
-                for (RecruitRow row : chunk.getRowsList()) {
+                for (RecruitRow row : chunk.getRecruit().getRowsList()) {
                     try {
                         rowQueue.put(row);  // Blocking - Queue가 가득 차면 대기
                     } catch (InterruptedException e) {

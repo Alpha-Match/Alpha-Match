@@ -107,15 +107,32 @@ batch:
         vector-dimension: 768          # Candidate Embedding 차원
         table-prefix: candidate        # 테이블 접두사
 
+  # ============================================
+  # 스케줄러 설정 (Pattern 1: Server Streaming)
+  # ============================================
+  # Pattern 1 (Server Streaming): Batch가 Python에 요청하여 데이터 수신
+  #   - Batch Server (gRPC Client) → Python Server (gRPC Server)
+  #   - 정기적으로 스케줄러가 실행
+  #   - 용도: 배치 작업으로 정기적 데이터 동기화
+  #
+  # Pattern 2 (Client Streaming): Python이 Batch에 데이터 전송
+  #   - Python Server (gRPC Client) → Batch Server (gRPC Server)
+  #   - FastAPI 엔드포인트 트리거 시 실행
+  #   - 용도: 사용자 요청 시 즉시 처리
+  #   - 스케줄러 불필요!
+  #
+  # 현재 전략: 두 패턴 모두 지원, Pattern 1 스케줄러는 기본 비활성화
+  # ============================================
   scheduler:
-    enabled: true                      # 스케줄러 활성화 (false로 설정 시 수동 실행만 가능)
+    enabled: true                      # 스케줄러 전체 활성화 (false로 설정 시 모든 Job 비활성화)
     jobs:
       recruit:
         cron: "0 0 2 * * ?"           # Recruit Job 실행 시간 (매일 새벽 2시)
-        enabled: true                  # Recruit Job 활성화
-      # candidate:
-      #   cron: "0 0 3 * * ?"         # Candidate Job 실행 시간 (매일 새벽 3시) - 예정
-      #   enabled: false               # Candidate Job 비활성화 - 예정
+        enabled: true                  # Recruit Job 활성화 (Pattern 1 사용)
+      candidate:
+        cron: "0 0 3 * * ?"           # Candidate Job 실행 시간 (매일 새벽 3시)
+        enabled: false                 # Candidate Job 비활성화 (Pattern 2만 사용)
+                                       # Pattern 1이 필요하면 true로 변경
 
 # Logging 설정
 logging:

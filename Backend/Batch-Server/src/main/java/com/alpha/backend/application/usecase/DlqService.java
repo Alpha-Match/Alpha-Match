@@ -17,12 +17,12 @@ public interface DlqService {
      * 실패한 레코드를 DLQ에 저장
      *
      * @param domain 도메인 이름 (예: "recruit", "candidate")
-     * @param entityId 실패한 엔티티의 UUID
+     * @param failedId 실패한 엔티티의 UUID
      * @param errorMessage 에러 메시지
      * @param payloadJson 원본 데이터 JSON
      * @return 저장된 DLQ 엔티티
      */
-    DlqEntity saveToDlq(String domain, UUID entityId, String errorMessage, String payloadJson);
+    DlqEntity saveToDlq(String domain, UUID failedId, String errorMessage, String payloadJson);
 
     /**
      * 특정 도메인의 모든 DLQ 레코드 조회
@@ -36,10 +36,10 @@ public interface DlqService {
      * 특정 도메인 + 엔티티 ID에 대한 DLQ 레코드 조회
      *
      * @param domain 도메인 이름
-     * @param entityId 엔티티 UUID
+     * @param failedId 실패한 엔티티 UUID
      * @return DLQ 레코드 리스트
      */
-    List<DlqEntity> findByDomainAndEntityId(String domain, UUID entityId);
+    List<DlqEntity> findByDomainAndFailedId(String domain, UUID failedId);
 
     /**
      * 특정 도메인의 재처리 대상 DLQ 레코드 조회 (생성일 오름차순)
