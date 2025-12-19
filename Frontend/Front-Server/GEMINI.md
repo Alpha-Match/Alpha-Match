@@ -1,177 +1,143 @@
-# Front-Server (Next.js) - Claude Instructions
+# Front-Server - Claude Instructions
 
-**프로젝트명:** Alpha-Match Frontend
-**작성일자:** 2025-12-10
-**기술 스택:** Next.js 16.0.7 + TypeScript + React Query + GraphQL Client
-
----
-
-## 📋 프로젝트 개요
-
-Alpha-Match의 사용자 인터페이스를 제공하는 프론트엔드 서버입니다. Next.js 16.0.7 기반으로 구축되며, React Query를 활용한 효율적인 데이터 캐싱과 GraphQL을 통한 유연한 API 연동을 특징으로 합니다.
+**역할:** GraphQL API 소비 → 헤드헌터-구인공고 매칭 UI 제공
+**기술 스택:** Next.js 16 + React 19 + Apollo Client 4 + Redux Toolkit
 
 ---
 
-## 🎯 핵심 역할
+## 📋 문서 목적
 
-1. **GraphQL API 소비**
-   - API 서버의 GraphQL 엔드포인트 호출
-   - 필요한 데이터만 선택적으로 요청 (Over-fetching 방지)
-
-2. **데이터 캐싱**
-   - React Query를 활용한 클라이언트 사이드 캐싱
-   - API 호출 최소화 및 사용자 경험 향상
-
-3. **UI/UX 제공**
-   - 채용 공고 검색 인터페이스
-   - 매칭 결과 시각화
-   - 반응형 디자인
+- **CLAUDE.md (이 문서)**: AI가 참조할 메타정보 + 코드 위치
+- **README.md**: 사람이 읽을 아키텍처/컨벤션 상세 설명
 
 ---
 
-## 🏗️ 기술 스택
+## 🗺️ 핵심 문서 경로
 
-### Core
-- **Next.js 16.0.7**: React 기반 프레임워크
-- **TypeScript**: 타입 안정성
-- **React 19**: 컴포넌트 기반 UI
-
-### State Management & Data Fetching
-- **React Query (TanStack Query)**: 서버 상태 관리 및 캐싱
-- **GraphQL Client**: urql 또는 Apollo Client
-
-### Styling
-- **Tailwind CSS** 또는 **CSS Modules** (선택)
-- **Shadcn/ui** 또는 **MUI** (컴포넌트 라이브러리)
+### 필수 참조
+- **아키텍처 및 컨벤션**: `README.md` (이 디렉토리)
+- **상세 기술 문서**: `GEMINI.md` (Gemini AI 작성, 상세 아키텍처)
+- **아키텍처 가이드**: `docs/ARCHITECTURE.md`
+- **캐싱 전략**: `docs/CACHING_STRATEGY.md`
+- **데이터 플로우**: `docs/DATA_FLOW.md`
 
 ---
 
-## 📂 프로젝트 구조 (예정)
+## 📂 구현된 코드 위치 (AI가 읽어야 할 경로)
 
-```
-Frontend/Front-Server/
-├── src/
-│   ├── app/              # Next.js 16 App Router
-│   │   ├── layout.tsx
-│   │   ├── page.tsx
-│   │   └── search/
-│   │       └── page.tsx
-│   │
-│   ├── components/       # 재사용 가능한 컴포넌트
-│   │   ├── ui/          # 기본 UI 컴포넌트
-│   │   ├── SearchBar.tsx
-│   │   └── RecruitCard.tsx
-│   │
-│   ├── lib/             # 유틸리티 및 설정
-│   │   ├── graphql/     # GraphQL 쿼리/뮤테이션
-│   │   │   ├── queries.ts
-│   │   │   └── client.ts
-│   │   └── react-query/ # React Query 설정
-│   │       └── queryClient.ts
-│   │
-│   └── types/           # TypeScript 타입 정의
-│       └── recruit.ts
-│
-├── public/              # 정적 파일
-├── package.json
-├── tsconfig.json
-├── next.config.ts
-└── CLAUDE.md           # 현재 문서
-```
+### 🚀 엔트리포인트 (App Router)
 
----
+- `src/app/layout.tsx` - 루트 레이아웃 (Provider 설정)
+- `src/app/page.tsx` - 메인 페이지 (검색 UI)
+- `src/app/globals.css` - 전역 CSS (Tailwind)
 
-## 🔧 주요 기능
+### ⚙️ Configuration
 
-### 1. 채용 공고 검색
-- 키워드 기반 검색
-- 필터링 (경력, 영어 레벨 등)
-- 실시간 검색 결과
+**Apollo Client:**
+- `src/lib/apollo-client.ts` - Apollo Client 설정 (GraphQL 엔드포인트)
+- `src/lib/apollo-wrapper.tsx` - Apollo Provider Wrapper
 
-### 2. 매칭 결과 표시
-- Vector Similarity 기반 추천 공고
-- 유사도 점수 시각화
-- 상세 정보 모달
+**Redux:**
+- `src/store/index.ts` - Redux Store 설정
+- `src/store/slices/searchSlice.ts` - 검색 필터 상태
+- `src/store/slices/notificationSlice.ts` - 알림 상태
 
-### 3. 캐싱 전략
-- React Query를 통한 자동 캐싱
-- Stale Time / Cache Time 설정
-- Optimistic Update
+### 🎨 Components
 
----
+**핵심 컴포넌트:**
+- `src/components/SearchBar.tsx` - 검색 바
+- `src/components/FilterPanel.tsx` - 필터 패널
+- `src/components/ResultCard.tsx` - 결과 카드
+- `src/components/AppInitializer.tsx` - 앱 초기화 (동적 데이터 로드)
 
-## 🚀 GraphQL 연동
+**공통 컴포넌트:**
+- `src/components/common/` - 재사용 가능한 UI 컴포넌트
 
-### API Endpoint
-```
-http://localhost:8080/graphql
-```
+### 📡 GraphQL
 
-### 예시 쿼리
-```graphql
-query SearchRecruits($keyword: String!, $limit: Int) {
-  searchRecruits(keyword: $keyword, limit: $limit) {
-    id
-    companyName
-    expYears
-    englishLevel
-    primaryKeyword
-    similarity
-  }
-}
-```
+**쿼리:**
+- `src/graphql/queries/` - GraphQL 쿼리 정의
 
-### React Query 통합
-```typescript
-const { data, isLoading, error } = useQuery({
-  queryKey: ['recruits', keyword],
-  queryFn: () => graphqlClient.request(SEARCH_RECRUITS, { keyword }),
-  staleTime: 5 * 60 * 1000, // 5분
-});
-```
+**타입:**
+- `src/graphql/types/` - GraphQL 타입 정의 (자동 생성 또는 수동)
+
+### 🔧 Utilities
+
+- `src/utils/` - 헬퍼 함수
+- `src/hooks/` - 커스텀 React Hooks
+
+### 📋 Types
+
+- `src/types/index.ts` - TypeScript 타입 정의
+
+### 🎨 Styles
+
+- `src/constants/index.ts` - 상수 (TECH_STACKS 등)
+- `tailwind.config.ts` - Tailwind 설정
+
+### 📋 설정 파일
+
+- `package.json` - 의존성
+- `next.config.mjs` - Next.js 설정
+- `tsconfig.json` - TypeScript 설정
 
 ---
 
-## 📝 개발 가이드
+## 🚀 현재 구현 상태
 
-### 초기 설정
-```bash
-cd Frontend/Front-Server
-npm install
-npm run dev
-```
+### ✅ 완료
+- Next.js 16 + App Router 마이그레이션
+- Apollo Client 4.0 업그레이드
+- Redux Toolkit 상태 관리
+- 전역 GraphQL 에러 처리 시스템 (Error Link)
+- 동적 TECH_STACKS 연동 (AppInitializer)
+- 파일 구조 리팩토링 (types, constants)
+- Tailwind CSS 스타일링
+- 타입스크립트 컴파일 에러 해결 (React 19, Apollo Client 4.0 타입 호환성, GraphQL 응답 데이터 타입 명시 등)
+- 전역 에러 알림 시스템 리팩토링 (Custom Event 기반 디커플링, UX 개선)
+- 컴포넌트 구조 리팩토링 (useSearchMatches 훅 분리, InputPanel 하위 컴포넌트 분리 및 파일 구조 계층화, Props Drilling 감소)
+- Apollo Client 4.0 패턴 문서화
 
-### 환경 변수 (.env.local)
-```bash
-NEXT_PUBLIC_GRAPHQL_ENDPOINT=http://localhost:8080/graphql
-```
+### 🔄 진행 중
+- ⏳ Redux를 이용한 상세 UI 상태 관리 로직 구현 (예: 검색 결과 필터링, UI 상태)
+- ⏳ 매칭 결과 시각화 컴포넌트 구현 및 데이터 바인딩
+- 🔄 네트워크 에러 토스트 알림 문제 디버깅 (후순위로 진행)
 
-### 코딩 컨벤션
-- 컴포넌트명: PascalCase
-- 파일명: kebab-case
-- 함수명: camelCase
-- TypeScript 필수 (any 금지)
+### ⏳ 예정
+- GraphQL 쿼리 구현 (API Server 연동)
+- 벡터 유사도 시각화
+- 
+---
+
+## ⚠️ AI가 반드시 알아야 할 규칙
+
+### 1. 코드 컨벤션 참조
+**상세 컨벤션은 README.md와 GEMINI.md 참조!** AI는 코드 작성 전에:
+1. `README.md` 또는 `GEMINI.md` 읽기 (아키텍처 패턴 이해)
+2. 기존 컴포넌트 읽기 (위 경로 참조)
+3. 같은 패턴으로 구현
+
+### 2. Next.js App Router 패턴
+- `src/app/` - 페이지 및 레이아웃
+- Server Component vs Client Component 구분
+- `'use client'` 지시어 사용 시점 명확히
+
+### 3. 상태 관리 분리
+- **서버 상태**: Apollo Client (GraphQL 캐시)
+- **클라이언트 상태**: Redux Toolkit (UI 상태, 필터 등)
+
+### 4. 타입 안정성
+- 모든 컴포넌트에 Props 타입 정의
+- GraphQL 응답 타입 정의
+
+### 5. 스타일링
+- Tailwind CSS 유틸리티 우선
+- 커스텀 CSS는 `globals.css`에 최소화
+
+### 6. 에러 처리
+- Apollo Error Link로 전역 에러 처리
+- Redux notificationSlice로 사용자 알림
 
 ---
 
-## 🔗 관련 문서
-
-- [루트 CLAUDE.md](../../CLAUDE.md)
-- [API Server CLAUDE.md](../../Backend/Api-Server/CLAUDE.md)
-- [Entire Structure](../../Backend/Batch-Server/docs/Entire_Structure.md)
-
----
-
-## ✅ 현재 진행 상황
-
-### 예정
-- ⏳ Next.js 프로젝트 초기 설정
-- ⏳ GraphQL Client 설정
-- ⏳ React Query 설정
-- ⏳ 기본 레이아웃 구성
-- ⏳ 검색 페이지 구현
-- ⏳ 매칭 결과 페이지 구현
-
----
-
-**최종 수정일:** 2025-12-10
+**최종 수정일:** 2025-12-18
