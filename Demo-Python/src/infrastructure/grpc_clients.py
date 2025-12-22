@@ -11,7 +11,7 @@ from typing import List, AsyncGenerator
 
 import grpc
 from ..config.settings import server_config
-from ..domain.models import RecruitData
+from ..domain.models import BaseData
 # 프로젝트 내 다른 모듈 및 생성된 proto 파일 임포트
 from ..proto import embedding_stream_pb2
 from ..proto import embedding_stream_pb2_grpc
@@ -23,7 +23,7 @@ async def _prepare_ingest_requests(
     domain: str,
     file_name: str,
     vector_dimension: int,
-    data: List[RecruitData],
+    data: List[BaseData],
     chunk_size: int
 ) -> AsyncGenerator[embedding_stream_pb2.IngestDataRequest, None]:
     """
@@ -35,7 +35,7 @@ async def _prepare_ingest_requests(
         domain (str): 데이터 도메인.
         file_name (str): 원본 파일 이름.
         vector_dimension (int): 벡터 차원.
-        data (List[RecruitData]): 전송할 전체 데이터 리스트.
+        data (List[BaseData]): 전송할 전체 데이터 리스트 (RecruitData, CandidateData, etc.).
         chunk_size (int): 한 번에 전송할 데이터 청크의 크기.
 
     Yields:
@@ -76,7 +76,7 @@ async def _prepare_ingest_requests(
 async def stream_data_to_batch_server(
     domain: str,
     file_name: str,
-    data: List[RecruitData],
+    data: List[BaseData],
     chunk_size: int = 100
 ) -> embedding_stream_pb2.IngestDataResponse:
     """
@@ -85,7 +85,7 @@ async def stream_data_to_batch_server(
     Args:
         domain (str): 데이터 도메인.
         file_name (str): 원본 파일 이름.
-        data (List[RecruitData]): 전송할 Pydantic 모델 객체 리스트.
+        data (List[BaseData]): 전송할 Pydantic 모델 객체 리스트 (RecruitData, CandidateData, etc.).
         chunk_size (int): 한 번에 묶어서 보낼 데이터 행의 수.
 
     Returns:
@@ -97,7 +97,17 @@ async def stream_data_to_batch_server(
             success=False, received_chunks=0, message="전송할 데이터가 없습니다."
         )
 
-    vector_dimension = len(data[0].vector) if data and data[0].vector else 0
+    # v2: 도메인별 벡터 필드명 확인 (skills_vector, skill_vector, vector)
+    first_row = data[0]
+    vector_field = None
+    if hasattr(first_row, 'skills_vector'):
+        vector_field = first_row.skills_vector
+    elif hasattr(first_row, 'skill_vector'):
+        vector_field = first_row.skill_vector
+    elif hasattr(first_row, 'vector'):  # legacy v1 지원
+        vector_field = first_row.vector
+
+    vector_dimension = len(vector_field) if vector_field else 0
 
     try:
         async with grpc.aio.insecure_channel(server_config.BATCH_SERVER_ADDRESS) as channel:
