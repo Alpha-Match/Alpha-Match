@@ -100,10 +100,14 @@
   - Repository 3개 수정 (RecruitSkillsEmbedding, CandidateSkillsEmbedding, SkillEmbeddingDic)
   - PGvector → String 변환 (.toString()) 후 PostgreSQL vector 타입으로 CAST
   - bytea → vector 변환 오류 완전 해결
-  - End-to-End 파이프라인 검증 성공 (Python → gRPC → Java → PostgreSQL)
-  - Recruit 도메인 87,488 레코드 (471MB) 처리 완료
-  - 4-table 동시 upsert 검증 (recruit, recruit_skill, recruit_description, recruit_skills_embedding)
-  - 384차원 Vector Embedding 저장 완전 검증 ✅
+  - **End-to-End 파이프라인 검증 성공** (Python → gRPC → Java → PostgreSQL)
+    - **Recruit 도메인**: 87,488 레코드 (471MB) 처리 완료
+      - 4-table 동시 upsert 검증 (recruit, recruit_skill, recruit_description, recruit_skills_embedding)
+      - 384차원 Vector Embedding 저장 완전 검증 ✅
+    - **Skill_dic 도메인**: 105 레코드 (358KB) 처리 완료
+      - 2-table 동시 upsert 검증 (skill_category_dic, skill_embedding_dic)
+      - FK 관계 처리 검증 (카테고리 자동 생성 → UUID 획득)
+      - UK 기반 Upsert 전략 검증 (category, skill 컬럼 기준) ✅
 
 ### 🔄 진행 중
 - 없음
@@ -238,4 +242,4 @@ Batch Server가 자동으로 Python Server에 연결하여 데이터를 수신�
 
 ---
 
-**최종 수정일:** 2025-12-22
+**최종 수정일:** 2025-12-22 (Skill_dic 도메인 검증 완료)

@@ -159,7 +159,7 @@
 - gRPC Client 구현 (Pattern 1: Server Streaming)
 - **gRPC Server 구현 (Pattern 2: Client Streaming)**
   - EmbeddingStreamServiceImpl (IngestDataStream RPC)
-  - DataProcessor (Recruit, Candidate)
+  - DataProcessor (Recruit, Candidate, SkillDic)
   - DataProcessorFactory (도메인별 자동 라우팅)
 - Checkpoint/DLQ 도메인 범용화
 - **DB 초기화 및 마이그레이션 실행 (2025-12-22)**
@@ -181,10 +181,13 @@
   - PGvector → String 변환 (.toString()) 후 CAST 적용
   - bytea → vector 변환 오류 해결
 - **End-to-End 파이프라인 검증 완료 (2025-12-22)**
-  - Python → Java gRPC Client Streaming 성공
-  - Recruit 도메인 87,488 레코드 처리 (471MB)
-  - 4-table 동시 upsert 성공 (recruit, recruit_skill, recruit_description, recruit_skills_embedding)
-  - Vector Embedding 384d 저장 완전 검증
+  - **Recruit 도메인**: 87,488 레코드 처리 (471MB)
+    - 4-table 동시 upsert 성공 (recruit, recruit_skill, recruit_description, recruit_skills_embedding)
+    - Vector Embedding 384d 저장 완전 검증
+  - **Skill_dic 도메인**: 105 레코드 처리 (358KB)
+    - 2-table 동시 upsert 성공 (skill_category_dic, skill_embedding_dic)
+    - FK 관계 처리 검증 (카테고리 자동 생성 → UUID 획득)
+    - UK 기반 Upsert 전략 검증 (category, skill 컬럼 기준)
 
 ### 🔄 진행 중
 - 없음
@@ -220,4 +223,4 @@
 
 ---
 
-**최종 수정일:** 2025-12-22
+**최종 수정일:** 2025-12-22 (Skill_dic 도메인 검증 완료)
