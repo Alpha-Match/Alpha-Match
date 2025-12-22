@@ -176,15 +176,24 @@
   - WebFlux 포트 8080 실행
   - HikariCP DB 연결 풀 정상 작동
   - 14개 JPA Repository 로드 완료
+- **PGvector 직렬화 문제 해결 (2025-12-22)**
+  - Repository 3개 수정: RecruitSkillsEmbedding, CandidateSkillsEmbedding, SkillEmbeddingDic
+  - PGvector → String 변환 (.toString()) 후 CAST 적용
+  - bytea → vector 변환 오류 해결
+- **End-to-End 파이프라인 검증 완료 (2025-12-22)**
+  - Python → Java gRPC Client Streaming 성공
+  - Recruit 도메인 87,488 레코드 처리 (471MB)
+  - 4-table 동시 upsert 성공 (recruit, recruit_skill, recruit_description, recruit_skills_embedding)
+  - Vector Embedding 384d 저장 완전 검증
 
 ### 🔄 진행 중
 - 없음
 
 ### ⏳ 예정
+- Candidate 도메인 파이프라인 테스트
+- 로깅 레벨 조정 (DEBUG → INFO)
 - Batch Job v2 마이그레이션 (Reader, Processor, Writer - 4-table 구조 반영)
 - Proto 파일 v2 업데이트 (Recruit/Candidate 4-table 구조)
-- gRPC 코드 v2 마이그레이션 (도메인별 + client/server별)
-- Pattern 1/2 통합 테스트
 - 성능 최적화 및 모니터링
 
 ---
@@ -211,4 +220,4 @@
 
 ---
 
-**최종 수정일:** 2025-12-21
+**최종 수정일:** 2025-12-22

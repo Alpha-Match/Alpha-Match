@@ -28,12 +28,19 @@ public interface SkillEmbeddingDicJpaRepository
      * ON CONFLICT 구문을 사용하여 충돌 시 업데이트
      *
      * PK: skill (VARCHAR(50))
+     * Vector: VECTOR(384)
      */
     @Override
     @Modifying
     @Query(value = """
-        INSERT INTO skill_embedding_dic (skill, position_category, skill_vector, updated_at)
-        VALUES (:#{#entity.skill}, :#{#entity.positionCategory}, :#{#entity.skillVector}, NOW())
+        INSERT INTO skill_embedding_dic (skill, position_category, skill_vector, created_at, updated_at)
+        VALUES (
+            :#{#entity.skill},
+            :#{#entity.positionCategory},
+            CAST(:#{#entity.skillVector.toString()} AS vector(384)),
+            COALESCE(:#{#entity.createdAt}, NOW()),
+            NOW()
+        )
         ON CONFLICT (skill)
         DO UPDATE SET
             position_category = EXCLUDED.position_category,

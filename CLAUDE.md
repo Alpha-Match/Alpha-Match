@@ -96,15 +96,24 @@
   - v2 스키마 전체 테이블 생성 완료
   - Quartz 설정 최적화 (auto-startup: false, RAMJobStore)
   - Batch Server 성공적 기동 (gRPC 9090, HTTP 8080)
+- **PGvector 직렬화 문제 해결 및 파이프라인 검증 (2025-12-22)**:
+  - Repository 3개 수정 (RecruitSkillsEmbedding, CandidateSkillsEmbedding, SkillEmbeddingDic)
+  - PGvector → String 변환 (.toString()) 후 PostgreSQL vector 타입으로 CAST
+  - bytea → vector 변환 오류 완전 해결
+  - End-to-End 파이프라인 검증 성공 (Python → gRPC → Java → PostgreSQL)
+  - Recruit 도메인 87,488 레코드 (471MB) 처리 완료
+  - 4-table 동시 upsert 검증 (recruit, recruit_skill, recruit_description, recruit_skills_embedding)
+  - 384차원 Vector Embedding 저장 완전 검증 ✅
 
 ### 🔄 진행 중
 - 없음
 
 ### ⏳ 예정
+- Candidate 도메인 파이프라인 테스트
 - API Server 설계 및 구현
 - GraphQL 구현 (Resolver → Service → Cache → DB)
 - Frontend GraphQL 쿼리 구현, React Query 캐싱
-- 통합 테스트 및 성능 최적화
+- 성능 최적화 및 모니터링
 
 **상세 일정**: `/docs/개발_우선순위.md` 참조
 
@@ -229,4 +238,4 @@ Batch Server가 자동으로 Python Server에 연결하여 데이터를 수신�
 
 ---
 
-**최종 수정일:** 2025-12-21
+**최종 수정일:** 2025-12-22

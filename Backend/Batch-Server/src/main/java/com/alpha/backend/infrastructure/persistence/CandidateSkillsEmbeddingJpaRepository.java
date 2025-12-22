@@ -29,14 +29,22 @@ public interface CandidateSkillsEmbeddingJpaRepository
      * ON CONFLICT 구문을 사용하여 충돌 시 업데이트
      *
      * PostgreSQL 배열 타입 처리:
-     * - skills: VARCHAR(50)[]
-     * - skills_vector: VECTOR(768)
+     * - skills: TEXT[]
+     * - skills_vector: VECTOR(384)
      */
     @Override
     @Modifying
     @Query(value = """
-        INSERT INTO candidate_skills_embedding (candidate_id, skills, skills_vector, updated_at)
-        VALUES (:#{#entity.id}, :#{#entity.skills}, :#{#entity.vector}, NOW())
+        INSERT INTO candidate_skills_embedding (
+            candidate_id, skills, skills_vector, created_at, updated_at
+        )
+        VALUES (
+            :#{#entity.candidateId},
+            :#{#entity.skills},
+            CAST(:#{#entity.skillsVector.toString()} AS vector(384)),
+            COALESCE(:#{#entity.createdAt}, NOW()),
+            NOW()
+        )
         ON CONFLICT (candidate_id)
         DO UPDATE SET
             skills = EXCLUDED.skills,

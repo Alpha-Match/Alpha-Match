@@ -20,7 +20,7 @@ class ServerConfig:
     PORT: int = 8000
 
     # gRPC 클라이언트가 접속할 배치 서버 주소
-    BATCH_SERVER_ADDRESS: str = 'localhost:50051'
+    BATCH_SERVER_ADDRESS: str = 'localhost:9090'
 
     # (구) gRPC 서버 설정
     GRPC_HOST: str = '[::]:50051'  # 모든 인터페이스의 50051 포트에서 리슨

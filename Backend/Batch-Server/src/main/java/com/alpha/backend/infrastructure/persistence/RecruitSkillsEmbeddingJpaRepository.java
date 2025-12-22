@@ -39,7 +39,7 @@ public interface RecruitSkillsEmbeddingJpaRepository
         VALUES (
             :#{#entity.recruitId},
             :#{#entity.skills},
-            :#{#entity.skillsVector}::vector(384),
+            CAST(:#{#entity.skillsVector.toString()} AS vector(384)),
             COALESCE(:#{#entity.createdAt}, NOW()),
             COALESCE(:#{#entity.updatedAt}, NOW())
         )
