@@ -6,16 +6,18 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.util.UUID;
 
 /**
  * Skill Embedding Dictionary Entity (skill_embedding_dic 테이블)
  * 기술 스택 사전 및 벡터 정보를 저장하는 엔티티
  *
  * SQL 매핑:
- * - skill (VARCHAR(50), PK)
- * - position_category (VARCHAR(50), NOT NULL)
- * - skill_vector (VECTOR(768), NOT NULL)
+ * - skill_id (UUID, PK, auto-generated)
+ * - category_id (UUID, FK → skill_category_dic)
+ * - skill (TEXT, UNIQUE)
+ * - skill_vector (VECTOR(384), NOT NULL)
  * - created_at, updated_at (자동 관리)
  */
 @Entity
@@ -27,25 +29,29 @@ import java.time.LocalDateTime;
 @Builder
 public class SkillEmbeddingDicEntity {
 
-    public static final int VECTOR_DIMENSION = 768;
+    public static final int VECTOR_DIMENSION = 384;
 
     @Id
-    @Column(name = "skill", length = 50, nullable = false)
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(name = "skill_id", updatable = false, nullable = false)
+    private UUID skillId;
+
+    @Column(name = "category_id", nullable = false)
+    private UUID categoryId;
+
+    @Column(name = "skill", nullable = false, unique = true, columnDefinition = "TEXT")
     private String skill;
 
-    @Column(name = "position_category", length = 50, nullable = false)
-    private String positionCategory;
-
-    @Column(name = "skill_vector", nullable = false)
+    @Column(name = "skill_vector", columnDefinition = "vector(384)", nullable = false)
     private PGvector skillVector;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, nullable = false)
-    private LocalDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private OffsetDateTime updatedAt;
 
     /**
      * 도메인 타입 반환
@@ -71,7 +77,7 @@ public class SkillEmbeddingDicEntity {
     /**
      * float 배열로부터 SkillEmbeddingDicEntity 생성
      */
-    public static SkillEmbeddingDicEntity fromFloatArray(String skill, String positionCategory, float[] vectorArray) {
+    public static SkillEmbeddingDicEntity fromFloatArray(UUID categoryId, String skill, float[] vectorArray) {
         if (vectorArray.length != VECTOR_DIMENSION) {
             throw new IllegalArgumentException(
                     String.format("Vector dimension mismatch: expected %d, got %d",
@@ -80,8 +86,8 @@ public class SkillEmbeddingDicEntity {
         }
 
         SkillEmbeddingDicEntity entity = new SkillEmbeddingDicEntity();
+        entity.setCategoryId(categoryId);
         entity.setSkill(skill);
-        entity.setPositionCategory(positionCategory);
         entity.setSkillVector(new PGvector(vectorArray));
         return entity;
     }

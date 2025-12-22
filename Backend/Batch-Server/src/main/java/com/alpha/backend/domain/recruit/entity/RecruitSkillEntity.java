@@ -1,4 +1,4 @@
-package com.alpha.backend.domain.candidate.entity;
+package com.alpha.backend.domain.recruit.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -9,29 +9,29 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 /**
- * Candidate Skill Entity (candidate_skill 테이블)
- * 후보자와 기술 스택의 매핑 정보 (1:N 관계)
+ * Recruit Skill Entity (recruit_skill 테이블)
+ * 채용 공고와 기술 스택의 매핑 정보 (1:N 관계)
  *
  * SQL 매핑:
- * - candidate_id (UUID, PK, FK → candidate)
+ * - recruit_id (UUID, PK, FK → recruit)
  * - skill (TEXT, PK)
  * - created_at, updated_at (자동 관리)
  *
- * 복합 PK: (candidate_id, skill)
+ * 복합 PK: (recruit_id, skill)
  */
 @Entity
-@Table(name = "candidate_skill")
-@IdClass(CandidateSkillId.class)
+@Table(name = "recruit_skill")
+@IdClass(RecruitSkillId.class)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CandidateSkillEntity {
+public class RecruitSkillEntity {
 
     @Id
-    @Column(name = "candidate_id", columnDefinition = "UUID", nullable = false)
-    private UUID candidateId;
+    @Column(name = "recruit_id", columnDefinition = "UUID", nullable = false)
+    private UUID recruitId;
 
     @Id
     @Column(name = "skill", columnDefinition = "TEXT", nullable = false)

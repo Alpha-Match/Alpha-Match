@@ -1,4 +1,4 @@
-package com.alpha.backend.domain.candidate.entity;
+package com.alpha.backend.domain.recruit.entity;
 
 import com.pgvector.PGvector;
 import jakarta.persistence.*;
@@ -10,29 +10,29 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 /**
- * Candidate Skills Embedding Entity (candidate_skills_embedding 테이블)
- * 후보자의 기술 스택 벡터 정보를 저장하는 엔티티
+ * Recruit Skills Embedding Entity (recruit_skills_embedding 테이블)
+ * 채용 공고의 기술 스택 벡터 정보를 저장하는 엔티티
  *
  * SQL 매핑:
- * - candidate_id (UUID, PK, FK → candidate)
+ * - recruit_id (UUID, PK, FK → recruit)
  * - skills (TEXT[], PostgreSQL 배열)
  * - skills_vector (VECTOR(384))
  * - created_at, updated_at (자동 관리)
  */
 @Entity
-@Table(name = "candidate_skills_embedding")
+@Table(name = "recruit_skills_embedding")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CandidateSkillsEmbeddingEntity {
+public class RecruitSkillsEmbeddingEntity {
 
     public static final int VECTOR_DIMENSION = 384;
 
     @Id
-    @Column(name = "candidate_id", columnDefinition = "UUID", updatable = false, nullable = false)
-    private UUID candidateId;
+    @Column(name = "recruit_id", columnDefinition = "UUID", updatable = false, nullable = false)
+    private UUID recruitId;
 
     @Column(name = "skills", columnDefinition = "TEXT[]", nullable = false)
     private String[] skills;
@@ -49,7 +49,7 @@ public class CandidateSkillsEmbeddingEntity {
     private OffsetDateTime updatedAt;
 
     public String getDomainType() {
-        return "candidate";
+        return "recruit";
     }
 
     public int getVectorDimension() {
@@ -64,9 +64,9 @@ public class CandidateSkillsEmbeddingEntity {
     }
 
     /**
-     * float 배열과 skills 배열로부터 CandidateSkillsEmbeddingEntity 생성
+     * float 배열과 skills 배열로부터 RecruitSkillsEmbeddingEntity 생성
      */
-    public static CandidateSkillsEmbeddingEntity fromFloatArray(UUID candidateId, String[] skills, float[] vectorArray) {
+    public static RecruitSkillsEmbeddingEntity fromFloatArray(UUID recruitId, String[] skills, float[] vectorArray) {
         if (vectorArray.length != VECTOR_DIMENSION) {
             throw new IllegalArgumentException(
                     String.format("Vector dimension mismatch: expected %d, got %d",
@@ -74,8 +74,8 @@ public class CandidateSkillsEmbeddingEntity {
             );
         }
 
-        CandidateSkillsEmbeddingEntity entity = new CandidateSkillsEmbeddingEntity();
-        entity.setCandidateId(candidateId);
+        RecruitSkillsEmbeddingEntity entity = new RecruitSkillsEmbeddingEntity();
+        entity.setRecruitId(recruitId);
         entity.setSkills(skills);
         entity.setSkillsVector(new PGvector(vectorArray));
         return entity;
