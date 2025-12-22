@@ -1,9 +1,11 @@
 package com.alpha.backend.application.grpc.processor;
 
 import com.alpha.backend.application.grpc.dto.CandidateRowDto;
+import com.alpha.backend.domain.candidate.entity.CandidateDescriptionEntity;
 import com.alpha.backend.domain.candidate.entity.CandidateEntity;
 import com.alpha.backend.domain.candidate.entity.CandidateSkillEntity;
 import com.alpha.backend.domain.candidate.entity.CandidateSkillsEmbeddingEntity;
+import com.alpha.backend.domain.candidate.repository.CandidateDescriptionRepository;
 import com.alpha.backend.domain.candidate.repository.CandidateRepository;
 import com.alpha.backend.domain.candidate.repository.CandidateSkillRepository;
 import com.alpha.backend.domain.candidate.repository.CandidateSkillsEmbeddingRepository;
@@ -22,12 +24,13 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Candidate 도메인 데이터 처리기
+ * Candidate 도메인 데이터 처리기 (v2)
  * <p>
- * Python 서버로부터 전송된 Candidate 데이터를 JSON에서 파싱하여 3개 테이블에 저장:
+ * Python 서버로부터 전송된 Candidate 데이터를 JSON에서 파싱하여 4개 테이블에 저장:
  * 1. candidate - 기본 정보
  * 2. candidate_skill - 기술 스택 (1:N)
- * 3. candidate_skills_embedding - 벡터 정보
+ * 3. candidate_description - 이력서 원문
+ * 4. candidate_skills_embedding - 벡터 정보
  */
 @Slf4j
 @Component
@@ -37,6 +40,7 @@ public class CandidateDataProcessor implements DataProcessor {
     private final ObjectMapper objectMapper;
     private final CandidateRepository candidateRepository;
     private final CandidateSkillRepository candidateSkillRepository;
+    private final CandidateDescriptionRepository candidateDescriptionRepository;
     private final CandidateSkillsEmbeddingRepository candidateSkillsEmbeddingRepository;
     private final BatchProperties batchProperties;
 
@@ -60,24 +64,30 @@ public class CandidateDataProcessor implements DataProcessor {
                 return 0;
             }
 
-            // 3. DTO → Entity 변환
-            List<CandidateEntity> candidateEntities = dtos.stream()
-                    .map(this::toCandidateEntity)
-                    .collect(Collectors.toList());
+            // 3. DTO → Entity 변환 (4개 테이블)
+            List<CandidateEntity> candidateEntities = new ArrayList<>();
+            List<CandidateSkillEntity> allSkillEntities = new ArrayList<>();
+            List<CandidateDescriptionEntity> descriptionEntities = new ArrayList<>();
+            List<CandidateSkillsEmbeddingEntity> embeddingEntities = new ArrayList<>();
 
-            List<CandidateSkillEntity> skillEntities = new ArrayList<>();
-            dtos.forEach(dto -> skillEntities.addAll(toCandidateSkillEntities(dto)));
+            for (CandidateRowDto dto : dtos) {
+                UUID candidateId = UUID.fromString(dto.getCandidateId());
 
-            List<CandidateSkillsEmbeddingEntity> embeddingEntities = dtos.stream()
-                    .map(this::toCandidateSkillsEmbeddingEntity)
-                    .collect(Collectors.toList());
+                candidateEntities.add(toCandidateEntity(dto, candidateId));
+                allSkillEntities.addAll(toCandidateSkillEntities(dto, candidateId));
+                descriptionEntities.add(toCandidateDescriptionEntity(dto, candidateId));
+                embeddingEntities.add(toCandidateSkillsEmbeddingEntity(dto, candidateId));
+            }
 
-            // 4. DB 저장 (순서 중요: candidate → skill → embedding)
+            // 4. DB 저장 (순서 중요: candidate → skill, description, embedding)
             candidateRepository.upsertAll(candidateEntities);
             log.info("Upserted {} candidate entities", candidateEntities.size());
 
-            candidateSkillRepository.upsertAll(skillEntities);
-            log.info("Upserted {} candidate skill entities", skillEntities.size());
+            candidateSkillRepository.upsertAll(allSkillEntities);
+            log.info("Upserted {} candidate skill entities", allSkillEntities.size());
+
+            candidateDescriptionRepository.upsertAll(descriptionEntities);
+            log.info("Upserted {} candidate description entities", descriptionEntities.size());
 
             candidateSkillsEmbeddingRepository.upsertAll(embeddingEntities);
             log.info("Upserted {} candidate skills embedding entities", embeddingEntities.size());
@@ -99,13 +109,11 @@ public class CandidateDataProcessor implements DataProcessor {
     }
 
     /**
-     * DTO → Candidate Entity 변환
+     * DTO → CandidateEntity 변환
      */
-    private CandidateEntity toCandidateEntity(CandidateRowDto dto) {
-        UUID candidateId = UUID.fromString(dto.getCandidateId());
-
+    private CandidateEntity toCandidateEntity(CandidateRowDto dto, UUID candidateId) {
         CandidateEntity entity = new CandidateEntity();
-        entity.setId(candidateId);
+        entity.setCandidateId(candidateId);
         entity.setPositionCategory(dto.getPositionCategory());
         entity.setExperienceYears(dto.getExperienceYears());
         entity.setOriginalResume(dto.getOriginalResume());
@@ -114,10 +122,12 @@ public class CandidateDataProcessor implements DataProcessor {
     }
 
     /**
-     * DTO → Candidate Skill Entity 리스트 변환 (1:N)
+     * DTO → List<CandidateSkillEntity> 변환 (1:N)
      */
-    private List<CandidateSkillEntity> toCandidateSkillEntities(CandidateRowDto dto) {
-        UUID candidateId = UUID.fromString(dto.getCandidateId());
+    private List<CandidateSkillEntity> toCandidateSkillEntities(CandidateRowDto dto, UUID candidateId) {
+        if (dto.getSkills() == null || dto.getSkills().isEmpty()) {
+            return List.of();
+        }
 
         return dto.getSkills().stream()
                 .map(skill -> {
@@ -130,10 +140,20 @@ public class CandidateDataProcessor implements DataProcessor {
     }
 
     /**
-     * DTO → Candidate Skills Embedding Entity 변환
+     * DTO → CandidateDescriptionEntity 변환
      */
-    private CandidateSkillsEmbeddingEntity toCandidateSkillsEmbeddingEntity(CandidateRowDto dto) {
-        UUID candidateId = UUID.fromString(dto.getCandidateId());
+    private CandidateDescriptionEntity toCandidateDescriptionEntity(CandidateRowDto dto, UUID candidateId) {
+        CandidateDescriptionEntity entity = new CandidateDescriptionEntity();
+        entity.setCandidateId(candidateId);
+        entity.setOriginalResume(dto.getOriginalResume());
+        entity.setResumeLang(null);  // TODO: Proto v2에서 추가 예정
+        return entity;
+    }
+
+    /**
+     * DTO → CandidateSkillsEmbeddingEntity 변환
+     */
+    private CandidateSkillsEmbeddingEntity toCandidateSkillsEmbeddingEntity(CandidateRowDto dto, UUID candidateId) {
 
         // Vector 차원 검증
         int expectedDim = batchProperties.getDomainConfig("candidate").getVectorDimension();

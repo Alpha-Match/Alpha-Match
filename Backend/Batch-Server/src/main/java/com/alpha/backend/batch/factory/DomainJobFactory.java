@@ -1,20 +1,29 @@
 package com.alpha.backend.batch.factory;
 
-import com.alpha.backend.application.batch.dto.DomainItem;
+import com.alpha.backend.application.batch.dto.CandidateItem;
+import com.alpha.backend.application.batch.dto.RecruitItem;
+import com.alpha.backend.application.batch.processor.CandidateItemProcessor;
 import com.alpha.backend.application.batch.processor.RecruitItemProcessor;
+import com.alpha.backend.application.batch.reader.CandidateItemReader;
 import com.alpha.backend.application.batch.reader.RecruitItemReader;
-import com.alpha.backend.application.batch.writer.DomainItemWriter;
+import com.alpha.backend.application.batch.writer.CandidateItemWriter;
+import com.alpha.backend.application.batch.writer.RecruitItemWriter;
 import com.alpha.backend.application.usecase.DlqService;
 import com.alpha.backend.batch.listener.EmbeddingJobListener;
 import com.alpha.backend.batch.listener.EmbeddingStepListener;
-import com.alpha.backend.domain.recruit.entity.RecruitEmbeddingEntity;
-import com.alpha.backend.domain.recruit.entity.RecruitMetadataEntity;
 import com.alpha.backend.infrastructure.config.BatchProperties;
 import com.alpha.backend.infrastructure.grpc.client.EmbeddingGrpcClient;
+import com.alpha.backend.infrastructure.grpc.proto.CandidateRow;
 import com.alpha.backend.infrastructure.grpc.proto.RecruitRow;
+import com.alpha.backend.infrastructure.persistence.CandidateDescriptionJpaRepository;
+import com.alpha.backend.infrastructure.persistence.CandidateJpaRepository;
+import com.alpha.backend.infrastructure.persistence.CandidateSkillJpaRepository;
+import com.alpha.backend.infrastructure.persistence.CandidateSkillsEmbeddingJpaRepository;
 import com.alpha.backend.infrastructure.persistence.CheckpointJpaRepository;
-import com.alpha.backend.infrastructure.persistence.RecruitEmbeddingJpaRepository;
-import com.alpha.backend.infrastructure.persistence.RecruitMetadataJpaRepository;
+import com.alpha.backend.infrastructure.persistence.RecruitDescriptionJpaRepository;
+import com.alpha.backend.infrastructure.persistence.RecruitJpaRepository;
+import com.alpha.backend.infrastructure.persistence.RecruitSkillJpaRepository;
+import com.alpha.backend.infrastructure.persistence.RecruitSkillsEmbeddingJpaRepository;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -71,9 +80,17 @@ public class DomainJobFactory {
     private final DlqService dlqService;
     private final JsonMapper jsonMapper;
 
-    // Recruit domain dependencies
-    private final RecruitMetadataJpaRepository recruitMetadataRepository;
-    private final RecruitEmbeddingJpaRepository recruitEmbeddingRepository;
+    // Recruit domain dependencies (v2)
+    private final RecruitJpaRepository recruitRepository;
+    private final RecruitSkillJpaRepository recruitSkillRepository;
+    private final RecruitDescriptionJpaRepository recruitDescriptionRepository;
+    private final RecruitSkillsEmbeddingJpaRepository recruitSkillsEmbeddingRepository;
+
+    // Candidate domain dependencies (v2)
+    private final CandidateJpaRepository candidateRepository;
+    private final CandidateSkillJpaRepository candidateSkillRepository;
+    private final CandidateDescriptionJpaRepository candidateDescriptionRepository;
+    private final CandidateSkillsEmbeddingJpaRepository candidateSkillsEmbeddingRepository;
 
     /**
      * 도메인별 Embedding Processing Job 생성
@@ -87,7 +104,7 @@ public class DomainJobFactory {
 
         return switch (domain.toLowerCase()) {
             case "recruit" -> createRecruitJob();
-            // case "candidate" -> createCandidateJob();  // ⏳ 예정
+            case "candidate" -> createCandidateJob();
             default -> throw new IllegalArgumentException("Unsupported domain: " + domain);
         };
     }
@@ -104,7 +121,7 @@ public class DomainJobFactory {
 
         return switch (domain.toLowerCase()) {
             case "recruit" -> createRecruitStep();
-            // case "candidate" -> createCandidateStep();  // ⏳ 예정
+            case "candidate" -> createCandidateStep();
             default -> throw new IllegalArgumentException("Unsupported domain: " + domain);
         };
     }
@@ -122,18 +139,18 @@ public class DomainJobFactory {
     }
 
     /**
-     * Recruit Embedding Processing Step
+     * Recruit Embedding Processing Step (v2)
      *
      * Chunk 기반 처리:
      * 1. Reader: gRPC Stream → RecruitRow proto
-     * 2. Processor: RecruitRow → DomainItem<RecruitMetadataEntity, RecruitEmbeddingEntity>
-     * 3. Writer: Batch Upsert to DB
+     * 2. Processor: RecruitRow → RecruitItem (4개 Entity)
+     * 3. Writer: Batch Upsert to 4 tables
      */
     private Step createRecruitStep() {
         int chunkSize = batchProperties.getChunkSize();
 
         return new StepBuilder("recruitEmbeddingProcessingStep", jobRepository)
-                .<RecruitRow, DomainItem<RecruitMetadataEntity, RecruitEmbeddingEntity>>chunk(chunkSize)
+                .<RecruitRow, RecruitItem>chunk(chunkSize)
                 .reader(createRecruitReader())
                 .processor(createRecruitProcessor())
                 .writer(createRecruitWriter())
@@ -164,41 +181,94 @@ public class DomainJobFactory {
     }
 
     /**
-     * Recruit ItemProcessor 생성
+     * Recruit ItemProcessor 생성 (v2)
      */
-    private ItemProcessor<RecruitRow, DomainItem<RecruitMetadataEntity, RecruitEmbeddingEntity>> createRecruitProcessor() {
+    private ItemProcessor<RecruitRow, RecruitItem> createRecruitProcessor() {
         return new RecruitItemProcessor(batchProperties);
     }
 
     /**
-     * Recruit ItemWriter 생성
+     * Recruit ItemWriter 생성 (v2)
      */
-    private ItemWriter<DomainItem<RecruitMetadataEntity, RecruitEmbeddingEntity>> createRecruitWriter() {
-        return new DomainItemWriter<>(
-                "recruit",
-                recruitMetadataRepository,
-                recruitEmbeddingRepository,
-                dlqService,
-                jsonMapper,
-                recruitMetadataRepository::upsertAll,  // Method reference
-                recruitEmbeddingRepository::upsertAll  // Method reference
+    private ItemWriter<RecruitItem> createRecruitWriter() {
+        return new RecruitItemWriter(
+                recruitRepository,
+                recruitSkillRepository,
+                recruitDescriptionRepository,
+                recruitSkillsEmbeddingRepository
         );
     }
 
-    // ==================== Candidate Domain (예정) ====================
+    // ==================== Candidate Domain (v2) ====================
 
     /**
-     * ⏳ Candidate Embedding Processing Job
+     * Candidate Embedding Processing Job (v2)
+     */
+    private Job createCandidateJob() {
+        return new JobBuilder("candidateEmbeddingProcessingJob", jobRepository)
+                .listener(embeddingJobListener)
+                .start(createCandidateStep())
+                .build();
+    }
+
+    /**
+     * Candidate Embedding Processing Step (v2)
      *
-     * 구현 예정:
-     * - CandidateRow proto 정의 필요
-     * - CandidateItemReader 구현 필요
-     * - CandidateItemProcessor 구현 필요
+     * Chunk 기반 처리:
+     * 1. Reader: gRPC Stream → CandidateRow proto
+     * 2. Processor: CandidateRow → CandidateItem (4개 Entity)
+     * 3. Writer: Batch Upsert to 4 tables
      */
-    // private Job createCandidateJob() { ... }
+    private Step createCandidateStep() {
+        int chunkSize = batchProperties.getChunkSize();
+
+        return new StepBuilder("candidateEmbeddingProcessingStep", jobRepository)
+                .<CandidateRow, CandidateItem>chunk(chunkSize)
+                .reader(createCandidateReader())
+                .processor(createCandidateProcessor())
+                .writer(createCandidateWriter())
+                .transactionManager(transactionManager)
+                .listener(embeddingStepListener)
+                // Fault Tolerance 설정
+                .faultTolerant()
+                .skip(Exception.class)  // 모든 예외를 skip 대상으로 (DLQ에 저장됨)
+                .skipLimit(100)  // 최대 100개까지 skip 허용
+                .build();
+    }
 
     /**
-     * ⏳ Candidate Embedding Processing Step
+     * Candidate ItemReader 생성 (v2)
      */
-    // private Step createCandidateStep() { ... }
+    private ItemReader<CandidateRow> createCandidateReader() {
+        UUID lastProcessedUuid = checkpointRepository
+                .findByDomain("candidate")
+                .map(checkpoint -> checkpoint.getLastProcessedUuid())
+                .orElse(null);
+
+        int chunkSize = batchProperties.getChunkSize();
+
+        log.info("[DOMAIN_JOB_FACTORY] Creating CandidateItemReader | Last UUID: {} | Chunk Size: {}",
+                lastProcessedUuid, chunkSize);
+
+        return new CandidateItemReader(embeddingGrpcClient, lastProcessedUuid, chunkSize);
+    }
+
+    /**
+     * Candidate ItemProcessor 생성 (v2)
+     */
+    private ItemProcessor<CandidateRow, CandidateItem> createCandidateProcessor() {
+        return new CandidateItemProcessor(batchProperties);
+    }
+
+    /**
+     * Candidate ItemWriter 생성 (v2)
+     */
+    private ItemWriter<CandidateItem> createCandidateWriter() {
+        return new CandidateItemWriter(
+                candidateRepository,
+                candidateSkillRepository,
+                candidateDescriptionRepository,
+                candidateSkillsEmbeddingRepository
+        );
+    }
 }

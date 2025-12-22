@@ -1,6 +1,7 @@
 package com.alpha.backend.application.batch.processor;
 
 import com.alpha.backend.application.batch.dto.CandidateItem;
+import com.alpha.backend.domain.candidate.entity.CandidateDescriptionEntity;
 import com.alpha.backend.domain.candidate.entity.CandidateEntity;
 import com.alpha.backend.domain.candidate.entity.CandidateSkillEntity;
 import com.alpha.backend.domain.candidate.entity.CandidateSkillsEmbeddingEntity;
@@ -17,15 +18,16 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Candidate ItemProcessor
+ * Candidate ItemProcessor (v2)
  *
  * Candidate 도메인의 Proto 객체(CandidateRow) → CandidateItem 변환
  *
  * 변환 과정:
- * 1. CandidateRow (Flat DTO) → 3개 Entity 분산 생성
+ * 1. CandidateRow (Flat DTO) → 4개 Entity 분산 생성
  * 2. CandidateEntity - 기본 정보
  * 3. List<CandidateSkillEntity> - skills 배열 분해 (1:N)
- * 4. CandidateSkillsEmbeddingEntity - skills + vector
+ * 4. CandidateDescriptionEntity - 이력서 원문
+ * 5. CandidateSkillsEmbeddingEntity - skills + vector
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -46,7 +48,10 @@ public class CandidateItemProcessor implements ItemProcessor<CandidateRow, Candi
             // 2. List<CandidateSkillEntity> 생성 (skills 배열 분해)
             List<CandidateSkillEntity> skills = createSkills(protoRow, candidateId);
 
-            // 3. CandidateSkillsEmbeddingEntity 생성
+            // 3. CandidateDescriptionEntity 생성
+            CandidateDescriptionEntity description = createDescription(protoRow, candidateId);
+
+            // 4. CandidateSkillsEmbeddingEntity 생성
             CandidateSkillsEmbeddingEntity embedding = createEmbedding(protoRow, candidateId);
 
             // 벡터 차원 검증
@@ -58,6 +63,7 @@ public class CandidateItemProcessor implements ItemProcessor<CandidateRow, Candi
             return CandidateItem.builder()
                     .candidate(candidate)
                     .skills(skills)
+                    .description(description)
                     .embedding(embedding)
                     .build();
 
@@ -72,7 +78,7 @@ public class CandidateItemProcessor implements ItemProcessor<CandidateRow, Candi
      */
     private CandidateEntity createCandidate(CandidateRow protoRow, UUID candidateId) {
         CandidateEntity candidate = new CandidateEntity();
-        candidate.setId(candidateId);
+        candidate.setCandidateId(candidateId);
         candidate.setPositionCategory(protoRow.getPositionCategory());
         candidate.setExperienceYears(protoRow.getExperienceYears());
         candidate.setOriginalResume(protoRow.getOriginalResume());
@@ -94,6 +100,17 @@ public class CandidateItemProcessor implements ItemProcessor<CandidateRow, Candi
     }
 
     /**
+     * CandidateDescriptionEntity 생성
+     */
+    private CandidateDescriptionEntity createDescription(CandidateRow protoRow, UUID candidateId) {
+        CandidateDescriptionEntity description = new CandidateDescriptionEntity();
+        description.setCandidateId(candidateId);
+        description.setOriginalResume(protoRow.getOriginalResume());
+        description.setResumeLang(null);  // TODO: Proto v2에서 추가
+        return description;
+    }
+
+    /**
      * CandidateSkillsEmbeddingEntity 생성
      */
     private CandidateSkillsEmbeddingEntity createEmbedding(CandidateRow protoRow, UUID candidateId) {
@@ -104,9 +121,9 @@ public class CandidateItemProcessor implements ItemProcessor<CandidateRow, Candi
         }
 
         CandidateSkillsEmbeddingEntity embedding = new CandidateSkillsEmbeddingEntity();
-        embedding.setId(candidateId);
+        embedding.setCandidateId(candidateId);
         embedding.setSkills(protoRow.getSkillsList().toArray(new String[0]));
-        embedding.setVector(new PGvector(vectorArray));
+        embedding.setSkillsVector(new PGvector(vectorArray));
 
         return embedding;
     }

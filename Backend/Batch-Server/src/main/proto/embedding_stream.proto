@@ -58,14 +58,26 @@ message SkillEmbeddingDicRowChunk {
 // 도메인별 Row 정의
 // ============================================================================
 
-// Recruit 도메인 (채용 공고)
+// Recruit 도메인 (채용 공고) - v2
 message RecruitRow {
-  string id = 1;                    // UUID v7
-  string company_name = 2;          // 회사명
-  int32 exp_years = 3;              // 요구 경력 (연)
-  string english_level = 4;         // 영어 레벨
-  string primary_keyword = 5;       // 주요 키워드
-  repeated float vector = 6;        // 임베딩 벡터 (384d)
+  // recruit 테이블
+  string id = 1;                    // UUID v7 (recruit_id)
+  string position = 2;              // 포지션 원문 (NOT NULL)
+  string company_name = 3;          // 회사명 (NOT NULL)
+  int32 experience_years = 4;       // 요구 경력 (연, Nullable)
+  string primary_keyword = 5;       // 주요 키워드 (Nullable)
+  string english_level = 6;         // 영어 레벨 (Nullable)
+  string published_at = 7;          // 게시 날짜 (ISO 8601, Nullable)
+
+  // recruit_skill 테이블 (1:N)
+  repeated string skills = 8;       // 요구 기술 스택 배열 (e.g., ["Java", "Spring", "AWS"])
+
+  // recruit_description 테이블
+  string long_description = 9;      // 채용 공고 원문 (Markdown, Nullable)
+  string description_lang = 10;     // 원문 언어 (e.g., "en", "ko", Nullable)
+
+  // recruit_skills_embedding 테이블
+  repeated float skills_vector = 11; // 기술 스택 벡터 (384d)
 }
 
 // Candidate 도메인 (후보자) - Flat DTO 구조
