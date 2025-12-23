@@ -175,7 +175,7 @@ Alpha-Match 프로젝트의 데이터베이스 ERD (Entity Relationship Diagram)
 │   - trigger_recruit_embedding_updated_at                          │
 │     BEFORE UPDATE → update_updated_at_column()                    │
 └───────────────────────────────────────────────────────────────────┘
-
+```
 Vector Search Query Example:
 ```sql
 -- L2 Distance (Euclidean Distance)
@@ -190,8 +190,6 @@ FROM recruit_embedding
 ORDER BY similarity DESC
 LIMIT 10;
 ```
-```
-
 ---
 
 ## 상세 ERD (Candidate Domain - 4 Tables)
@@ -275,6 +273,8 @@ LIMIT 10;
 │   - idx_candidate_skill_skill (skill) -- FK 조회 최적화           │
 └───────────────────────────────────────────────────────────────────┘
 
+```
+
 Query Examples:
 ```sql
 -- 특정 후보자의 스킬 목록
@@ -289,7 +289,6 @@ FROM candidate_skill
 WHERE skill IN ('Java', 'Spring', 'PostgreSQL')
 GROUP BY candidate_id
 HAVING COUNT(DISTINCT skill) = 3;
-```
 ```
 
 ### 4. candidate_skills_embedding (스킬 벡터 - 1:1 관계)
@@ -318,6 +317,7 @@ HAVING COUNT(DISTINCT skill) = 3;
 │   - idx_candidate_skills_gin (skills) USING GIN -- 배열 검색      │
 └───────────────────────────────────────────────────────────────────┘
 
+```
 Vector Search Examples:
 ```sql
 -- 유사한 스킬셋을 가진 후보자 찾기 (코사인 유사도)
@@ -336,7 +336,6 @@ SELECT candidate_id FROM candidate_skills_embedding WHERE 'Java' = ANY(skills);
 -- skills 배열에 'Java' 또는 'Python' 포함
 SELECT candidate_id FROM candidate_skills_embedding
 WHERE skills && ARRAY['Java', 'Python'];
-```
 ```
 
 ---
@@ -366,6 +365,7 @@ WHERE skills && ARRAY['Java', 'Python'];
 │   - idx_dlq_domain_created_at (domain, created_at)                │
 └───────────────────────────────────────────────────────────────────┘
 
+```
 Usage Example:
 ```sql
 -- recruit 도메인의 최근 실패 레코드
@@ -378,7 +378,6 @@ LIMIT 100;
 SELECT * FROM dlq
 WHERE entity_id = 'uuid-here'
 ORDER BY created_at DESC;
-```
 ```
 
 ### Checkpoint (배치 체크포인트)
@@ -405,6 +404,7 @@ ORDER BY created_at DESC;
 │     BEFORE UPDATE → update_updated_at_column()                    │
 └───────────────────────────────────────────────────────────────────┘
 
+```
 Usage Example:
 ```sql
 -- recruit 도메인의 마지막 체크포인트 조회
@@ -414,7 +414,6 @@ SELECT last_processed_uuid FROM checkpoint WHERE domain = 'recruit';
 UPDATE checkpoint
 SET last_processed_uuid = 'new-uuid-here'
 WHERE domain = 'recruit';
-```
 ```
 
 ---
