@@ -1,23 +1,36 @@
-// src/components/SkillSelector.tsx
+// src/components/input-panel/SkillSelector.tsx
 import React from 'react';
 import { useAppSelector, useAppDispatch } from '../../store/hooks';
 import { toggleSkill } from '../../store/features/search/searchSlice';
-import { UserMode } from '../../types';
+import { UserMode } from '../../types/appTypes';
 import { Code } from 'lucide-react';
+import { CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS } from '../../constants/appConstants';
+import chroma from 'chroma-js';
 
 export const SkillSelector: React.FC = () => {
   const dispatch = useAppDispatch();
+  const mode = useAppSelector((state) => state.ui.userMode);
   const { 
-    activeTab: mode, 
     selectedSkills, 
     skillCategories, 
     skillsLoaded 
   } = useAppSelector((state) => state.search);
 
-  const isCandidate = mode === UserMode.CANDIDATE;
-
   const handleSkillToggle = (skill: string) => {
     dispatch(toggleSkill(skill));
+  };
+  
+  const themeColors = mode === UserMode.CANDIDATE ? CANDIDATE_THEME_COLORS : RECRUITER_THEME_COLORS;
+  const primaryColor = themeColors[0];
+  const ringColor = chroma(primaryColor).alpha(0.4).hex();
+
+  const activeButtonStyle = {
+    boxShadow: `0 0 0 1px ${ringColor}`,
+  };
+
+  const activeCheckboxStyle = {
+    backgroundColor: primaryColor,
+    borderColor: primaryColor,
   };
 
   return (
@@ -38,16 +51,14 @@ export const SkillSelector: React.FC = () => {
                 key={`${skill}-${idx}`}
                 onClick={() => handleSkillToggle(skill)}
                 className={`group flex items-center p-2 rounded-md transition-all duration-150 ${
-                  isSelected
-                    ? `bg-white shadow-sm ring-1 ring-${isCandidate ? 'blue' : 'purple'}-200`
-                    : 'hover:bg-slate-200/50'
+                  isSelected ? 'bg-white shadow-sm' : 'hover:bg-slate-200/50'
                 }`}
+                style={isSelected ? activeButtonStyle : {}}
               >
-                <div className={`w-5 h-5 rounded border flex items-center justify-center mr-3 transition-colors ${
-                  isSelected
-                    ? `bg-${isCandidate ? 'blue' : 'purple'}-600 border-${isCandidate ? 'blue' : 'purple'}-600`
-                    : 'border-slate-300 bg-white group-hover:border-slate-400'
-                }`}>
+                <div 
+                  className="w-5 h-5 rounded border flex items-center justify-center mr-3 transition-colors"
+                  style={isSelected ? activeCheckboxStyle : {}}
+                >
                   {isSelected && <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                 </div>
                 <span className={`text-sm ${isSelected ? 'font-semibold text-slate-800' : 'text-slate-600'}`}>

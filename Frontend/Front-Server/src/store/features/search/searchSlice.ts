@@ -1,10 +1,9 @@
 'use client';
 
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { UserMode, ExperienceLevel } from '../../../types';
+import { ExperienceLevel } from '../../../types/appTypes';
 
 export interface SearchState {
-  activeTab: UserMode;
   selectedSkills: string[];
   selectedExperience: string;
   isInitial: boolean;
@@ -13,7 +12,6 @@ export interface SearchState {
 }
 
 const initialState: SearchState = {
-  activeTab: UserMode.CANDIDATE,
   selectedSkills: [],
   selectedExperience: ExperienceLevel.MID,
   isInitial: true,
@@ -25,12 +23,6 @@ export const searchSlice = createSlice({
   name: 'search',
   initialState,
   reducers: {
-    setActiveTab: (state, action: PayloadAction<UserMode>) => {
-      state.activeTab = action.payload;
-      // Reset other states on tab change
-      state.selectedSkills = [];
-      state.isInitial = true;
-    },
     toggleSkill: (state, action: PayloadAction<string>) => {
       const skill = action.payload;
       const index = state.selectedSkills.indexOf(skill);
@@ -58,7 +50,6 @@ export const searchSlice = createSlice({
 });
 
 export const { 
-  setActiveTab, 
   toggleSkill, 
   setExperience, 
   setSearchPerformed, 

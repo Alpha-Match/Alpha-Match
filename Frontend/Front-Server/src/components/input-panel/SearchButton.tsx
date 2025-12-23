@@ -1,8 +1,10 @@
-// src/components/SearchButton.tsx
+// src/components/input-panel/SearchButton.tsx
 import React from 'react';
 import { useAppSelector } from '../../store/hooks';
-import { UserMode } from '../../types';
+import { UserMode } from '../../types/appTypes';
 import { Search } from 'lucide-react';
+import { CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS } from '../../constants/appConstants';
+import chroma from 'chroma-js';
 
 interface SearchButtonProps {
   onSearch: () => void;
@@ -13,19 +15,34 @@ export const SearchButton: React.FC<SearchButtonProps> = ({
   onSearch,
   isLoading,
 }) => {
-  const { activeTab: mode, selectedSkills } = useAppSelector((state) => state.search);
+  const mode = useAppSelector((state) => state.ui.userMode);
+  const { selectedSkills } = useAppSelector((state) => state.search);
   const isCandidate = mode === UserMode.CANDIDATE;
+
+  const themeColors = isCandidate ? CANDIDATE_THEME_COLORS : RECRUITER_THEME_COLORS;
+  const primaryColor = themeColors[0];
+  
+  // To better match the original gradient, we shift the hue for the end color.
+  // For the blue (candidate) theme, we shift towards purple.
+  // For the purple (recruiter) theme, we shift towards pink.
+  const gradientEndColor = isCandidate
+    ? chroma(primaryColor).set('hsl.h', '+40').hex()
+    : chroma(primaryColor).set('hsl.h', '+30').hex();
+
+  const shadowColor = chroma(primaryColor).alpha(0.3).hex();
+
+  const gradientStyle = {
+    background: `linear-gradient(to right, ${primaryColor}, ${gradientEndColor})`,
+    boxShadow: `0 10px 15px -3px ${shadowColor}, 0 4px 6px -4px ${shadowColor}`,
+  };
 
   return (
     <div className="p-6 border-t border-slate-100 bg-white">
       <button
         onClick={onSearch}
         disabled={isLoading || selectedSkills.length === 0}
-        className={`w-full py-3 px-4 rounded-xl text-white font-bold text-lg shadow-lg transform transition hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
-          isCandidate 
-            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-blue-200' 
-            : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-purple-200'
-        }`}
+        className="w-full py-3 px-4 rounded-xl text-white font-bold text-lg shadow-lg transform transition hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        style={gradientStyle}
       >
         {isLoading ? (
           <>

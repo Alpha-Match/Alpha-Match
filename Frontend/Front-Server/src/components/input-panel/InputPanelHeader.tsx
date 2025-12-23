@@ -1,16 +1,28 @@
-// src/components/InputPanelHeader.tsx
+// src/components/input-panel/InputPanelHeader.tsx
 import React from 'react';
 import { useAppSelector } from '../../store/hooks';
-import { UserMode } from '../../types';
+import { UserMode } from '../../types/appTypes';
 import { Search, Briefcase } from 'lucide-react';
+import { CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS } from '../../constants/appConstants';
+import chroma from 'chroma-js';
 
 export const InputPanelHeader: React.FC = () => {
-  const mode = useAppSelector((state) => state.search.activeTab);
+  const mode = useAppSelector((state) => state.ui.userMode);
   const isCandidate = mode === UserMode.CANDIDATE;
 
+  const themeColors = isCandidate ? CANDIDATE_THEME_COLORS : RECRUITER_THEME_COLORS;
+  const primaryColor = themeColors[0];
+  const backgroundColor = chroma(primaryColor).alpha(0.1).css();
+
   return (
-    <div className={`p-6 border-b border-slate-100 ${isCandidate ? 'bg-blue-50' : 'bg-purple-50'}`}>
-      <h2 className={`text-xl font-bold flex items-center gap-2 ${isCandidate ? 'text-blue-700' : 'text-purple-700'}`}>
+    <div 
+      className="p-6 border-b border-slate-100"
+      style={{ backgroundColor }}
+    >
+      <h2 
+        className="text-xl font-bold flex items-center gap-2"
+        style={{ color: primaryColor }}
+      >
         {isCandidate ? <Briefcase className="w-6 h-6" /> : <Search className="w-6 h-6" />}
         {isCandidate ? "Configure Job Seeker Profile" : "Define Ideal Candidate Profile"}
       </h2>
