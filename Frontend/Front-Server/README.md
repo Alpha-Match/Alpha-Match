@@ -33,49 +33,35 @@ GraphQL API를 소비하여 벡터 기반 유사도 검색 결과를 사용자�
 Frontend/Front-Server/
 │
 ├── src/
-│   ├── app/                    # Next.js App Router
-│   │   ├── layout.tsx          # 루트 레이아웃 (Provider)
-│   │   ├── page.tsx            # 메인 페이지
-│   │   └── globals.css         # 전역 CSS
+│   ├── app/                    # Next.js App Router (페이지 및 레이아웃)
 │   │
-│   ├── components/             # React 컴포넌트
-│   │   ├── SearchBar.tsx
-│   │   ├── FilterPanel.tsx
-│   │   ├── ResultCard.tsx
-│   │   ├── AppInitializer.tsx  # 앱 초기화
-│   │   └── common/             # 재사용 컴포넌트
+│   ├── components/             # 기능/화면 단위 컴포넌트
+│   │   ├── common/             #   - 범용 컴포넌트 (Button, Tooltip, Icon 등)
+│   │   ├── dashboard/          #   - 대시보드 화면 관련 컴포넌트
+│   │   ├── input-panel/        #   - 검색 입력 패널 관련 컴포넌트
+│   │   ├── layout/             #   - 전역 레이아웃 (Header 등)
+│   │   └── search/             #   - 검색 결과 화면 관련 컴포넌트
 │   │
-│   ├── lib/                    # 라이브러리 설정
-│   │   ├── apollo-client.ts    # Apollo Client 설정
-│   │   └── apollo-wrapper.tsx  # Apollo Provider
+│   ├── lib/                    # 라이브러리 설정 (Apollo Client 등)
 │   │
-│   ├── store/                  # Redux
-│   │   ├── index.ts            # Store 설정
-│   │   └── slices/
-│   │       ├── searchSlice.ts  # 검색 필터 상태
-│   │       └── notificationSlice.ts  # 알림 상태
+│   ├── store/                  # Redux 전역 상태 관리
+│   │   ├── features/           #   - 기능별 Slice (ui, search, notification)
+│   │   ├── hooks.ts            #   - 타입이 적용된 Redux Hooks
+│   │   └── index.ts            #   - Store 설정
 │   │
-│   ├── graphql/                # GraphQL
-│   │   ├── queries/            # Query 정의
-│   │   └── types/              # 타입 정의
+│   ├── graphql/                # GraphQL (쿼리, 타입 등)
 │   │
-│   ├── types/
-│   │   └── index.ts            # TypeScript 타입
+│   ├── hooks/                  # 커스텀 React Hooks (e.g., useSearchMatches)
 │   │
-│   └── constants/
-│       └── index.ts            # 상수 (TECH_STACKS)
+│   ├── types/                  # 전역 TypeScript 타입
+│   │
+│   └── constants/              # 전역 상수
 │
 ├── docs/                       # 개발 문서
-│   ├── ARCHITECTURE.md
-│   ├── CACHING_STRATEGY.md
-│   └── DATA_FLOW.md
 │
 ├── package.json
-├── next.config.mjs
-├── tailwind.config.ts
-├── tsconfig.json
-├── CLAUDE.md                   # AI 개발 가이드
-├── GEMINI.md                   # Gemini AI 작성 상세 문서
+├── CLAUDE.md                   # AI 개발 가이드 (Legacy)
+├── GEMINI.md                   # AI 개발 가이드
 └── README.md                   # 이 문서
 ```
 

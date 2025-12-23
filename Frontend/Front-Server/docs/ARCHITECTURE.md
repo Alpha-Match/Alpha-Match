@@ -2,17 +2,22 @@
 
 ## 1. 디렉토리 구조
 
-본 프로젝트는 애플리케이션이 복잡해져도 유지보수와 확장이 쉽도록 **계층형 아키텍처(Layered Architecture)**와 **피처 기반(Feature-Sliced)** 설계를 혼합한 구조를 채택합니다.
+본 프로젝트는 애플리케이션이 복잡해져도 유지보수와 확장이 쉽도록 **기능/화면 단위(Feature-based)** 설계를 채택합니다. 모든 컴포넌트는 `src/components` 디렉토리 하위에 기능별로 그룹화됩니다.
 
 | 디렉토리 | 역할 및 설계 이유 |
 | :--- | :--- |
 | **`src/app`** | **Next.js 16+의 표준 라우팅**: App Router의 규약으로, 파일 기반으로 페이지와 레이아웃을 직관적으로 관리합니다. 전역 Providers (`src/app/providers.tsx`) 및 루트 레이아웃 (`src/app/layout.tsx`)을 포함합니다. |
-| **`src/components`** | **재사용 가능한 UI 컴포넌트**: `Button`, `Input` 등 공통 UI 요소와, `Notification.tsx` (전역 알림), `AppInitializer.tsx` (초기 데이터 로딩)와 같이 여러 기능에서 사용되는 범용 컴포넌트를 모아둡니다. |
-| **`src/features`** | **기능별 모듈화**: 애플리케이션의 주요 기능을 독립적인 모듈로 분리합니다. 예를 들어, `search`, `recruit-detail` 등으로 나눕니다. 기능에 관련된 코드(컴포넌트, 훅, 상태)가 한곳에 모여 응집도가 높습니다. |
-| **`src/lib`** | **외부 서비스 연동**: GraphQL 클라이언트 (`lib/apollo-client.ts`), API 유틸리티 등 외부 서비스와의 통신 및 설정을 담당합니다. `lib/graphql/queries.ts`에 쿼리를 정의하여, 애플리케이션 전체에서 일관된 방식으로 API를 호출하고 테스트 시 Mocking이 용이합니다. |
-| **`src/store`** | **전역 클라이언트 상태 관리**: Redux Toolkit 설정을 관리합니다. `Apollo Client`가 서버 상태를 담당하지만, `searchSlice` (검색 UI 상태), `notificationSlice` (전역 알림 상태) 등 여러 컴포넌트에서 공유해야 하는 **클라이언트 상태**는 Redux로 관리하여 역할을 분리합니다. |
-| **`src/types`** | **글로벌 타입 정의**: 애플리케이션 전반에서 사용되는 TypeScript 인터페이스, Enum 등 공통 타입 정의 (`src/types/index.ts`)를 관리합니다. 코드 일관성과 타입 안정성을 보장합니다. |
-| **`src/constants`** | **전역 상수 관리**: API 엔드포인트, 설정 값, 기본 데이터 (`src/constants/index.ts`의 `TECH_STACKS_DEMO`) 등 애플리케이션 전반에서 사용되는 변경되지 않는 값들을 중앙에서 관리합니다. |
+| **`src/components`** | **기능/화면 단위 컴포넌트 루트**: 모든 UI 컴포넌트는 이곳에 기능별로 분류되어 저장됩니다. |
+| `components/common` | **범용 컴포넌트**: `Button`, `Tooltip`, `Icon` 등 특정 도메인에 종속되지 않고 앱 전반에서 재사용되는 가장 작은 단위의 UI 컴포넌트를 관리합니다. |
+| `components/layout` | **레이아웃 컴포넌트**: `Header`, `ThemeManager` 등 앱의 전체적인 구조와 레이아웃을 담당하는 컴포넌트를 관리합니다. |
+| `components/dashboard` | **대시보드 컴포넌트**: `DefaultDashboard`와 그를 구성하는 `GenericTreemap`, `CategoryPieChart` 등 대시보드 화면과 관련된 컴포넌트들을 관리합니다. |
+| `components/search` | **검색 결과 컴포넌트**: `SearchResultPanel`, `ResultCard`, `MatchDetailPanel` 등 검색 결과 표시에 관련된 컴포넌트들을 관리합니다. |
+| `components/input-panel`| **입력 패널 컴포넌트**: `InputPanel`, `SkillSelector` 등 사용자의 입력을 받는 좌측 패널과 관련된 컴포넌트들을 관리합니다. |
+| **`src/lib`** | **외부 서비스 연동**: GraphQL 클라이언트 (`lib/apollo-client.ts`), API 유틸리티 등 외부 서비스와의 통신 및 설정을 담당합니다. |
+| **`src/store`** | **전역 클라이언트 상태 관리**: Redux Toolkit 설정을 관리합니다. `features` 디렉토리 안에 각 기능별 `slice` 파일(`uiSlice`, `searchSlice` 등)을 두어 상태를 분리합니다. |
+| **`src/hooks`** | **커스텀 React Hooks**: `useSearchMatches`와 같이 여러 컴포넌트에서 재사용될 수 있는 비즈니스 로직 및 상태 관련 로직을 분리하여 관리합니다. |
+| **`src/types`** | **글로벌 타입 정의**: 애플리케이션 전반에서 사용되는 TypeScript 인터페이스, Enum 등 공통 타입 정의를 관리합니다. |
+| **`src/constants`** | **전역 상수 관리**: API 엔드포인트, 설정 값, 테마 색상 등 애플리케이션 전반에서 사용되는 변경되지 않는 값들을 중앙에서 관리합니다. |
 
 ---
 
