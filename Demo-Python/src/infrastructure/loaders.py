@@ -85,14 +85,44 @@ class PklChunkLoader(BaseChunkLoader[T_Row]):
         """
         try:
             logger.info(f"Loading pkl file: {file_path}")
-            df = pd.read_pickle(file_path)
-            total_rows = len(df)
-            logger.info(f"Total rows loaded: {total_rows}")
+            pkl_data = pd.read_pickle(file_path)
+
+            # pkl 파일이 dict 형태인 경우 data_frame 키로 접근
+            if isinstance(pkl_data, dict) and 'data_frame' in pkl_data:
+                df = pkl_data['data_frame']
+            else:
+                df = pkl_data
+
+            total_rows_before = len(df)
+            logger.info(f"Total rows loaded: {total_rows_before}")
+
+            # v2: Recruit 도메인 전처리 적용
+            if self.row_class.__name__ == 'RecruitData':
+                df = self._preprocess_recruit_data(df)
+
+            total_rows_after = len(df)
+            if total_rows_before != total_rows_after:
+                logger.info(f"Rows after preprocessing: {total_rows_after} (filtered: {total_rows_before - total_rows_after})")
 
             # Chunk 단위로 분할
-            for i in range(0, total_rows, self.chunk_size):
+            for i in range(0, total_rows_after, self.chunk_size):
                 chunk_df = df.iloc[i:i+self.chunk_size]
-                chunk_data = [self.row_class(**row) for row in chunk_df.to_dict('records')]
+
+                # v2: numpy array를 list로 변환 (skills, skills_vector) + NaN을 None으로 변환
+                chunk_records = chunk_df.to_dict('records')
+                for record in chunk_records:
+                    # skills 변환
+                    if 'skills' in record and hasattr(record['skills'], 'tolist'):
+                        record['skills'] = record['skills'].tolist()
+                    # skills_vector 변환
+                    if 'skills_vector' in record and hasattr(record['skills_vector'], 'tolist'):
+                        record['skills_vector'] = record['skills_vector'].tolist()
+                    # NaN을 None으로 변환 (Pydantic 호환성)
+                    for key, value in list(record.items()):
+                        if isinstance(value, float) and pd.isna(value):
+                            record[key] = None
+
+                chunk_data = [self.row_class(**row) for row in chunk_records]
 
                 logger.debug(f"Yielding chunk {i//self.chunk_size + 1}: {len(chunk_data)} rows")
                 yield chunk_data
@@ -103,6 +133,93 @@ class PklChunkLoader(BaseChunkLoader[T_Row]):
         except Exception as e:
             logger.error(f"Error loading pkl file: {e}")
             raise IOError(f"pkl 파일 로딩 중 오류 발생: {e}")
+
+    def _preprocess_recruit_data(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Recruit 도메인 전처리 (table_specification.md 요구사항)
+
+        1. 컬럼명 매핑 (Title Case → snake_case)
+        2. Exp Years 전처리 ('no_exp' → null, 'Ny' → Integer)
+        3. 불필요한 컬럼 삭제
+        4. skills 빈 배열 제외 (실제로는 0개지만 방어 코드)
+        5. 벡터 누락 행 필터링
+        """
+        logger.info("Applying Recruit domain preprocessing...")
+
+        # 1. 컬럼명 매핑 (Title Case → snake_case)
+        column_mapping = {
+            'Position': 'position',
+            'Company Name': 'company_name',
+            'Exp Years': 'experience_years',
+            'Primary Keyword': 'primary_keyword',
+            'English Level': 'english_level',
+            'Published': 'published_at',
+            'Long Description': 'long_description',
+            'Long Description_lang': 'description_lang',
+            'skill_vector': 'skills_vector',
+            'skills': 'skills',
+            'id': 'id'
+        }
+        df = df.rename(columns=column_mapping)
+
+        # 2. Exp Years 전처리
+        def convert_exp_years(value):
+            """'no_exp' → None, 'Ny' → Integer"""
+            if pd.isna(value) or value == 'no_exp':
+                return None
+            if isinstance(value, str) and value.endswith('y'):
+                try:
+                    return int(value[:-1])
+                except ValueError:
+                    return None
+            if isinstance(value, int):
+                return value
+            return None
+
+        df['experience_years'] = df['experience_years'].apply(convert_exp_years)
+        logger.debug(f"Exp Years converted: no_exp → None, 'Ny' → Integer")
+
+        # 3. 불필요한 컬럼 삭제
+        unnecessary_cols = ['__index_level_0__', 'normalized_skills', 'embedding_input_text', 'embedding_sample']
+        existing_unnecessary = [col for col in unnecessary_cols if col in df.columns]
+        if existing_unnecessary:
+            df = df.drop(columns=existing_unnecessary)
+            logger.debug(f"Dropped columns: {', '.join(existing_unnecessary)}")
+
+        # 4. skills 빈 배열 제외 (numpy array와 list 모두 지원)
+        before_skill_filter = len(df)
+        def has_skills(x):
+            """skills가 비어있지 않은지 확인 (ndarray 또는 list)"""
+            import numpy as np
+            # numpy array 또는 list의 길이 확인
+            try:
+                return len(x) > 0
+            except (TypeError, AttributeError):
+                # None 또는 길이가 없는 객체
+                return False
+
+        df = df[df['skills'].apply(has_skills)]
+        after_skill_filter = len(df)
+        if before_skill_filter != after_skill_filter:
+            logger.info(f"Filtered empty skills: {before_skill_filter - after_skill_filter} rows")
+
+        # 5. 벡터 누락 행 필터링
+        before_vector_filter = len(df)
+        df = df[df['skills_vector'].notna()]
+        after_vector_filter = len(df)
+        if before_vector_filter != after_vector_filter:
+            logger.info(f"Filtered null vectors: {before_vector_filter - after_vector_filter} rows")
+
+        # 필요한 컬럼만 선택 (v2 스키마 순서대로)
+        required_cols = [
+            'id', 'position', 'company_name', 'experience_years',
+            'primary_keyword', 'english_level', 'published_at',
+            'skills', 'long_description', 'description_lang', 'skills_vector'
+        ]
+        df = df[required_cols]
+
+        logger.info("Recruit preprocessing completed")
+        return df
 
 
 # ============================================================================

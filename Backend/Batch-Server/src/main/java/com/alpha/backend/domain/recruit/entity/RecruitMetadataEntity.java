@@ -19,16 +19,17 @@ import java.util.UUID;
 @Builder
 public class RecruitMetadataEntity extends BaseMetadataEntity {
 
-    @Column(name = "company_name", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "company_name", nullable = false, length = 100)
     private String companyName;
 
     @Column(name = "exp_years", nullable = false)
-    private Integer expYears;
+    @Builder.Default
+    private Integer expYears = 0;
 
-    @Column(name = "english_level", columnDefinition = "TEXT")
+    @Column(name = "english_level", length = 20)
     private String englishLevel;
 
-    @Column(name = "primary_keyword", columnDefinition = "TEXT")
+    @Column(name = "primary_keyword", length = 100)
     private String primaryKeyword;
 
     @Override

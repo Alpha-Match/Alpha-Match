@@ -42,7 +42,8 @@
 
 **Database:**
 - `src/main/java/com/alpha/backend/config/database/JpaConfig.java` - JPA 설정
-- `src/main/resources/db/migration/V1__init_database_schema.sql` - Flyway 마이그레이션
+- `src/main/resources/db/migration/V1__init_database_schema.sql` - Flyway V1 (초기 스키마)
+- `src/main/resources/db/migration/V2__restructure_schema_to_v2.sql` - Flyway V2 (스키마 재구조화, 2025-12-21)
 
 **gRPC:**
 - `src/main/java/com/alpha/backend/config/grpc/GrpcChannelConfig.java` - gRPC Channel
@@ -51,17 +52,33 @@
 
 ### 📦 Domain Layer (Port)
 
-**Recruit 도메인:**
-- `src/main/java/com/alpha/backend/domain/recruit/entity/RecruitMetadataEntity.java`
-- `src/main/java/com/alpha/backend/domain/recruit/entity/RecruitEmbeddingEntity.java`
-- `src/main/java/com/alpha/backend/domain/recruit/repository/RecruitMetadataRepository.java`
-- `src/main/java/com/alpha/backend/domain/recruit/repository/RecruitEmbeddingRepository.java`
+**Recruit 도메인 (v2 - 4 tables):**
+- `src/main/java/com/alpha/backend/domain/recruit/entity/RecruitEntity.java` (기존 RecruitMetadataEntity 대체)
+- `src/main/java/com/alpha/backend/domain/recruit/entity/RecruitDescriptionEntity.java` (신규)
+- `src/main/java/com/alpha/backend/domain/recruit/entity/RecruitSkillEntity.java` (신규)
+- `src/main/java/com/alpha/backend/domain/recruit/entity/RecruitSkillId.java` (신규 - 복합 PK)
+- `src/main/java/com/alpha/backend/domain/recruit/entity/RecruitSkillsEmbeddingEntity.java` (기존 RecruitEmbeddingEntity 대체)
+- `src/main/java/com/alpha/backend/domain/recruit/repository/RecruitRepository.java`
+- `src/main/java/com/alpha/backend/domain/recruit/repository/RecruitDescriptionRepository.java`
+- `src/main/java/com/alpha/backend/domain/recruit/repository/RecruitSkillRepository.java`
+- `src/main/java/com/alpha/backend/domain/recruit/repository/RecruitSkillsEmbeddingRepository.java`
 
-**Candidate 도메인:**
+**Candidate 도메인 (v2 - 4 tables):**
 - `src/main/java/com/alpha/backend/domain/candidate/entity/CandidateEntity.java`
+- `src/main/java/com/alpha/backend/domain/candidate/entity/CandidateDescriptionEntity.java` (신규)
 - `src/main/java/com/alpha/backend/domain/candidate/entity/CandidateSkillEntity.java`
+- `src/main/java/com/alpha/backend/domain/candidate/entity/CandidateSkillId.java`
 - `src/main/java/com/alpha/backend/domain/candidate/entity/CandidateSkillsEmbeddingEntity.java`
-- `src/main/java/com/alpha/backend/domain/candidate/repository/` (4개 Repository)
+- `src/main/java/com/alpha/backend/domain/candidate/repository/CandidateRepository.java`
+- `src/main/java/com/alpha/backend/domain/candidate/repository/CandidateDescriptionRepository.java`
+- `src/main/java/com/alpha/backend/domain/candidate/repository/CandidateSkillRepository.java`
+- `src/main/java/com/alpha/backend/domain/candidate/repository/CandidateSkillsEmbeddingRepository.java`
+
+**Skill Embedding Dictionary 도메인 (v2 - 2 tables):**
+- `src/main/java/com/alpha/backend/domain/skilldic/entity/SkillCategoryDicEntity.java` (신규)
+- `src/main/java/com/alpha/backend/domain/skilldic/entity/SkillEmbeddingDicEntity.java`
+- `src/main/java/com/alpha/backend/domain/skilldic/repository/SkillCategoryDicRepository.java`
+- `src/main/java/com/alpha/backend/domain/skilldic/repository/SkillEmbeddingDicRepository.java`
 
 **공통:**
 - `src/main/java/com/alpha/backend/domain/checkpoint/entity/CheckpointEntity.java`
@@ -69,10 +86,19 @@
 
 ### 🏗️ Infrastructure Layer (Adapter)
 
-**Persistence (JPA):**
-- `src/main/java/com/alpha/backend/infrastructure/persistence/RecruitMetadataJpaRepository.java` - Upsert Native Query
-- `src/main/java/com/alpha/backend/infrastructure/persistence/RecruitEmbeddingJpaRepository.java`
-- `src/main/java/com/alpha/backend/infrastructure/persistence/Candidate*JpaRepository.java` (4개)
+**Persistence (JPA) - v2:**
+- `src/main/java/com/alpha/backend/infrastructure/persistence/RecruitJpaRepository.java`
+- `src/main/java/com/alpha/backend/infrastructure/persistence/RecruitDescriptionJpaRepository.java`
+- `src/main/java/com/alpha/backend/infrastructure/persistence/RecruitSkillJpaRepository.java`
+- `src/main/java/com/alpha/backend/infrastructure/persistence/RecruitSkillsEmbeddingJpaRepository.java`
+- `src/main/java/com/alpha/backend/infrastructure/persistence/CandidateJpaRepository.java`
+- `src/main/java/com/alpha/backend/infrastructure/persistence/CandidateDescriptionJpaRepository.java`
+- `src/main/java/com/alpha/backend/infrastructure/persistence/CandidateSkillJpaRepository.java`
+- `src/main/java/com/alpha/backend/infrastructure/persistence/CandidateSkillsEmbeddingJpaRepository.java`
+- `src/main/java/com/alpha/backend/infrastructure/persistence/SkillCategoryDicJpaRepository.java`
+- `src/main/java/com/alpha/backend/infrastructure/persistence/SkillEmbeddingDicJpaRepository.java`
+- `src/main/java/com/alpha/backend/infrastructure/persistence/CheckpointJpaRepository.java`
+- `src/main/java/com/alpha/backend/infrastructure/persistence/DlqJpaRepository.java`
 
 **gRPC Client (Pattern 1: Server Streaming):**
 - `src/main/java/com/alpha/backend/infrastructure/grpc/client/EmbeddingGrpcClient.java` - Python Server로 요청
@@ -117,22 +143,60 @@
 ### ✅ 완료
 - Factory 패턴 기반 도메인별 Job/Step 생성
 - Quartz Scheduler 통합 (Cron 기반)
-- Recruit 도메인 완전 구현 (Entity, Repository, Processor, Writer)
-- Candidate 도메인 완전 구현 (3개 테이블 분산 저장)
+- **v2 스키마 전환 (2025-12-21)**
+  - Flyway V2 마이그레이션 (벡터 차원 통일: 384d, TIMESTAMPTZ, TEXT)
+  - Entity 11개 (Recruit 5개, Candidate 5개, SkillDic 2개 - 신규 7개, 수정 4개)
+  - Repository 12개 (Domain 6개 + Infrastructure 6개, Native Upsert 구현)
+- **Recruit 도메인 v2 완전 구현 (4-table 구조)**
+  - Entity: Recruit, RecruitDescription, RecruitSkill, RecruitSkillsEmbedding
+  - Repository: 4개 Domain + 4개 JPA (복합키, 벡터검색 지원)
+- **Candidate 도메인 v2 완전 구현 (4-table 구조)**
+  - Entity: Candidate, CandidateDescription, CandidateSkill, CandidateSkillsEmbedding
+  - Repository: 4개 Domain + 4개 JPA (기존 3개 + 신규 CandidateDescription)
+- **SkillEmbeddingDic 도메인 v2 완전 구현 (2-table 구조)**
+  - Entity: SkillCategoryDic, SkillEmbeddingDic
+  - Repository: 2개 Domain + 2개 JPA (UUID 자동생성)
 - gRPC Client 구현 (Pattern 1: Server Streaming)
 - **gRPC Server 구현 (Pattern 2: Client Streaming)**
   - EmbeddingStreamServiceImpl (IngestDataStream RPC)
-  - DataProcessor (Recruit, Candidate)
+  - DataProcessor (Recruit, Candidate, SkillDic)
   - DataProcessorFactory (도메인별 자동 라우팅)
 - Checkpoint/DLQ 도메인 범용화
-- Flyway V1 마이그레이션
+- **DB 초기화 및 마이그레이션 실행 (2025-12-22)**
+  - PostgreSQL alpha_match DB 초기화 완료
+  - Flyway V1, V2 수동 마이그레이션 실행
+  - 모든 v2 테이블 생성 (Recruit 4개, Candidate 4개, SkillDic 2개, 공통 2개)
+  - 벡터 인덱스 생성 완료 (ivfflat, 384d)
+- **Quartz Scheduler 설정 최적화 (2025-12-22)**
+  - Pattern 1 비활성화에 따라 Quartz auto-startup 비활성화
+  - JDBC JobStore → RAMJobStore (간소화)
+  - Spring Boot 4.0 호환성 문제 해결
+- **Batch Server 기동 성공 (2025-12-22)**
+  - gRPC Server 포트 9090 대기 중 (Pattern 2)
+  - WebFlux 포트 8080 실행
+  - HikariCP DB 연결 풀 정상 작동
+  - 14개 JPA Repository 로드 완료
+- **PGvector 직렬화 문제 해결 (2025-12-22)**
+  - Repository 3개 수정: RecruitSkillsEmbedding, CandidateSkillsEmbedding, SkillEmbeddingDic
+  - PGvector → String 변환 (.toString()) 후 CAST 적용
+  - bytea → vector 변환 오류 해결
+- **End-to-End 파이프라인 검증 완료 (2025-12-22)**
+  - **Recruit 도메인**: 87,488 레코드 처리 (471MB)
+    - 4-table 동시 upsert 성공 (recruit, recruit_skill, recruit_description, recruit_skills_embedding)
+    - Vector Embedding 384d 저장 완전 검증
+  - **Skill_dic 도메인**: 105 레코드 처리 (358KB)
+    - 2-table 동시 upsert 성공 (skill_category_dic, skill_embedding_dic)
+    - FK 관계 처리 검증 (카테고리 자동 생성 → UUID 획득)
+    - UK 기반 Upsert 전략 검증 (category, skill 컬럼 기준)
 
 ### 🔄 진행 중
 - 없음
 
 ### ⏳ 예정
-- SkillEmbeddingDic 도메인 구현 (Entity, Repository, Processor)
-- Pattern 1/2 통합 테스트
+- Candidate 도메인 파이프라인 테스트
+- 로깅 레벨 조정 (DEBUG → INFO)
+- Batch Job v2 마이그레이션 (Reader, Processor, Writer - 4-table 구조 반영)
+- Proto 파일 v2 업데이트 (Recruit/Candidate 4-table 구조)
 - 성능 최적화 및 모니터링
 
 ---
@@ -159,4 +223,4 @@
 
 ---
 
-**최종 수정일:** 2025-12-18
+**최종 수정일:** 2025-12-22 (Skill_dic 도메인 검증 완료)

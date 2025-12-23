@@ -61,9 +61,19 @@ async def ingest_data_from_file(domain: str, file_path: str, chunk_size: int = 1
         total_rows = 0
 
         for chunk_idx, chunk_data in enumerate(loader.load_chunks(file_path)):
-            # 첫 번째 Chunk에서 벡터 차원 검증
+            # 첫 번째 Chunk에서 벡터 차원 검증 (v2: skills_vector, skill_vector 지원)
             if chunk_idx == 0 and chunk_data:
-                actual_dimension = len(chunk_data[0].vector) if hasattr(chunk_data[0], 'vector') and chunk_data[0].vector else 0
+                # v2: 도메인별 벡터 필드명 확인
+                first_row = chunk_data[0]
+                vector_field = None
+                if hasattr(first_row, 'skills_vector'):
+                    vector_field = first_row.skills_vector
+                elif hasattr(first_row, 'skill_vector'):
+                    vector_field = first_row.skill_vector
+                elif hasattr(first_row, 'vector'):  # legacy v1 지원
+                    vector_field = first_row.vector
+
+                actual_dimension = len(vector_field) if vector_field else 0
                 if actual_dimension != domain_cfg.vector_dimension:
                     raise ValueError(
                         f"데이터 차원 수 불일치! '{domain}' 도메인의 설정된 차원 수는 "

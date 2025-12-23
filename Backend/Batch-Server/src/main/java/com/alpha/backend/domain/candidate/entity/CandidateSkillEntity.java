@@ -5,7 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 /**
@@ -14,7 +14,7 @@ import java.util.UUID;
  *
  * SQL 매핑:
  * - candidate_id (UUID, PK, FK → candidate)
- * - skill (VARCHAR(50), PK, FK → skill_embedding_dic)
+ * - skill (TEXT, PK)
  * - created_at, updated_at (자동 관리)
  *
  * 복합 PK: (candidate_id, skill)
@@ -34,14 +34,14 @@ public class CandidateSkillEntity {
     private UUID candidateId;
 
     @Id
-    @Column(name = "skill", length = 50, nullable = false)
+    @Column(name = "skill", columnDefinition = "TEXT", nullable = false)
     private String skill;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, nullable = false)
-    private LocalDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private OffsetDateTime updatedAt;
 }

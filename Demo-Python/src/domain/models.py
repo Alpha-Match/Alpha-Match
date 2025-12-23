@@ -31,32 +31,53 @@ class BaseData(BaseModel):
 
 
 # ============================================================================
-# Recruit 도메인 (채용 공고)
+# Recruit 도메인 (채용 공고) - v2
 # ============================================================================
 
 class RecruitData(BaseData):
     """
-    채용 공고 데이터 모델입니다.
+    채용 공고 데이터 모델 (v2)
 
-    Proto 매핑: RecruitRow
+    v2 변경사항:
+    - 추가: position, published_at, skills[], long_description, description_lang
+    - 필드명 변경: exp_years → experience_years, vector → skills_vector
+
+    Proto 매핑: RecruitRow (v2)
     - id → id (UUID v7)
+    - position → position (포지션 원문)
     - company_name → company_name
-    - exp_years → exp_years
-    - english_level → english_level
+    - experience_years → experience_years
     - primary_keyword → primary_keyword
-    - vector → vector (384d)
+    - english_level → english_level
+    - published_at → published_at (ISO 8601)
+    - skills → skills (요구 기술 스택 배열)
+    - long_description → long_description (채용 공고 원문)
+    - description_lang → description_lang (원문 언어)
+    - skills_vector → skills_vector (384d)
     """
+    position: str = Field(..., description="포지션 원문")
     company_name: str = Field(..., description="회사명")
-    exp_years: int = Field(..., ge=0, description="요구 경력 (년차)")
-    english_level: Optional[str] = Field(None, description="영어 수준")
-    primary_keyword: Optional[str] = Field(None, description="핵심 키워드")
-    vector: List[float] = Field(..., description="임베딩 벡터 (384차원)")
+    experience_years: Optional[int] = Field(None, ge=0, description="요구 경력 (연)")
+    primary_keyword: Optional[str] = Field(None, description="주요 키워드")
+    english_level: Optional[str] = Field(None, description="영어 레벨")
+    published_at: Optional[str] = Field(None, description="게시 날짜 (ISO 8601)")
+    skills: List[str] = Field(..., min_length=1, description="요구 기술 스택 배열")
+    long_description: Optional[str] = Field(None, description="채용 공고 원문 (Markdown)")
+    description_lang: Optional[str] = Field(None, description="원문 언어 (e.g., 'en', 'ko')")
+    skills_vector: List[float] = Field(..., description="기술 스택 벡터 (384d)")
 
-    @field_validator('vector')
+    @field_validator('skills_vector')
     @classmethod
     def validate_vector_dimension(cls, v):
         if len(v) != 384:
-            raise ValueError(f'Recruit vector must be 384 dimensions, got {len(v)}')
+            raise ValueError(f'Recruit skills_vector must be 384 dimensions, got {len(v)}')
+        return v
+
+    @field_validator('skills')
+    @classmethod
+    def validate_skills_not_empty(cls, v):
+        if not v or len(v) == 0:
+            raise ValueError('Recruit must have at least one skill')
         return v
 
 
@@ -66,7 +87,7 @@ class RecruitData(BaseData):
 
 class CandidateData(BaseData):
     """
-    후보자 데이터 모델입니다 (Flat DTO 구조).
+    후보자 데이터 모델 (v2 - Flat DTO 구조)
 
     Java gRPC DTO 매핑: CandidateRowDto
     - candidate_id → candidate_id (UUID v7)
@@ -74,12 +95,13 @@ class CandidateData(BaseData):
     - experience_years → experience_years
     - original_resume → original_resume
     - skills → skills (배열)
-    - skills_vector → skills_vector (768d)
+    - skills_vector → skills_vector (384d)
 
-    Java 매핑: Batch Writer가 3개 테이블에 분산 저장
-    - CandidateEntity (candidate 테이블)
-    - CandidateSkillEntity (candidate_skill 테이블, skills 배열 분해)
-    - CandidateSkillsEmbeddingEntity (candidate_skills_embedding 테이블)
+    Java 매핑: Batch Writer가 4개 테이블에 분산 저장 (v2)
+    - CandidateEntity (candidate 테이블 - 기본 정보)
+    - CandidateSkillEntity (candidate_skill 테이블 - skills 배열 분해, 1:N)
+    - CandidateDescriptionEntity (candidate_description 테이블 - 이력서 원문)
+    - CandidateSkillsEmbeddingEntity (candidate_skills_embedding 테이블 - 벡터)
 
     Note: BaseData를 상속받지만 id 필드를 candidate_id로 오버라이드
     """
@@ -88,13 +110,13 @@ class CandidateData(BaseData):
     experience_years: int = Field(..., ge=0, description="경력 (연)")
     original_resume: str = Field(..., description="원문 이력서")
     skills: List[str] = Field(..., min_length=1, description="보유 스킬 배열 (예: ['Java', 'Python'])")
-    skills_vector: List[float] = Field(..., description="기술 스택 벡터 (768차원)")
+    skills_vector: List[float] = Field(..., description="기술 스택 벡터 (384차원)")
 
     @field_validator('skills_vector')
     @classmethod
     def validate_vector_dimension(cls, v):
-        if len(v) != 768:
-            raise ValueError(f'Candidate vector must be 768 dimensions, got {len(v)}')
+        if len(v) != 384:
+            raise ValueError(f'Candidate skills_vector must be 384 dimensions, got {len(v)}')
         return v
 
     @field_validator('skills')
@@ -120,24 +142,27 @@ class CandidateData(BaseData):
 
 class SkillEmbeddingDicData(BaseModel):
     """
-    기술 스택 사전 데이터 모델입니다.
+    기술 스택 사전 데이터 모델 (v2)
 
-    Java gRPC DTO 매핑: SkillEmbeddingDicRowDto (생성 예정)
+    v2 변경사항:
+    - 벡터 차원 통일: 768d → 384d
+
+    Java gRPC DTO 매핑: SkillEmbeddingDicRowDto
     - skill → skill (PK)
     - position_category → position_category
-    - skill_vector → skill_vector (768d)
+    - skill_vector → skill_vector (384d)
 
     Java 매핑: SkillEmbeddingDicEntity (skill_embedding_dic 테이블)
     """
     skill: str = Field(..., description="스킬명 (PK)")
     position_category: str = Field(..., description="직종 카테고리")
-    skill_vector: List[float] = Field(..., description="스킬 벡터 (768차원)")
+    skill_vector: List[float] = Field(..., description="스킬 벡터 (384차원)")
 
     @field_validator('skill_vector')
     @classmethod
     def validate_vector_dimension(cls, v):
-        if len(v) != 768:
-            raise ValueError(f'Skill vector must be 768 dimensions, got {len(v)}')
+        if len(v) != 384:
+            raise ValueError(f'Skill vector must be 384 dimensions, got {len(v)}')
         return v
 
     class Config:

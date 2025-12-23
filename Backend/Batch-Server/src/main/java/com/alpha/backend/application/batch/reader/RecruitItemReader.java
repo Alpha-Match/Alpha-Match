@@ -34,7 +34,7 @@ public class RecruitItemReader extends DomainItemReader<RecruitRow> {
         log.info("[READER] Starting gRPC stream | Domain: {} | Last UUID: {} | Chunk Size: {}",
                 getDomainName(), lastProcessedUuid, chunkSize);
 
-        Flux<RowChunk> stream = embeddingGrpcClient.streamEmbeddings(lastProcessedUuid, chunkSize);
+        Flux<RowChunk> stream = embeddingGrpcClient.streamEmbeddings(getDomainName(), lastProcessedUuid, chunkSize);
 
         // 백그라운드 스레드에서 스트림 처리
         stream

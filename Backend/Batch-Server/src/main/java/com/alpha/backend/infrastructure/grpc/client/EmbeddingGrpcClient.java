@@ -35,19 +35,21 @@ public class EmbeddingGrpcClient {
      * Embedding Stream 수신
      * Python Server로부터 RowChunk를 Streaming으로 수신
      *
+     * @param domain 도메인 구분 (recruit, candidate, skill_dic)
      * @param lastProcessedUuid 마지막 처리된 UUID (checkpoint)
      * @param chunkSize Chunk 크기
      * @return Flux<RowChunk> Reactive Stream
      */
-    public Flux<RowChunk> streamEmbeddings(UUID lastProcessedUuid, int chunkSize) {
-        log.info("Starting embedding stream - lastProcessedUuid: {}, chunkSize: {}",
-                lastProcessedUuid, chunkSize);
+    public Flux<RowChunk> streamEmbeddings(String domain, UUID lastProcessedUuid, int chunkSize) {
+        log.info("Starting embedding stream - domain: {}, lastProcessedUuid: {}, chunkSize: {}",
+                domain, lastProcessedUuid, chunkSize);
 
         // Reactive Sink 생성 (backpressure 지원)
         Sinks.Many<RowChunk> sink = Sinks.many().unicast().onBackpressureBuffer();
 
         // gRPC Request 생성
         StreamEmbeddingRequest.Builder requestBuilder = StreamEmbeddingRequest.newBuilder()
+                .setDomain(domain)
                 .setChunkSize(chunkSize);
 
         if (lastProcessedUuid != null) {

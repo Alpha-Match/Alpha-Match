@@ -1,12 +1,12 @@
 package com.alpha.backend.domain.candidate.entity;
 
-import com.alpha.backend.domain.common.BaseEmbeddingEntity;
 import com.pgvector.PGvector;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 /**
@@ -15,40 +15,52 @@ import java.util.UUID;
  *
  * SQL 매핑:
  * - candidate_id (UUID, PK, FK → candidate)
- * - skills (VARCHAR(50)[], PostgreSQL 배열)
- * - skills_vector (VECTOR(768))
+ * - skills (TEXT[], PostgreSQL 배열)
+ * - skills_vector (VECTOR(384))
  * - created_at, updated_at (자동 관리)
  */
 @Entity
 @Table(name = "candidate_skills_embedding")
-@AttributeOverrides({
-    @AttributeOverride(name = "id", column = @Column(name = "candidate_id", columnDefinition = "UUID", updatable = false, nullable = false)),
-    @AttributeOverride(name = "vector", column = @Column(name = "skills_vector", nullable = false))
-})
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CandidateSkillsEmbeddingEntity extends BaseEmbeddingEntity {
+public class CandidateSkillsEmbeddingEntity {
 
-    public static final int VECTOR_DIMENSION = 768;
+    public static final int VECTOR_DIMENSION = 384;
 
-    @Column(name = "skills", columnDefinition = "VARCHAR(50)[]", nullable = false)
+    @Id
+    @Column(name = "candidate_id", columnDefinition = "UUID", updatable = false, nullable = false)
+    private UUID candidateId;
+
+    @Column(name = "skills", columnDefinition = "TEXT[]", nullable = false)
     private String[] skills;
+
+    @Column(name = "skills_vector", columnDefinition = "vector(384)", nullable = false)
+    private PGvector skillsVector;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, nullable = false)
-    private LocalDateTime createdAt;
+    private OffsetDateTime createdAt;
 
-    @Override
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private OffsetDateTime updatedAt;
+
     public String getDomainType() {
         return "candidate";
     }
 
-    @Override
     public int getVectorDimension() {
         return VECTOR_DIMENSION;
+    }
+
+    /**
+     * PGvector를 float 배열로 변환
+     */
+    public float[] toFloatArray() {
+        return this.skillsVector != null ? this.skillsVector.toArray() : new float[0];
     }
 
     /**
@@ -63,9 +75,9 @@ public class CandidateSkillsEmbeddingEntity extends BaseEmbeddingEntity {
         }
 
         CandidateSkillsEmbeddingEntity entity = new CandidateSkillsEmbeddingEntity();
-        entity.setId(candidateId);
+        entity.setCandidateId(candidateId);
         entity.setSkills(skills);
-        entity.setVector(new PGvector(vectorArray));
+        entity.setSkillsVector(new PGvector(vectorArray));
         return entity;
     }
 }
