@@ -2,6 +2,10 @@ spring:
   application:
     name: batch-service
 
+  # Web Application Type (HTTP 서버 비활성화, gRPC만 사용)
+  main:
+    web-application-type: none
+
   # PostgreSQL + pgvector 설정
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:alpha_match}
@@ -25,7 +29,7 @@ spring:
         format_sql: true
         use_sql_comments: true
         jdbc:
-          batch_size: 300
+          batch_size: 300  # v3: baseline 복원 (Virtual Thread 병렬 쓰기 비교용)
         order_inserts: true
         order_updates: true
     show-sql: true
@@ -42,6 +46,8 @@ spring:
     enabled: true
     baseline-on-migrate: true
     locations: classpath:db/migration
+    validate-on-migrate: true
+    clean-disabled: true
 
   # Quartz 설정 - 스케줄링 라이브러리 (Pattern 1 비활성화로 인해 전체 비활성화)
   quartz:
@@ -51,7 +57,7 @@ spring:
 grpc:
   # gRPC 서버 설정 (Python에서 Client Streaming으로 데이터 수신)
   server:
-    port: 50051  # Batch Server (IngestDataStream 수신)
+    port: 9090  # Batch Server (IngestDataStream 수신)
 
   client:
     # Python AI Server (Embedding Stream)
@@ -82,7 +88,7 @@ batch:
         vector-dimension: 384          # Recruit Embedding 차원
         table-prefix: recruit          # 테이블 접두사
       candidate:
-        vector-dimension: 768          # Candidate Embedding 차원
+        vector-dimension: 384          # Candidate Embedding 차원 (v2: 384d 통일)
         table-prefix: candidate        # 테이블 접두사
 
   # ============================================
@@ -116,8 +122,10 @@ batch:
 # Logging 설정
 logging:
   level:
-    com.alpha.backend: DEBUG
+    com.alpha.backend: INFO  # DEBUG → INFO (성능 테스트용)
     org.springframework.batch: INFO
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.hibernate.SQL: INFO  # DEBUG → INFO (SQL 로깅 비활성화)
+    org.hibernate.type.descriptor.sql.BasicBinder: INFO  # TRACE → INFO (파라미터 바인딩 로깅 비활성화)
     io.grpc: INFO
+    org.flywaydb: INFO  # DEBUG → INFO (마이그레이션 완료 후)
+    org.springframework.boot.autoconfigure: INFO  # DEBUG → INFO (AutoConfiguration 로그 축소)

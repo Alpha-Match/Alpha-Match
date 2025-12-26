@@ -77,7 +77,7 @@ async def stream_data_to_batch_server(
     domain: str,
     file_name: str,
     data: List[BaseData],
-    chunk_size: int = 100
+    chunk_size: int = 100  # v3: baseline 복원 (Virtual Thread 병렬 쓰기 비교용)
 ) -> embedding_stream_pb2.IngestDataResponse:
     """
     클라이언트 스트리밍을 통해 배치 서버로 데이터를 전송합니다.
