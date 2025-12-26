@@ -1,10 +1,10 @@
 // src/components/input-panel/SkillSelector.tsx
 import React from 'react';
-import { useAppSelector, useAppDispatch } from '../../store/hooks';
-import { toggleSkill } from '../../store/features/search/searchSlice';
-import { UserMode } from '../../types/appTypes';
+import { useAppSelector, useAppDispatch } from '../../services/state/hooks';
+import { toggleSkill } from '../../services/state/features/search/searchSlice';
+import { UserMode } from '../../types';
 import { Code } from 'lucide-react';
-import { CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS } from '../../constants/appConstants';
+import { CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS } from '../../constants';
 import chroma from 'chroma-js';
 
 export const SkillSelector: React.FC = () => {

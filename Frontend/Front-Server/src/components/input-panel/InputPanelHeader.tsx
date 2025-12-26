@@ -1,9 +1,9 @@
 // src/components/input-panel/InputPanelHeader.tsx
 import React from 'react';
-import { useAppSelector } from '../../store/hooks';
-import { UserMode } from '../../types/appTypes';
+import { useAppSelector } from '../../services/state/hooks';
+import { UserMode } from '../../types';
 import { Search, Briefcase } from 'lucide-react';
-import { CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS } from '../../constants/appConstants';
+import { CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS } from '../../constants';
 import chroma from 'chroma-js';
 
 export const InputPanelHeader: React.FC = () => {

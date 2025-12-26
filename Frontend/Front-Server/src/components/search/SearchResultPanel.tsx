@@ -6,7 +6,7 @@
  *              운영체제: Windows
  */
 import React from 'react';
-import { MatchItem } from '../../types/appTypes';
+import { MatchItem } from '../../types';
 import ResultCard from './ResultCard';
 
 interface SearchResultPanelProps {

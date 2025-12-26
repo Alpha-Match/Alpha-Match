@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { useAppSelector, useAppDispatch } from '../../store/hooks';
-import { showNotification, hideNotification } from '../../store/features/notification/notificationSlice';
+import { useAppSelector, useAppDispatch } from '../../services/state/hooks';
+import { showNotification, hideNotification } from '../../services/state/features/notification/notificationSlice';
 import { XCircle, CheckCircle, Info } from 'lucide-react';
 
 const icons = {

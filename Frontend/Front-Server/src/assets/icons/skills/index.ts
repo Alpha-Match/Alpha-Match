@@ -4,7 +4,7 @@
  *              Next.js의 SVG import는 { src, width, height } 형태의 StaticImageData 객체를 반환합니다.
  *              운영체제: Windows
  */
-import { StaticImageData } from 'next/image';
+import {StaticImageData} from 'next/image';
 
 import Abap from './abap.svg';
 import Angular from './angular.svg';
@@ -65,6 +65,7 @@ import Mysql from './mysql.svg';
 import Neo4j from './neo4j.svg';
 import Nestjs from './nestjs.svg';
 import Nextjs from './next.js.svg';
+import Vue from './vue.svg';
 import Nlp from './nlp.svg';
 import Nodejs from './node.js.svg';
 import Notion from './notion.svg';
@@ -101,7 +102,6 @@ import Tensorflow from './tensorflow.svg';
 import Terraform from './terraform.svg';
 import Transformers from './transformers.svg';
 import Typescript from './typescript.svg';
-import Vue from './vue.svg';
 import Websocket from './websocket.svg';
 
 const SKILL_ICONS: { [key: string]: StaticImageData } = {

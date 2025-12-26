@@ -1,17 +1,17 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { useAppSelector, useAppDispatch } from '../store/hooks';
-import { setSearchPerformed } from '../store/features/search/searchSlice';
-import { setPageViewMode, setSelectedMatchId } from '../store/features/ui/uiSlice';
+import { useAppSelector, useAppDispatch } from '../services/state/hooks';
+import { setSearchPerformed } from '../services/state/features/search/searchSlice';
+import { setPageViewMode, setSelectedMatchId } from '../services/state/features/ui/uiSlice';
 import { InputPanel } from '../components/input-panel';
 import { Header } from '../components/layout/Header';
 import { useSearchMatches } from '../hooks/useSearchMatches';
 import SearchResultPanel from '../components/search/SearchResultPanel';
 import DefaultDashboard from '../components/dashboard/DefaultDashboard';
 import MatchDetailPanel from '../components/search/MatchDetailPanel';
-import { UserMode, MatchItem } from '../types/appTypes';
-import { CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS } from '../constants/appConstants';
+import { UserMode, MatchItem } from '../types';
+import { CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS } from '../constants';
 
 /**
  * @file page.tsx

@@ -2,8 +2,8 @@
 'use client';
 
 import React from 'react';
-import { useAppSelector, useAppDispatch } from '../../store/hooks';
-import { setTheme } from '../../store/features/ui/uiSlice';
+import { useAppSelector, useAppDispatch } from '../../services/state/hooks';
+import { setTheme } from '../../services/state/features/ui/uiSlice';
 import { Sun, Moon } from 'lucide-react';
 
 export const ThemeToggle: React.FC = () => {

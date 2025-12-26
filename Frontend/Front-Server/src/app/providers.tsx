@@ -2,8 +2,8 @@
 
 import { ApolloProvider } from '@apollo/client/react';
 import { Provider as ReduxProvider } from 'react-redux';
-import { store } from '../store/store';
-import { makeClient } from '../lib/apollo-client';
+import { store } from '../services/state/store';
+import { makeClient } from '../services/api/apollo-client';
 import { useState } from 'react';
 
 export default function Providers({

@@ -2,10 +2,10 @@
 
 import { useEffect } from 'react';
 import { useQuery } from '@apollo/client/react';
-import { useAppDispatch } from '../../store/hooks';
-import { setSkillCategories } from '../../store/features/search/searchSlice';
-import { GET_SKILL_CATEGORIES } from '../../lib/graphql/queries';
-import { TECH_STACKS_DEMO } from '../../constants/appConstants';
+import { useAppDispatch } from '../../services/state/hooks';
+import { setSkillCategories } from '../../services/state/features/search/searchSlice';
+import { GET_SKILL_CATEGORIES } from '../../services/api/queries/skills';
+import { TECH_STACKS_DEMO } from '../../constants';
 
 interface SkillCategoriesData {
   skillCategories: {

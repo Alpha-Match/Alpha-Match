@@ -7,9 +7,9 @@
  */
 import React from 'react';
 import chroma from 'chroma-js';
-import { useAppSelector } from '../../store/hooks';
-import { UserMode } from '../../types/appTypes';
-import { RECRUITER_THEME_COLORS, CANDIDATE_THEME_COLORS } from '../../constants/appConstants';
+import { useAppSelector } from '../../services/state/hooks';
+import { UserMode } from '../../types';
+import { RECRUITER_THEME_COLORS, CANDIDATE_THEME_COLORS } from '../../constants';
 import { DASHBOARD_MOCK_DATA } from '../../constants/mockData';
 import CategoryPieChart from './CategoryPieChart';
 import GenericTreemap from './GenericTreemap';

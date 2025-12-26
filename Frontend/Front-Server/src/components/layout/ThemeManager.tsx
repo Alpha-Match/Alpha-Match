@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useAppSelector } from '../../store/hooks';
+import { useAppSelector } from '../../services/state/hooks';
 
 /**
  * @file ThemeManager.tsx

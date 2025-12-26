@@ -1,9 +1,9 @@
 // src/components/input-panel/ExperienceSelector.tsx
 import React from 'react';
-import { useAppSelector, useAppDispatch } from '../../store/hooks';
-import { setExperience } from '../../store/features/search/searchSlice';
-import { UserMode } from '../../types/appTypes';
-import { EXPERIENCE_LEVELS, CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS } from '../../constants/appConstants';
+import { useAppSelector, useAppDispatch } from '../../services/state/hooks';
+import { setExperience } from '../../services/state/features/search/searchSlice';
+import { UserMode } from '../../types';
+import { EXPERIENCE_LEVELS, CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS } from '../../constants';
 import { CheckCircle2 } from 'lucide-react';
 import chroma from 'chroma-js';
 

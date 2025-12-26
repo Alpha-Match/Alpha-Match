@@ -1,4 +1,4 @@
-import { Recruit, Candidate, ExperienceLevel } from '../types/appTypes';
+import { Recruit, Candidate, ExperienceLevel } from '../types';
 
 /**
  * @file mockData.ts
@@ -145,7 +145,7 @@ export const DASHBOARD_MOCK_DATA = [
     skills: [
       { skill: 'React', count: 95 },
       { skill: 'TypeScript', count: 88 },
-      { skill: 'Vue.js', count: 40 },
+      { skill: 'Vue', count: 40 },
       { skill: 'Next.js', count: 75 },
       { skill: 'Angular', count: 35 },
       { skill: 'Javascript', count: 85 },

@@ -2,13 +2,13 @@
 'use client';
 
 import React from 'react';
-import { useAppSelector, useAppDispatch } from '../../store/hooks';
-import { resetSearch } from '../../store/features/search/searchSlice';
-import { setUserMode, resetView } from '../../store/features/ui/uiSlice';
-import { UserMode } from '../../types/appTypes';
+import { useAppSelector, useAppDispatch } from '../../services/state/hooks';
+import { resetSearch } from '../../services/state/features/search/searchSlice';
+import { setUserMode, resetView } from '../../services/state/features/ui/uiSlice';
+import { UserMode } from '../../types';
 import { Briefcase, UserSearch } from 'lucide-react';
 import { ThemeToggle } from '../common/ThemeToggle';
-import { CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS } from '../../constants/appConstants';
+import { CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS } from '../../constants';
 
 export const Header: React.FC = () => {
   const dispatch = useAppDispatch();
