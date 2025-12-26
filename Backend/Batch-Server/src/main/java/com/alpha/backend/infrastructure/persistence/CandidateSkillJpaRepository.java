@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -31,6 +32,7 @@ public interface CandidateSkillJpaRepository
      * - candidate_skill 테이블 (candidate_id, skill) 복합 PK
      */
     @Override
+    @Transactional
     @Modifying
     @Query(value = """
         INSERT INTO candidate_skill (candidate_id, skill, updated_at)
@@ -45,6 +47,7 @@ public interface CandidateSkillJpaRepository
      * Batch Upsert for multiple entities
      */
     @Override
+    @Transactional
     default void upsertAll(List<CandidateSkillEntity> entities) {
         entities.forEach(this::upsert);
     }

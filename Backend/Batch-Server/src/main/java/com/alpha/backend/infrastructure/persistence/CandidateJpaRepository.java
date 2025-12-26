@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -29,10 +30,11 @@ public interface CandidateJpaRepository
      * - candidate 테이블 (candidate_id, position_category, experience_years, original_resume)
      */
     @Override
+    @Transactional
     @Modifying
     @Query(value = """
         INSERT INTO candidate (candidate_id, position_category, experience_years, original_resume, updated_at)
-        VALUES (:#{#entity.id}, :#{#entity.positionCategory}, :#{#entity.experienceYears},
+        VALUES (:#{#entity.candidateId}, :#{#entity.positionCategory}, :#{#entity.experienceYears},
                 :#{#entity.originalResume}, NOW())
         ON CONFLICT (candidate_id)
         DO UPDATE SET
@@ -47,6 +49,7 @@ public interface CandidateJpaRepository
      * Batch Upsert for multiple entities
      */
     @Override
+    @Transactional
     default void upsertAll(List<CandidateEntity> entities) {
         entities.forEach(this::upsert);
     }

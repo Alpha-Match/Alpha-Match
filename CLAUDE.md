@@ -56,7 +56,7 @@
 - **gRPC 통신 가이드**: `/Demo-Python/docs/gRPC_통신_가이드.md` (Client Streaming)
 
 ### 🌐 Frontend
-- **Frontend 가이드**: `/Frontend/Front-Server/CLAUDE.md`
+- **Frontend 가이드**: `/Frontend/Front-Server/GEMINI.md`
 
 ### 🏗️ 시스템 아키텍처 (공통)
 - **시스템 아키텍처**: `/docs/시스템_아키텍처.md`
@@ -100,20 +100,22 @@
   - Repository 3개 수정 (RecruitSkillsEmbedding, CandidateSkillsEmbedding, SkillEmbeddingDic)
   - PGvector → String 변환 (.toString()) 후 PostgreSQL vector 타입으로 CAST
   - bytea → vector 변환 오류 완전 해결
-  - **End-to-End 파이프라인 검증 성공** (Python → gRPC → Java → PostgreSQL)
-    - **Recruit 도메인**: 87,488 레코드 (471MB) 처리 완료
-      - 4-table 동시 upsert 검증 (recruit, recruit_skill, recruit_description, recruit_skills_embedding)
-      - 384차원 Vector Embedding 저장 완전 검증 ✅
-    - **Skill_dic 도메인**: 105 레코드 (358KB) 처리 완료
-      - 2-table 동시 upsert 검증 (skill_category_dic, skill_embedding_dic)
-      - FK 관계 처리 검증 (카테고리 자동 생성 → UUID 획득)
-      - UK 기반 Upsert 전략 검증 (category, skill 컬럼 기준) ✅
+- **JVM 힙 메모리 및 로깅 최적화 (2025-12-26)**:
+  - `gradle.properties` 추가: `-Xms2g -Xmx8g -XX:+UseG1GC`
+  - 로깅 레벨 DEBUG → INFO 조정 (OOM 방지)
+  - OOM 크래시 분석 및 해결 (리포트: `Backend/Batch-Server/docs/hist/2025-12-26_01_OOM_Crash_Analysis_Report.md`)
+- **전체 도메인 성능 테스트 완료 (2025-12-26)**:
+  - **Recruit**: 87,488건, 12m 54.8s, 113.0 rps ✅
+  - **Candidate**: 118,741건, 30m 50.1s, 64.2 rps ✅
+  - **Skill_dic**: 105건, 1.69s, 62.2 rps ✅
+  - **총 처리량**: 206,334건, 44m 46.6s, 평균 76.8 rps
+  - 리포트: `Backend/Batch-Server/docs/hist/2025-12-26_02_Performance_Test_Report.md`
 
 ### 🔄 진행 중
 - 없음
 
 ### ⏳ 예정
-- Candidate 도메인 파이프라인 테스트
+- 청크 사이즈 튜닝 (100, 500, 1000 비교)
 - API Server 설계 및 구현
 - GraphQL 구현 (Resolver → Service → Cache → DB)
 - Frontend GraphQL 쿼리 구현, React Query 캐싱
@@ -174,6 +176,7 @@
   - `Python_서버_개발_가이드.md`
   - `데이터_처리_가이드.md`
   - `gRPC_통신_가이드.md`
+- `/Frontend/Front-Server/GEMINI.md` (프론트엔드 아키텍처 및 개발 가이드)
 
 **Tier 2 - 아키텍처 문서 (구조 변경 시 업데이트)**
 - `/docs/시스템_아키텍처.md`
@@ -242,4 +245,4 @@ Batch Server가 자동으로 Python Server에 연결하여 데이터를 수신�
 
 ---
 
-**최종 수정일:** 2025-12-22 (Skill_dic 도메인 검증 완료)
+**최종 수정일:** 2025-12-26 (전체 도메인 성능 테스트 완료, JVM 최적화)

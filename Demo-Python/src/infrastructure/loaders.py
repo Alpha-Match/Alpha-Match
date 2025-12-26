@@ -96,9 +96,11 @@ class PklChunkLoader(BaseChunkLoader[T_Row]):
             total_rows_before = len(df)
             logger.info(f"Total rows loaded: {total_rows_before}")
 
-            # v2: Recruit 도메인 전처리 적용
+            # v2: 도메인별 전처리 적용
             if self.row_class.__name__ == 'RecruitData':
                 df = self._preprocess_recruit_data(df)
+            elif self.row_class.__name__ == 'CandidateData':
+                df = self._preprocess_candidate_data(df)
 
             total_rows_after = len(df)
             if total_rows_before != total_rows_after:
@@ -180,7 +182,13 @@ class PklChunkLoader(BaseChunkLoader[T_Row]):
         logger.debug(f"Exp Years converted: no_exp → None, 'Ny' → Integer")
 
         # 3. 불필요한 컬럼 삭제
-        unnecessary_cols = ['__index_level_0__', 'normalized_skills', 'embedding_input_text', 'embedding_sample']
+        unnecessary_cols = [
+            '__index_level_0__',
+            'normalized_skills',
+            'embedding_input_text',
+            'embedding_sample',
+            'db_id'  # v2: Remove database ID column if present
+        ]
         existing_unnecessary = [col for col in unnecessary_cols if col in df.columns]
         if existing_unnecessary:
             df = df.drop(columns=existing_unnecessary)
@@ -219,6 +227,109 @@ class PklChunkLoader(BaseChunkLoader[T_Row]):
         df = df[required_cols]
 
         logger.info("Recruit preprocessing completed")
+        return df
+
+    def _preprocess_candidate_data(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Candidate 도메인 전처리 (table_specification.md 요구사항)
+
+        1. 컬럼명 매핑 (Title Case → snake_case)
+        2. Experience Years 전처리 (float → int, NaN 처리)
+        3. 불필요한 컬럼 삭제
+        4. skills 빈 배열 제외
+        5. 벡터 누락 행 필터링
+        6. 벡터 차원 검증 (384d)
+        """
+        logger.info("Applying Candidate domain preprocessing...")
+
+        # 1. 컬럼명 매핑 (Title Case → snake_case)
+        column_mapping = {
+            'id': 'candidate_id',                  # BaseData.id → candidate_id
+            'Primary Keyword': 'position_category',
+            'Experience Years': 'experience_years',
+            'CV': 'original_resume',
+            'skills': 'skills',
+            'skill_vector': 'skills_vector'
+        }
+        df = df.rename(columns=column_mapping)
+
+        # 2. Position Category 전처리 (NaN → 'Unknown')
+        before_position_filter = len(df)
+        df['position_category'] = df['position_category'].fillna('Unknown')
+        after_position_filter = len(df)
+        if before_position_filter != after_position_filter:
+            logger.info(f"Filled null position_category: {before_position_filter - after_position_filter} rows")
+
+        # 3. Experience Years 전처리 (float → int)
+        def convert_exp_years(value):
+            """float64 → int, NaN → 0"""
+            if pd.isna(value):
+                return 0  # Default to 0 for candidates with unknown experience
+            try:
+                return int(round(value))  # Round and convert to int
+            except (ValueError, TypeError):
+                return 0
+
+        df['experience_years'] = df['experience_years'].apply(convert_exp_years)
+        logger.debug(f"Experience Years converted: float64 → int, NaN → 0")
+
+        # 4. 불필요한 컬럼 삭제
+        unnecessary_cols = [
+            '__index_level_0__',
+            'normalized_skills',
+            'embedding_input_text',
+            'embedding_sample',
+            'Position',          # Display field, not needed
+            'Moreinfo',          # Additional info, not needed
+            'Looking For',       # Preferences, not needed
+            'Highlights',        # Achievements, not needed
+            'English Level',     # Language level, not needed
+            'CV_lang'           # Resume language, not needed
+        ]
+        existing_unnecessary = [col for col in unnecessary_cols if col in df.columns]
+        if existing_unnecessary:
+            df = df.drop(columns=existing_unnecessary)
+            logger.debug(f"Dropped columns: {', '.join(existing_unnecessary)}")
+
+        # 5. skills 빈 배열 제외 (numpy array와 list 모두 지원)
+        before_skill_filter = len(df)
+        def has_skills(x):
+            """skills가 비어있지 않은지 확인 (ndarray 또는 list)"""
+            import numpy as np
+            try:
+                return len(x) > 0
+            except (TypeError, AttributeError):
+                # None 또는 길이가 없는 객체
+                return False
+
+        df = df[df['skills'].apply(has_skills)]
+        after_skill_filter = len(df)
+        if before_skill_filter != after_skill_filter:
+            logger.info(f"Filtered empty skills: {before_skill_filter - after_skill_filter} rows")
+
+        # 6. 벡터 누락 행 필터링
+        before_vector_filter = len(df)
+        df = df[df['skills_vector'].notna()]
+        after_vector_filter = len(df)
+        if before_vector_filter != after_vector_filter:
+            logger.info(f"Filtered null vectors: {before_vector_filter - after_vector_filter} rows")
+
+        # 7. 벡터 차원 검증 (384d) - 로깅만, 실제 검증은 Pydantic에서 수행
+        if len(df) > 0:
+            sample_vector = df['skills_vector'].iloc[0]
+            if hasattr(sample_vector, 'shape'):
+                logger.debug(f"Vector dimension: {sample_vector.shape[0]}")
+            elif isinstance(sample_vector, list):
+                logger.debug(f"Vector dimension: {len(sample_vector)}")
+
+        # 필요한 컬럼만 선택 (v2 스키마 순서대로)
+        required_cols = [
+            'candidate_id', 'position_category', 'experience_years',
+            'original_resume', 'skills', 'skills_vector'
+        ]
+        df = df[required_cols]
+
+        logger.info("Candidate preprocessing completed")
         return df
 
 

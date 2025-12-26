@@ -85,7 +85,7 @@ class RecruitData(BaseData):
 # Candidate 도메인 (후보자) - Flat DTO 구조
 # ============================================================================
 
-class CandidateData(BaseData):
+class CandidateData(BaseModel):
     """
     후보자 데이터 모델 (v2 - Flat DTO 구조)
 
@@ -103,7 +103,7 @@ class CandidateData(BaseData):
     - CandidateDescriptionEntity (candidate_description 테이블 - 이력서 원문)
     - CandidateSkillsEmbeddingEntity (candidate_skills_embedding 테이블 - 벡터)
 
-    Note: BaseData를 상속받지만 id 필드를 candidate_id로 오버라이드
+    Note: BaseModel을 직접 상속 (BaseData가 아님, candidate_id 사용)
     """
     candidate_id: str = Field(..., description="후보자 UUID")
     position_category: str = Field(..., description="직종 카테고리")
@@ -128,12 +128,6 @@ class CandidateData(BaseData):
 
     class Config:
         arbitrary_types_allowed = True
-
-    # BaseData의 id 필드를 숨기기 위한 property
-    @property
-    def id(self) -> str:
-        """id 필드를 candidate_id로 리다이렉트"""
-        return self.candidate_id
 
 
 # ============================================================================

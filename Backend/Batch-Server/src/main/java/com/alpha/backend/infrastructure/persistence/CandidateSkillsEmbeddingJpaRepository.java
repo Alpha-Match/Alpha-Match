@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -33,6 +34,7 @@ public interface CandidateSkillsEmbeddingJpaRepository
      * - skills_vector: VECTOR(384)
      */
     @Override
+    @Transactional
     @Modifying
     @Query(value = """
         INSERT INTO candidate_skills_embedding (
@@ -57,6 +59,7 @@ public interface CandidateSkillsEmbeddingJpaRepository
      * Batch Upsert for multiple entities
      */
     @Override
+    @Transactional
     default void upsertAll(List<CandidateSkillsEmbeddingEntity> entities) {
         entities.forEach(this::upsert);
     }
