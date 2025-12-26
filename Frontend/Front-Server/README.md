@@ -42,12 +42,11 @@ Frontend/Front-Server/
 │   │   ├── layout/             #   - 전역 레이아웃 (Header 등)
 │   │   └── search/             #   - 검색 결과 화면 관련 컴포넌트
 │   │
-│   ├── lib/                    # 라이브러리 설정 (Apollo Client 등)
+│   ├── services/               # 외부 서비스 및 클라이언트 상태 관리
+│   │   ├── api/                #   - API 연동 로직 (GraphQL 클라이언트, 쿼리)
+│   │   └── state/              #   - 전역 클라이언트 상태 관리 (Redux slices, hooks, store)
 │   │
-│   ├── store/                  # Redux 전역 상태 관리
-│   │   ├── features/           #   - 기능별 Slice (ui, search, notification)
-│   │   ├── hooks.ts            #   - 타입이 적용된 Redux Hooks
-│   │   └── index.ts            #   - Store 설정
+│   ├── lib/                    # 공통 유틸리티
 │   │
 │   ├── graphql/                # GraphQL (쿼리, 타입 등)
 │   │
@@ -60,7 +59,6 @@ Frontend/Front-Server/
 ├── docs/                       # 개발 문서
 │
 ├── package.json
-├── CLAUDE.md                   # AI 개발 가이드 (Legacy)
 ├── GEMINI.md                   # AI 개발 가이드
 └── README.md                   # 이 문서
 ```
@@ -128,7 +126,7 @@ npm start
 ```typescript
 'use client';
 
-import { useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 import { SEARCH_RECRUITS } from '@/graphql/queries';
 
 export default function SearchResults() {
@@ -146,23 +144,20 @@ export default function SearchResults() {
 ### 3. Redux 상태 관리
 
 ```typescript
-// searchSlice.ts
-export const searchSlice = createSlice({
-  name: 'search',
-  initialState: {
-    keyword: '',
-    filters: {}
-  },
-  reducers: {
-    setKeyword: (state, action) => {
-      state.keyword = action.payload;
-    }
-  }
-});
+// src/services/state/features/search/searchSlice.ts (파일 위치)
+import { createSlice } from '@reduxjs/toolkit';
+// ... (초기 상태 및 리듀서 정의) ...
 
-// Component에서 사용
-const keyword = useSelector((state: RootState) => state.search.keyword);
-const dispatch = useDispatch();
+// Component에서 사용 (예시)
+import { useAppSelector, useAppDispatch } from '@/services/state/hooks';
+import type { RootState } from '@/services/state/store';
+
+function MyComponent() {
+  const keyword = useAppSelector((state: RootState) => state.search.keyword);
+  const dispatch = useAppDispatch();
+
+  // ...
+}
 ```
 
 ### 4. Tailwind CSS
@@ -175,11 +170,180 @@ const dispatch = useDispatch();
 
 ---
 
+## 5. React 19 개발 패턴 가이드
+
+이 문서는 React 19에서 도입된 주요 기능과 권장 패턴을 요약하여, `Alpha-Match` 프론트엔드 개발 시 일관되고 현대적인 코드 스타일을 유지하기 위해 작성되었습니다.
+
+---
+
+### 5.1. Actions: 데이터 변경 로직의 혁신
+
+**개념**: 서버 데이터 변경(생성, 수정, 삭제)과 관련된 비동기 로직을 처리하는 새로운 방식입니다. Actions는 데이터 제출부터 UI 피드백(로딩, 에러, 성공)까지의 전체 흐름을 React가 자동으로 관리하게 해줍니다.
+
+**핵심 이점**:
+- **Pending 상태 자동 관리**: `useState`로 `isLoading`과 같은 상태를 수동으로 관리할 필요가 없어집니다.
+- **에러 처리 간소화**: `try/catch` 블록 대신, React가 에러를 잡아내어 UI에 쉽게 표시할 수 있습니다.
+- **낙관적 업데이트(Optimistic Updates)**: 서버 응답을 기다리지 않고 UI를 먼저 긍정적으로 업데이트하여 사용자 경험을 향상시킬 수 있습니다. (`useOptimistic` 훅 사용)
+
+#### 사용 패턴: `useTransition`과의 결합
+
+가장 기본적인 Actions 패턴으로, `useTransition`을 사용하여 Pending 상태를 추적할 수 있습니다.
+
+**Before (React < 19)**
+```tsx
+function AddToCartButton({ productId }) {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleClick = async () => {
+    setIsLoading(true);
+    await addToCart(productId);
+    setIsLoading(false);
+  };
+
+  return (
+    <button onClick={handleClick} disabled={isLoading}>
+      {isLoading ? 'Adding...' : 'Add to Cart'}
+    </button>
+  );
+}
+```
+
+**After (React 19)**
+```tsx
+import { useTransition } from 'react';
+
+function AddToCartButton({ productId }) {
+  const [isPending, startTransition] = useTransition();
+
+  const handleClick = () => {
+    startTransition(async () => {
+      await addToCart(productId);
+    });
+  };
+
+  return (
+    <button onClick={handleClick} disabled={isPending}>
+      {isPending ? 'Adding...' : 'Add to Cart'}
+    </button>
+  );
+}
+```
+
+---
+
+### 5.2. `use` 훅: 조건부 렌더링의 미래
+
+**개념**: `Promise`나 `Context` 같은 "읽을 수 있는(readable)" 값을 렌더링 중에 직접 사용할 수 있게 해주는 훅입니다.
+
+**핵심 이점**:
+- **조건부 로직 내에서 호출 가능**: 일반적인 훅과 달리, `if`, `for`, `early return` 문 안에서도 `use`를 호출할 수 있습니다.
+- **코드 간소화**: `Promise`를 `Suspense`와 함께 사용하면, 데이터 로딩 상태를 더욱 깔끔하게 처리할 수 있습니다.
+
+**Before (Context)**
+```tsx
+import { useContext } from 'react';
+import { ThemeContext } from './ThemeContext';
+
+function MyComponent() {
+  const theme = useContext(ThemeContext);
+  return <div className={theme}>...</div>;
+}
+```
+
+**After (React 19)**
+```tsx
+import { use } from 'react';
+import { ThemeContext } from './ThemeContext';
+
+function MyComponent() {
+  // if, return 등 조건문 안에서도 사용 가능
+  const theme = use(ThemeContext);
+  return <div className={theme}>...</div>;
+}
+```
+
+---
+
+### 5.3. `<form>`과 Actions
+
+React 19에서는 HTML의 `<form>` 태그가 Actions를 직접 지원하도록 강화되었습니다. 폼 상태 관리를 위한 `useFormState`와 `useFormStatus` 훅이 함께 도입되었습니다.
+
+#### `useFormStatus`
+- `<form>`의 자식 컴포넌트에서 폼의 제출 상태(`pending`, `data`, `method`)를 알 수 있게 해줍니다.
+
+#### `useFormState`
+- 폼 액션의 결과에 따라 상태를 업데이트합니다. 서버로부터 받은 에러 메시지 등을 표시하는 데 유용합니다.
+
+**예시: 로그인 폼**
+```tsx
+'use client';
+
+import { useFormState, useFormStatus } from 'react-dom';
+import { login } from './actions'; // 서버 액션 또는 클라이언트 액션
+
+const initialState = {
+  message: null,
+};
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button type="submit" disabled={pending}>
+      {pending ? 'Submitting...' : 'Login'}
+    </button>
+  );
+}
+
+export function LoginForm() {
+  const [state, formAction] = useFormState(login, initialState);
+
+  return (
+    <form action={formAction}>
+      <input type="email" name="email" required />
+      <input type="password" name="password" required />
+      <SubmitButton />
+      {state?.message && <p style={{ color: 'red' }}>{state.message}</p>}
+    </form>
+  );
+}
+```
+
+---
+
+### 5.4. `ref`를 prop으로 전달
+
+**개념**: `forwardRef`를 사용하지 않고도 `ref`를 함수 컴포넌트에 직접 prop으로 전달할 수 있습니다.
+
+**Before**
+```tsx
+import { forwardRef } from 'react';
+
+const MyInput = forwardRef((props, ref) => {
+  return <input {...props} ref={ref} />;
+});
+```
+
+**After (React 19)**
+```tsx
+function MyInput({ ref, ...props }) {
+  return <input {...props} ref={ref} />;
+}
+
+// 또는 props로 바로 받기
+function MyInput(props) {
+  return <input {...props} />;
+}
+```
+
+이 변경 사항은 코드를 더 직관적이고 간결하게 만들어주며, `forwardRef` 사용 시 발생하던 혼란을 줄여줍니다.
+
+---
+
 ## 🔧 설정 가이드
 
 ### Apollo Client 설정
 
-`src/lib/apollo-client.ts`:
+`src/services/api/apollo-client.ts`:
 
 ```typescript
 import { ApolloClient, InMemoryCache, createHttpLink } from '@apollo/client';
@@ -266,10 +430,10 @@ npm run test:e2e
 
 ## 📖 관련 문서
 
-- [GEMINI.md](GEMINI.md) - Gemini AI 작성 상세 아키텍처
-- [아키텍처 가이드](docs/ARCHITECTURE.md)
-- [캐싱 전략](docs/CACHING_STRATEGY.md)
-- [데이터 플로우](docs/DATA_FLOW.md)
+- [GEMINI.md](./GEMINI.md) - AI 개발 가이드 (상세 아키텍처 및 패턴)
+- [아키텍처 가이드](./docs/ARCHITECTURE.md)
+- [캐싱 전략](./docs/CACHING_STRATEGY.md)
+- [APOLLO_CLIENT_PATTERNS.md](./docs/APOLLO_CLIENT_PATTERNS.md)
 
 ---
 
@@ -309,4 +473,4 @@ Redux state resets on page refresh
 
 ---
 
-**최종 수정일:** 2025-12-18
+**최종 수정일:** 2025-12-26

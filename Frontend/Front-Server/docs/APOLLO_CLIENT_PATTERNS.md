@@ -95,7 +95,7 @@ const [execute, { data }] = useLazyQuery(QUERY, {
 const handleClick = () => execute();
 ```
 
-**Correct Pattern (v4):**
+**Correct Pattern (v4):
 ```typescript
 const [execute, { data }] = useLazyQuery(QUERY);
 
@@ -160,3 +160,7 @@ import { ApolloLink, HttpLink } from '@apollo/client';
 const link = ApolloLink.from([errorLink, new HttpLink(...)]);
 ```
 This ensures code is more explicit and future-proof.
+
+---
+
+**최종 수정일:** 2025-12-26

@@ -33,7 +33,7 @@
 - **하드코딩된 색상 제거**:
     - `Header`, `InputPanel`, `ResultCard` 등 애플리케이션 전반에 걸쳐 하드코딩되어 있던 색상 관련 Tailwind 클래스들을 모두 제거했습니다.
 - **테마 상수 기반 동적 스타일링**:
-    - `appConstants.ts`에 정의된 `CANDIDATE_THEME_COLORS`와 `RECRUITER_THEME_COLORS`를 기반으로 동적으로 색상을 적용하도록 리팩토링했습니다.
+    - `index.ts`에 정의된 `CANDIDATE_THEME_COLORS`와 `RECRUITER_THEME_COLORS`를 기반으로 동적으로 색상을 적용하도록 리팩토링했습니다.
     - Tailwind 클래스로 동적 색상 주입이 어려운 경우, 인라인 `style` 속성과 `chroma.js`를 활용하여 그라데이션, 투명도, 그림자 색상까지 테마에 맞게 동적으로 생성하도록 구현했습니다.
     - 특히, `SearchButton.tsx`에서는 사용자의 피드백을 반영하여, 기본 테마색의 색조(hue)를 변경하는 방식으로 다색상 그라데이션 효과를 복원했습니다.
 
