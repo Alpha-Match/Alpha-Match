@@ -2,17 +2,19 @@
 import React, { ReactNode, useEffect } from 'react';
 import { ApolloError } from '@apollo/client';
 
+import { LoadingSpinner } from './LoadingSpinner';
+
 interface QueryBoundaryProps {
   loading: boolean;
   error?: ApolloError | Error;
-  children: ReactNode;
+  children: React.ReactNode | (() => React.ReactNode);
   loadingComponent?: ReactNode;
   errorComponent?: ReactNode;
 }
 
 const DefaultLoadingComponent = () => (
   <div className="flex justify-center items-center h-64">
-    <p className="text-white">Loading data...</p>
+    <LoadingSpinner message="Loading data..." />
   </div>
 );
 

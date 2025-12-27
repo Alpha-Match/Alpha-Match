@@ -1,19 +1,19 @@
 'use client';
 
-import React, { Suspense, useEffect, useRef } from 'react';
-import { useAppSelector, useAppDispatch } from '../services/state/hooks';
-import { setSearchPerformed } from '../services/state/features/search/searchSlice';
-import { setPageViewMode, setSelectedMatchId } from '../services/state/features/ui/uiSlice';
-import { InputPanel } from '../components/input-panel';
-import { Header } from '../components/layout/Header';
-import { useSearchMatches } from '../hooks/useSearchMatches';
+import React, {Suspense, useEffect, useRef} from 'react';
+import {useAppDispatch, useAppSelector} from '../services/state/hooks';
+import {setSearchPerformed} from '../services/state/features/search/searchSlice';
+import {setPageViewMode, setSelectedMatchId} from '../services/state/features/ui/uiSlice';
+import {InputPanel} from '../components/input-panel';
+import {Header} from '../components/layout/Header';
+import {useSearchMatches} from '../hooks/useSearchMatches';
 import SearchResultPanel from '../components/search/SearchResultPanel';
 import DefaultDashboard from '../components/dashboard/DefaultDashboard';
 import MatchDetailPanel from '../components/search/MatchDetailPanel';
 import QueryBoundary from '../components/common/QueryBoundary';
-import { UserMode, MatchItem } from '../types';
-import { CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS } from '../constants';
-
+import {LoadingSpinner} from '../components/common/LoadingSpinner';
+import {MatchItem, UserMode} from '../types';
+import {CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS} from '../constants';
 /**
  * @file page.tsx
  * @description 애플리케이션의 메인 페이지 컴포넌트
@@ -98,11 +98,14 @@ const HomePage: React.FC = () => {
           </QueryBoundary>
         );
 
+
+
+// ... inside renderMainPanel
       case 'dashboard':
       default:
         return (
           <QueryBoundary>
-            <Suspense fallback={<div className="flex justify-center items-center h-64"><p className="text-white">Loading dashboard...</p></div>}>
+            <Suspense fallback={<LoadingSpinner message="Loading dashboard..." />}>
               <DefaultDashboard />
             </Suspense>
           </QueryBoundary>

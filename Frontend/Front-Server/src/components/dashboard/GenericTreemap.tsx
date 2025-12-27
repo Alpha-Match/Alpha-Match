@@ -152,6 +152,9 @@ const GenericTreemap: React.FC<GenericTreemapProps> = ({ title, data, baseCatego
 
     /** color scale 기준 최대값 */
     const maxSkillValue = Math.max(...data.map(s => s.value), 0);
+    
+    // 데이터를 값에 따라 내림차순으로 정렬하여 일관된 레이아웃 보장
+    const sortedData = [...data].sort((a, b) => b.value - a.value);
 
     return (
         <div className="bg-slate-800/50 p-4 rounded-lg shadow-lg flex flex-col">
@@ -159,9 +162,9 @@ const GenericTreemap: React.FC<GenericTreemapProps> = ({ title, data, baseCatego
             <div className="flex-1 w-full h-full">
                 <ResponsiveContainer width="100%" height={250}>
                     <Treemap
-                        data={data}
+                        data={sortedData}
                         dataKey="value"
-                        aspectRatio={2}
+                        aspectRatio={1}
                         stroke="#fff"
                         fill={baseCategoryColor}
                         content={(props) => (
