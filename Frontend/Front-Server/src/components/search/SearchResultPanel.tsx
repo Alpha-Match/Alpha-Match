@@ -11,31 +11,11 @@ import ResultCard from './ResultCard';
 
 interface SearchResultPanelProps {
   matches: MatchItem[];
-  loading: boolean;
-  error: Error | null;
   onMatchSelect: (match: MatchItem) => void;
   activeColor: string;
 }
 
-const SearchResultPanel: React.FC<SearchResultPanelProps> = ({ matches, loading, error, onMatchSelect, activeColor }) => {
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center p-8 h-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-        <p className="ml-4 text-lg text-gray-500">검색 결과 로딩 중...</p>
-      </div>
-    );
-  }
-
-  if (error && matches.length === 0) {
-    return (
-      <div className="text-center p-8 text-red-500">
-        <p className="text-lg">오류 발생</p>
-        <p className="text-sm">{error.message}</p>
-      </div>
-    );
-  }
-
+const SearchResultPanel: React.FC<SearchResultPanelProps> = ({ matches, onMatchSelect, activeColor }) => {
   if (matches.length === 0) {
     return (
       <div className="text-center p-8 text-gray-400 h-full flex flex-col justify-center items-center">

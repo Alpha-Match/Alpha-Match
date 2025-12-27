@@ -10,6 +10,7 @@ import { useSearchMatches } from '../hooks/useSearchMatches';
 import SearchResultPanel from '../components/search/SearchResultPanel';
 import DefaultDashboard from '../components/dashboard/DefaultDashboard';
 import MatchDetailPanel from '../components/search/MatchDetailPanel';
+import QueryBoundary from '../components/common/QueryBoundary';
 import { UserMode, MatchItem } from '../types';
 import { CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS } from '../constants';
 
@@ -77,6 +78,11 @@ const HomePage: React.FC = () => {
   const themeColors = userMode === UserMode.CANDIDATE ? CANDIDATE_THEME_COLORS : RECRUITER_THEME_COLORS;
   const activeColor = themeColors[0];
 
+  import QueryBoundary from '../components/common/QueryBoundary';
+// ... (other imports)
+
+// ... (inside HomePage component)
+
   /**
    * 메인 콘텐츠 패널을 렌더링하는 함수
    */
@@ -88,13 +94,13 @@ const HomePage: React.FC = () => {
       
       case 'results':
         return (
-          <SearchResultPanel
-            matches={matches}
-            loading={loading}
-            error={error}
-            onMatchSelect={handleMatchSelect}
-            activeColor={activeColor}
-          />
+          <QueryBoundary loading={loading} error={error}>
+            <SearchResultPanel
+              matches={matches}
+              onMatchSelect={handleMatchSelect}
+              activeColor={activeColor}
+            />
+          </QueryBoundary>
         );
 
       case 'dashboard':
@@ -102,6 +108,8 @@ const HomePage: React.FC = () => {
         return <DefaultDashboard />;
     }
   }
+
+// ... (rest of the component)
 
   return (
     <div className="h-screen w-screen flex flex-col bg-gray-100 dark:bg-slate-900 text-white overflow-hidden font-sans">
