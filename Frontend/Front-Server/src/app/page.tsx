@@ -28,6 +28,7 @@ const HomePage: React.FC = () => {
   // Redux 스토어에서 상태 가져오기
   const { userMode, viewResetCounter, pageViewMode, selectedMatchId } = useAppSelector((state) => state.ui);
   const { selectedSkills, selectedExperience } = useAppSelector((state) => state.search[userMode]);
+  const { isInitial } = useAppSelector((state) => state.search[userMode]); // Moved outside useEffect
   
   const { runSearch, loading, error, matches } = useSearchMatches();
   
@@ -52,11 +53,10 @@ const HomePage: React.FC = () => {
 
   // userMode 변경 시 자동으로 검색을 다시 실행하여 이전 상태를 복원
   useEffect(() => {
-    const { isInitial } = useAppSelector((state) => state.search[userMode]); // Get isInitial for the current userMode
     if (pageViewMode === 'results' && selectedSkills.length > 0 && !isInitial) {
       runSearch(userMode, selectedSkills, selectedExperience);
     }
-  }, [userMode, pageViewMode, selectedSkills, selectedExperience, runSearch]);
+  }, [userMode, pageViewMode, selectedSkills, selectedExperience, isInitial, runSearch]);
 
   /**
    * 검색 실행 핸들러
