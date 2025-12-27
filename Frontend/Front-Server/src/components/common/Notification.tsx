@@ -51,15 +51,15 @@ export const Notification = () => {
 
   return (
     <div 
-      className="fixed bottom-5 right-5 bg-white shadow-lg rounded-lg p-4 max-w-md z-[100] border-l-4 transition-all duration-300 ease-in-out transform animate-slide-in-up"
+      className="fixed bottom-5 right-5 bg-white shadow-lg rounded-lg p-4 max-w-sm min-w-[320px] z-[100] border-l-4 transition-all duration-300 ease-in-out transform animate-slide-in-up"
       style={{ borderColor: type === 'error' ? '#ef4444' : type === 'success' ? '#22c55e' : '#3b82f6' }}
     >
       <div className="flex items-start">
         <div className="flex-shrink-0">
           {icons[type]}
         </div>
-        <div className="ml-3 w-0 flex-1 pt-0.5">
-          <p className="text-sm font-medium text-gray-900">{message}</p>
+        <div className="ml-3 w-full flex-1 pt-0.5">
+          <p className="text-sm font-medium text-gray-900 break-words">{message}</p>
         </div>
         <div className="ml-4 flex-shrink-0 flex">
           <button

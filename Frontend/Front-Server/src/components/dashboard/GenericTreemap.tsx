@@ -115,8 +115,8 @@ const CustomizedTreemapContent: React.FC<CustomizedTreemapContentProps> = (props
                 <foreignObject
                     x={x + 4}
                     y={y + 4}
-                    width={width - 8}
-                    height={height - 8}
+                    width={Math.max(0, width - 8)}
+                    height={Math.max(0, height - 8)}
                 >
                     {renderCellContent({
                         name,
