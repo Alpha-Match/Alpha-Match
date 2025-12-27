@@ -3,15 +3,25 @@ import { UserMode } from '../../../../types';
 
 type PageViewMode = 'dashboard' | 'results' | 'detail';
 
+export interface ModeSpecificUiState {
+  pageViewMode: PageViewMode;
+  selectedMatchId: string | null;
+}
+
 interface UiState {
   isSidebarOpen: boolean;
   theme: 'light' | 'dark';
   viewResetCounter: number;
   activeTooltipId: string | null;
   userMode: UserMode;
-  pageViewMode: PageViewMode;
-  selectedMatchId: string | null;
+  [UserMode.CANDIDATE]: ModeSpecificUiState;
+  [UserMode.RECRUITER]: ModeSpecificUiState;
 }
+
+const initialModeSpecificUiState: ModeSpecificUiState = {
+  pageViewMode: 'dashboard',
+  selectedMatchId: null,
+};
 
 const initialState: UiState = {
   isSidebarOpen: true,
@@ -19,8 +29,8 @@ const initialState: UiState = {
   viewResetCounter: 0,
   activeTooltipId: null,
   userMode: UserMode.CANDIDATE, // Default mode
-  pageViewMode: 'dashboard',
-  selectedMatchId: null,
+  [UserMode.CANDIDATE]: { ...initialModeSpecificUiState },
+  [UserMode.RECRUITER]: { ...initialModeSpecificUiState },
 };
 
 const uiSlice = createSlice({
@@ -33,10 +43,11 @@ const uiSlice = createSlice({
     setTheme(state, action: PayloadAction<'light' | 'dark'>) {
       state.theme = action.payload;
     },
-    resetView(state) {
-      state.viewResetCounter += 1;
-      state.pageViewMode = 'dashboard';
-      state.selectedMatchId = null;
+    resetView(state, action: PayloadAction<UserMode>) {
+      // Resets view state for a specific user mode
+      state.viewResetCounter += 1; // Global counter still increments for debugging/tracking
+      state[action.payload].pageViewMode = 'dashboard';
+      state[action.payload].selectedMatchId = null;
     },
     setActiveTooltip(state, action: PayloadAction<string | null>) {
       state.activeTooltipId = action.payload;
@@ -44,11 +55,11 @@ const uiSlice = createSlice({
     setUserMode(state, action: PayloadAction<UserMode>) {
       state.userMode = action.payload;
     },
-    setPageViewMode(state, action: PayloadAction<PageViewMode>) {
-        state.pageViewMode = action.payload;
+    setPageViewMode(state, action: PayloadAction<{ userMode: UserMode; pageViewMode: PageViewMode }>) {
+        state[action.payload.userMode].pageViewMode = action.payload.pageViewMode;
     },
-    setSelectedMatchId(state, action: PayloadAction<string | null>) {
-        state.selectedMatchId = action.payload;
+    setSelectedMatchId(state, action: PayloadAction<{ userMode: UserMode; selectedMatchId: string | null }>) {
+        state[action.payload.userMode].selectedMatchId = action.payload.selectedMatchId;
     }
   },
 });
@@ -63,3 +74,4 @@ export const {
     setSelectedMatchId
 } = uiSlice.actions;
 export default uiSlice.reducer;
+

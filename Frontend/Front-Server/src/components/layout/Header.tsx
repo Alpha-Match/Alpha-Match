@@ -17,11 +17,11 @@ export const Header: React.FC = () => {
 
   const handleTabChange = (mode: UserMode) => {
     dispatch(setUserMode(mode));
-    dispatch(resetSearch());
+    dispatch(resetSearch(mode));
   };
 
   const handleNavigateHome = () => {
-    dispatch(resetView());
+    dispatch(resetView(userMode));
   };
   
   const themeColors = userMode === UserMode.CANDIDATE ? CANDIDATE_THEME_COLORS : RECRUITER_THEME_COLORS;

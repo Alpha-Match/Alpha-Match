@@ -26,7 +26,8 @@ const HomePage: React.FC = () => {
   const [isPending, startTransition] = useTransition();
   
   // Redux 스토어에서 상태 가져오기
-  const { userMode, viewResetCounter, pageViewMode, selectedMatchId } = useAppSelector((state) => state.ui);
+  const { userMode, viewResetCounter } = useAppSelector((state) => state.ui);
+  const { pageViewMode, selectedMatchId } = useAppSelector((state) => state.ui[userMode]);
   const { selectedSkills, selectedExperience } = useAppSelector((state) => state.search[userMode]);
   const { isInitial } = useAppSelector((state) => state.search[userMode]); // Moved outside useEffect
   
@@ -65,8 +66,8 @@ const HomePage: React.FC = () => {
     startTransition(() => {
       dispatch(setSearchPerformed(userMode));
       runSearch(userMode, selectedSkills, selectedExperience);
-      dispatch(setPageViewMode('results'));
-      dispatch(setSelectedMatchId(null));
+      dispatch(setPageViewMode({ userMode: userMode, pageViewMode: 'results' }));
+      dispatch(setSelectedMatchId({ userMode: userMode, selectedMatchId: null }));
     });
   };
 
@@ -74,16 +75,16 @@ const HomePage: React.FC = () => {
    * 결과 카드 클릭 핸들러 (상세 뷰로 전환)
    */
   const handleMatchSelect = (match: MatchItem) => {
-    dispatch(setSelectedMatchId(match.id));
-    dispatch(setPageViewMode('detail'));
+    dispatch(setSelectedMatchId({ userMode: userMode, selectedMatchId: match.id }));
+    dispatch(setPageViewMode({ userMode: userMode, pageViewMode: 'detail' }));
   };
 
   /**
    * 상세 뷰에서 목록으로 돌아가기 핸들러
    */
   const handleBackToList = () => {
-    dispatch(setSelectedMatchId(null));
-    dispatch(setPageViewMode('results'));
+    dispatch(setSelectedMatchId({ userMode: userMode, selectedMatchId: null }));
+    dispatch(setPageViewMode({ userMode: userMode, pageViewMode: 'results' }));
   };
   
   const themeColors = userMode === UserMode.CANDIDATE ? CANDIDATE_THEME_COLORS : RECRUITER_THEME_COLORS;
