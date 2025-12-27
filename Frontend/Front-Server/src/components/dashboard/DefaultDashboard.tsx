@@ -17,24 +17,33 @@ import SkillIcon from '../common/SkillIcon';
 import { useQuery } from '@apollo/client/react';
 import { GET_DASHBOARD_DATA } from '../../services/api/queries/dashboard';
 
-export default function DefaultDashboard() {
-    const userMode = useAppSelector((state) => state.ui.userMode);
+import React from 'react';
+import chroma from 'chroma-js';
+import { useAppSelector } from '../../services/state/hooks';
+import { UserMode, DashboardData, DashboardVars } from '../../types';
+import { RECRUITER_THEME_COLORS, CANDIDATE_THEME_COLORS } from '../../constants';
+import CategoryPieChart from './CategoryPieChart';
+import GenericTreemap from './GenericTreemap';
+import BaseTooltip from '../common/BaseTooltip';
+import SkillIcon from '../common/SkillIcon';
+import { useQuery } from '@apollo/client/react';
+import { GET_DASHBOARD_DATA } from '../../services/api/queries/dashboard';
 
-    const { loading, error, data } = useQuery<DashboardData, DashboardVars>(GET_DASHBOARD_DATA, {
-        variables: { userMode: userMode },
-    });
-
-    if (loading) return <p className="p-6 text-white">Loading dashboard data...</p>;
-    if (error) return <p className="p-6 text-red-500">Error loading dashboard data: {error.message}</p>;
+// 차트 컨텐츠를 렌더링하는 내부 컴포넌트
+const DashboardContent = ({ loading, error, data, themeColors, userMode }) => {
+    if (loading) {
+        return <div className="flex justify-center items-center h-64"><p className="text-white">Loading dashboard data...</p></div>;
+    }
+    if (error) {
+        return <div className="flex justify-center items-center h-64 bg-red-900/20 rounded-lg"><p className="text-red-400">Error: {error.message}</p></div>;
+    }
 
     const dashboardData = data?.dashboardData || [];
 
+    if (dashboardData.length === 0) {
+        return <div className="flex justify-center items-center h-64"><p className="text-gray-400">No dashboard data available.</p></div>;
+    }
 
-    const themeColors = userMode === UserMode.RECRUITER
-        ? RECRUITER_THEME_COLORS
-        : CANDIDATE_THEME_COLORS;
-
-    // 1. 데이터 가공: 카테고리별 합계 계산 및 정렬
     const sortedCategoryTotals = dashboardData
         .map(cat => ({
             name: cat.category,
@@ -42,11 +51,68 @@ export default function DefaultDashboard() {
         }))
         .sort((a, b) => b.value - a.value);
 
-    // 2. 동적 색상 스케일 및 툴팁 색상 생성
     const baseColor = themeColors[0];
     const categoryColorScale = chroma.scale([baseColor, chroma(baseColor).brighten(2)])
                                      .domain([0, sortedCategoryTotals.length - 1]);
     const tooltipTextColor = chroma(baseColor).luminance() > 0.5 ? '#222' : '#fff';
+
+    return (
+        <div className="space-y-8">
+            <CategoryPieChart
+                data={sortedCategoryTotals}
+                colorScale={categoryColorScale}
+                baseColor={baseColor}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                {sortedCategoryTotals.map((sortedEntry, index) => {
+                    const categoryData = dashboardData.find(d => d.category === sortedEntry.name);
+                    if (!categoryData) return null;
+
+                    const baseCategoryColor = categoryColorScale(index).hex();
+
+                    return (
+                        <GenericTreemap
+                            key={categoryData.category}
+                            title={categoryData.category}
+                            data={categoryData.skills.map(s => ({ name: s.skill, value: s.count }))}
+                            baseCategoryColor={baseCategoryColor}
+                            renderCellContent={({ name, width, height, textColor }) => {
+                                const showText = width > 50 && height > 30;
+                                return (
+                                    <div className="w-full h-full flex flex-col items-center justify-center overflow-hidden p-1" style={{ color: textColor }}>
+                                        <SkillIcon skill={name} className={`${showText ? 'w-8 h-8' : 'w-5 h-5'} mb-1`} />
+                                        {showText && <p className="text-xs font-semibold text-center truncate w-full">{name}</p>}
+                                    </div>
+                                );
+                            }}
+                            renderTooltipContent={({ name, value }) => (
+                                <BaseTooltip
+                                    title={name}
+                                    value={value}
+                                    color={baseColor}
+                                    textColor={tooltipTextColor}
+                                    icon={<SkillIcon skill={name} className="w-6 h-6" />}
+                                />
+                            )}
+                        />
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
+
+export default function DefaultDashboard() {
+    const userMode = useAppSelector((state) => state.ui.userMode);
+    const { loading, error, data } = useQuery<DashboardData, DashboardVars>(GET_DASHBOARD_DATA, {
+        variables: { userMode: userMode },
+    });
+
+    const themeColors = userMode === UserMode.RECRUITER
+        ? RECRUITER_THEME_COLORS
+        : CANDIDATE_THEME_COLORS;
 
     return (
         <div className="p-6 h-full text-white animate-fade-in">
@@ -57,53 +123,13 @@ export default function DefaultDashboard() {
 
             <h2 className="text-3xl font-bold text-gray-200 my-4">전체 직무 선호도 대시보드</h2>
 
-            <div className="space-y-8">
-                {/* 직무별 점유율 (파이 차트) */}
-                <CategoryPieChart
-                    data={sortedCategoryTotals}
-                    colorScale={categoryColorScale}
-                    baseColor={baseColor}
-                />
-
-                {/* 직무별 기술 스택 (트리맵) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-                    {sortedCategoryTotals.map((sortedEntry, index) => {
-                        const categoryData = dashboardData.find(data => data.category === sortedEntry.name);
-                        if (!categoryData) return null;
-
-                        const baseCategoryColor = categoryColorScale(index).hex();
-
-                        return (
-                            <GenericTreemap
-                                key={categoryData.category}
-                                title={categoryData.category}
-                                data={categoryData.skills.map(s => ({ name: s.skill, value: s.count }))}
-                                baseCategoryColor={baseCategoryColor}
-                                renderCellContent={({ name, width, height, textColor }) => {
-                                    const showText = width > 50 && height > 30;
-                                    return (
-                                        <div className="w-full h-full flex flex-col items-center justify-center overflow-hidden p-1" style={{ color: textColor }}>
-                                            <SkillIcon skill={name} className={`${showText ? 'w-8 h-8' : 'w-5 h-5'} mb-1`} />
-                                            {showText && (
-                                                <p className="text-xs font-semibold text-center truncate w-full">{name}</p>
-                                            )}
-                                        </div>
-                                    );
-                                }}
-                                renderTooltipContent={({ name, value }) => (
-                                    <BaseTooltip
-                                        title={name}
-                                        value={value}
-                                        color={baseColor}
-                                        textColor={tooltipTextColor}
-                                        icon={<SkillIcon skill={name} className="w-6 h-6" />}
-                                    />
-                                )}
-                            />
-                        );
-})}
-                </div>
-            </div>
+            <DashboardContent
+                loading={loading}
+                error={error}
+                data={data}
+                themeColors={themeColors}
+                userMode={userMode}
+            />
         </div>
     );
 }
