@@ -10,21 +10,32 @@ import chroma from 'chroma-js';
 import { useAppSelector } from '../../services/state/hooks';
 import { UserMode } from '../../types';
 import { RECRUITER_THEME_COLORS, CANDIDATE_THEME_COLORS } from '../../constants';
-import { DASHBOARD_MOCK_DATA } from '../../constants/mockData';
 import CategoryPieChart from './CategoryPieChart';
 import GenericTreemap from './GenericTreemap';
 import BaseTooltip from '../common/BaseTooltip';
 import SkillIcon from '../common/SkillIcon';
+import { useQuery } from '@apollo/client';
+import { GET_DASHBOARD_DATA } from '../../services/api/queries/dashboard';
 
 export default function DefaultDashboard() {
     const userMode = useAppSelector((state) => state.ui.userMode);
+
+    const { loading, error, data } = useQuery(GET_DASHBOARD_DATA, {
+        variables: { userMode: userMode },
+    });
+
+    if (loading) return <p className="p-6 text-white">Loading dashboard data...</p>;
+    if (error) return <p className="p-6 text-red-500">Error loading dashboard data: {error.message}</p>;
+
+    const dashboardData = data?.dashboardData || [];
+
 
     const themeColors = userMode === UserMode.RECRUITER
         ? RECRUITER_THEME_COLORS
         : CANDIDATE_THEME_COLORS;
 
     // 1. 데이터 가공: 카테고리별 합계 계산 및 정렬
-    const sortedCategoryTotals = DASHBOARD_MOCK_DATA
+    const sortedCategoryTotals = dashboardData
         .map(cat => ({
             name: cat.category,
             value: cat.skills.reduce((acc, skill) => acc + skill.count, 0),
@@ -57,7 +68,7 @@ export default function DefaultDashboard() {
                 {/* 직무별 기술 스택 (트리맵) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                     {sortedCategoryTotals.map((sortedEntry, index) => {
-                        const categoryData = DASHBOARD_MOCK_DATA.find(data => data.category === sortedEntry.name);
+                        const categoryData = dashboardData.find(data => data.category === sortedEntry.name);
                         if (!categoryData) return null;
 
                         const baseCategoryColor = categoryColorScale(index).hex();
@@ -96,3 +107,4 @@ export default function DefaultDashboard() {
         </div>
     );
 }
+

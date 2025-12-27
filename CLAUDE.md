@@ -104,7 +104,7 @@
   - `gradle.properties` 추가: `-Xms2g -Xmx8g -XX:+UseG1GC`
   - 로깅 레벨 DEBUG → INFO 조정 (OOM 방지)
   - OOM 크래시 분석 및 해결 (리포트: `Backend/Batch-Server/docs/hist/2025-12-26_01_OOM_Crash_Analysis_Report.md`)
-- **전체 도메인 성능 테스트 완료 (2025-12-26)**:
+- **Frontend: DefaultDashboard GraphQL 연동 및 데이터 처리**
   - **Recruit**: 87,488건, 12m 54.8s, 113.0 rps ✅
   - **Candidate**: 118,741건, 30m 50.1s, 64.2 rps ✅
   - **Skill_dic**: 105건, 1.69s, 62.2 rps ✅
@@ -118,7 +118,7 @@
 - 청크 사이즈 튜닝 (100, 500, 1000 비교)
 - API Server 설계 및 구현
 - GraphQL 구현 (Resolver → Service → Cache → DB)
-- Frontend GraphQL 쿼리 구현, React Query 캐싱
+- Frontend: GraphQL 쿼리 구현 (대시보드 제외), React Query 캐싱
 - 성능 최적화 및 모니터링
 
 **상세 일정**: `/docs/개발_우선순위.md` 참조
