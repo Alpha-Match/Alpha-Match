@@ -1,6 +1,6 @@
 'use client';
 
-import React, {Suspense, useEffect, useRef} from 'react';
+import React, {Suspense, useEffect, useRef, useTransition} from 'react';
 import {useAppDispatch, useAppSelector} from '../services/state/hooks';
 import {setSearchPerformed} from '../services/state/features/search/searchSlice';
 import {setPageViewMode, setSelectedMatchId} from '../services/state/features/ui/uiSlice';
@@ -23,6 +23,7 @@ import {CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS} from '../constants';
  */
 const HomePage: React.FC = () => {
   const dispatch = useAppDispatch();
+  const [isPending, startTransition] = useTransition();
   
   // Redux 스토어에서 상태 가져오기
   const { userMode, viewResetCounter, pageViewMode, selectedMatchId } = useAppSelector((state) => state.ui);
@@ -53,10 +54,12 @@ const HomePage: React.FC = () => {
    * 검색 실행 핸들러
    */
   const handleSearch = () => {
-    dispatch(setSearchPerformed(userMode));
-    runSearch(userMode, selectedSkills, selectedExperience);
-    dispatch(setPageViewMode('results'));
-    dispatch(setSelectedMatchId(null));
+    startTransition(() => {
+      dispatch(setSearchPerformed(userMode));
+      runSearch(userMode, selectedSkills, selectedExperience);
+      dispatch(setPageViewMode('results'));
+      dispatch(setSelectedMatchId(null));
+    });
   };
 
   /**
@@ -122,7 +125,7 @@ const HomePage: React.FC = () => {
         <div className="w-1/3 min-w-[350px] max-w-[450px] h-full z-20 bg-slate-800/50 border-r border-slate-700">
           <InputPanel
             onSearch={handleSearch}
-            isLoading={loading && pageViewMode === 'results'}
+            isLoading={isPending && pageViewMode === 'results'}
           />
         </div>
 
