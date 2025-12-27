@@ -1,9 +1,9 @@
 // src/components/input-panel/SkillSelector.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { useAppSelector, useAppDispatch } from '../../services/state/hooks';
 import { toggleSkill } from '../../services/state/features/search/searchSlice';
 import { UserMode } from '../../types';
-import { Code } from 'lucide-react';
+import { Code, Search } from 'lucide-react'; // Added Search icon
 import { CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS } from '../../constants';
 import chroma from 'chroma-js';
 
@@ -15,6 +15,8 @@ export const SkillSelector: React.FC = () => {
     skillCategories, 
     skillsLoaded 
   } = useAppSelector((state) => state.search);
+
+  const [searchTerm, setSearchTerm] = useState(''); // New state for search term
 
   const handleSkillToggle = (skill: string) => {
     dispatch(toggleSkill(skill));
@@ -33,18 +35,38 @@ export const SkillSelector: React.FC = () => {
     borderColor: primaryColor,
   };
 
+  // Filter skills based on search term
+  const filteredSkills = skillCategories.filter(skill =>
+    skill.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <section>
       <label className="block text-sm font-semibold text-slate-700 mb-3 uppercase tracking-wider flex items-center gap-2">
         <Code className="w-4 h-4" />
         Tech Stack (Select Multiple)
       </label>
+      {/* Search Input Field */}
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <input
+          type="text"
+          placeholder="Search skills..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:border-blue-400 text-slate-800"
+        />
+      </div>
+
       <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 h-96 overflow-y-auto custom-scrollbar">
         <div className="grid grid-cols-1 gap-2">
           {!skillsLoaded && (
             <div className="text-center text-slate-500 text-sm">Loading skills...</div>
           )}
-          {skillsLoaded && skillCategories.map((skill, idx) => {
+          {skillsLoaded && filteredSkills.length === 0 && searchTerm !== '' && (
+            <div className="text-center text-slate-500 text-sm">No matching skills found.</div>
+          )}
+          {skillsLoaded && filteredSkills.map((skill, idx) => {
             const isSelected = selectedSkills.includes(skill);
             return (
               <button

@@ -1,11 +1,10 @@
 // Frontend/Front-Server/src/components/common/QueryBoundary.tsx
 import React, { ReactNode, useEffect } from 'react';
-import { ApolloError } from '@apollo/client';
-
+import { AlertTriangle } from 'lucide-react';
 import { LoadingSpinner } from './LoadingSpinner';
 
 interface QueryBoundaryProps {
-  loading: boolean;
+  loading?: boolean;
   error?: ApolloError | Error;
   children: React.ReactNode | (() => React.ReactNode);
   loadingComponent?: ReactNode;
@@ -24,8 +23,9 @@ const DefaultErrorComponent = ({ error }: { error: ApolloError | Error }) => {
   }, [error]);
 
   return (
-    <div className="flex justify-center items-center h-64 bg-red-900/20 rounded-lg">
-      <p className="text-red-400">데이터를 불러오는 중 오류가 발생했습니다.</p>
+    <div className="flex flex-col justify-center items-center h-64 bg-red-900/20 rounded-lg gap-4">
+      <AlertTriangle className="w-12 h-12 text-red-400" />
+      <p className="text-red-400 text-lg">데이터를 불러오는 중 오류가 발생했습니다.</p>
     </div>
   );
 };
