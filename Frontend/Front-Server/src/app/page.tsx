@@ -50,6 +50,14 @@ const HomePage: React.FC = () => {
     }
   }, [viewResetCounter]);
 
+  // userMode 변경 시 자동으로 검색을 다시 실행하여 이전 상태를 복원
+  useEffect(() => {
+    const { isInitial } = useAppSelector((state) => state.search[userMode]); // Get isInitial for the current userMode
+    if (pageViewMode === 'results' && selectedSkills.length > 0 && !isInitial) {
+      runSearch(userMode, selectedSkills, selectedExperience);
+    }
+  }, [userMode, pageViewMode, selectedSkills, selectedExperience, runSearch]);
+
   /**
    * 검색 실행 핸들러
    */
@@ -109,7 +117,7 @@ const HomePage: React.FC = () => {
         return (
           <QueryBoundary>
             <Suspense fallback={<LoadingSpinner message="Loading dashboard..." />}>
-              <DefaultDashboard />
+              <DefaultDashboard key={userMode} />
             </Suspense>
           </QueryBoundary>
         );
