@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { Suspense, useEffect, useRef } from 'react';
 import { useAppSelector, useAppDispatch } from '../services/state/hooks';
 import { setSearchPerformed } from '../services/state/features/search/searchSlice';
 import { setPageViewMode, setSelectedMatchId } from '../services/state/features/ui/uiSlice';
@@ -78,11 +78,6 @@ const HomePage: React.FC = () => {
   const themeColors = userMode === UserMode.CANDIDATE ? CANDIDATE_THEME_COLORS : RECRUITER_THEME_COLORS;
   const activeColor = themeColors[0];
 
-  import QueryBoundary from '../components/common/QueryBoundary';
-// ... (other imports)
-
-// ... (inside HomePage component)
-
   /**
    * 메인 콘텐츠 패널을 렌더링하는 함수
    */
@@ -105,11 +100,15 @@ const HomePage: React.FC = () => {
 
       case 'dashboard':
       default:
-        return <DefaultDashboard />;
+        return (
+          <QueryBoundary>
+            <Suspense fallback={<div className="flex justify-center items-center h-64"><p className="text-white">Loading dashboard...</p></div>}>
+              <DefaultDashboard />
+            </Suspense>
+          </QueryBoundary>
+        );
     }
   }
-
-// ... (rest of the component)
 
   return (
     <div className="h-screen w-screen flex flex-col bg-gray-100 dark:bg-slate-900 text-white overflow-hidden font-sans">
@@ -134,3 +133,4 @@ const HomePage: React.FC = () => {
 };
 
 export default HomePage;
+

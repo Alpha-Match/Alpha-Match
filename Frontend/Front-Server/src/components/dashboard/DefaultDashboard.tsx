@@ -3,6 +3,7 @@
  * @file DefaultDashboard.tsx
  * @description 검색 실행 전 표시되는 기본 대시보드 컨테이너 컴포넌트.
  *              재사용 가능한 자식 컴포넌트(PieChart, Treemap)에 데이터와 스타일을 전달합니다.
+ *              `useSuspenseQuery`를 사용하여 데이터 로딩을 선언적으로 처리합니다.
  *              운영체제: Windows
  */
 import React from 'react';
@@ -14,13 +15,14 @@ import CategoryPieChart from './CategoryPieChart';
 import GenericTreemap from './GenericTreemap';
 import BaseTooltip from '../common/BaseTooltip';
 import SkillIcon from '../common/SkillIcon';
-import { useQuery } from '@apollo/client/react';
+import { useSuspenseQuery } from '@apollo/client/react';
 import { GET_DASHBOARD_DATA } from '../../services/api/queries/dashboard';
-import QueryBoundary from '../common/QueryBoundary';
 
 export default function DefaultDashboard() {
     const userMode = useAppSelector((state) => state.ui.userMode);
-    const { loading, error, data } = useQuery<DashboardData, DashboardVars>(GET_DASHBOARD_DATA, {
+    
+    // useSuspenseQuery는 data를 직접 반환하거나, 로딩 중일 때 suspense, 에러 시 throw합니다.
+    const { data } = useSuspenseQuery<DashboardData, DashboardVars>(GET_DASHBOARD_DATA, {
         variables: { userMode: userMode },
     });
 
@@ -28,68 +30,19 @@ export default function DefaultDashboard() {
         ? RECRUITER_THEME_COLORS
         : CANDIDATE_THEME_COLORS;
 
-    const renderContent = () => {
-        const dashboardData = data?.dashboardData || [];
-        if (dashboardData.length === 0 && !loading) {
-            return <div className="flex justify-center items-center h-64"><p className="text-gray-400">No dashboard data available.</p></div>;
-        }
-        
-        const sortedCategoryTotals = dashboardData
-            .map(cat => ({
-                name: cat.category,
-                value: cat.skills.reduce((acc, skill) => acc + skill.count, 0),
-            }))
-            .sort((a, b) => b.value - a.value);
+    const dashboardData = data?.dashboardData || [];
 
-        const baseColor = themeColors[0];
-        const categoryColorScale = chroma.scale([baseColor, chroma(baseColor).brighten(2)])
-                                         .domain([0, sortedCategoryTotals.length - 1]);
-        const tooltipTextColor = chroma(baseColor).luminance() > 0.5 ? '#222' : '#fff';
+    const sortedCategoryTotals = dashboardData
+        .map(cat => ({
+            name: cat.category,
+            value: cat.skills.reduce((acc, skill) => acc + skill.count, 0),
+        }))
+        .sort((a, b) => b.value - a.value);
 
-        return (
-            <div className="space-y-8">
-                <CategoryPieChart
-                    data={sortedCategoryTotals}
-                    colorScale={categoryColorScale}
-                    baseColor={baseColor}
-                />
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-                    {sortedCategoryTotals.map((sortedEntry, index) => {
-                        const categoryData = dashboardData.find(d => d.category === sortedEntry.name);
-                        if (!categoryData) return null;
-
-                        const baseCategoryColor = categoryColorScale(index).hex();
-                        return (
-                            <GenericTreemap
-                                key={categoryData.category}
-                                title={categoryData.category}
-                                data={categoryData.skills.map(s => ({ name: s.skill, value: s.count }))}
-                                baseCategoryColor={baseCategoryColor}
-                                renderCellContent={({ name, width, height, textColor }) => {
-                                    const showText = width > 50 && height > 30;
-                                    return (
-                                        <div className="w-full h-full flex flex-col items-center justify-center overflow-hidden p-1" style={{ color: textColor }}>
-                                            <SkillIcon skill={name} className={`${showText ? 'w-8 h-8' : 'w-5 h-5'} mb-1`} />
-                                            {showText && <p className="text-xs font-semibold text-center truncate w-full">{name}</p>}
-                                        </div>
-                                    );
-                                }}
-                                renderTooltipContent={({ name, value }) => (
-                                    <BaseTooltip
-                                        title={name}
-                                        value={value}
-                                        color={baseColor}
-                                        textColor={tooltipTextColor}
-                                        icon={<SkillIcon skill={name} className="w-6 h-6" />}
-                                    />
-                                )}
-                            />
-                        );
-                    })}
-                </div>
-            </div>
-        );
-    };
+    const baseColor = themeColors[0];
+    const categoryColorScale = chroma.scale([baseColor, chroma(baseColor).brighten(2)])
+                                     .domain([0, sortedCategoryTotals.length - 1]);
+    const tooltipTextColor = chroma(baseColor).luminance() > 0.5 ? '#222' : '#fff';
 
     return (
         <div className="p-6 h-full text-white animate-fade-in">
@@ -100,9 +53,51 @@ export default function DefaultDashboard() {
 
             <h2 className="text-3xl font-bold text-gray-200 my-4">전체 직무 선호도 대시보드</h2>
 
-            <QueryBoundary loading={loading} error={error}>
-                {renderContent()}
-            </QueryBoundary>
+            {dashboardData.length === 0 ? (
+                <div className="flex justify-center items-center h-64"><p className="text-gray-400">No dashboard data available.</p></div>
+            ) : (
+                <div className="space-y-8">
+                    <CategoryPieChart
+                        data={sortedCategoryTotals}
+                        colorScale={categoryColorScale}
+                        baseColor={baseColor}
+                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                        {sortedCategoryTotals.map((sortedEntry, index) => {
+                            const categoryData = dashboardData.find(d => d.category === sortedEntry.name);
+                            if (!categoryData) return null;
+
+                            const baseCategoryColor = categoryColorScale(index).hex();
+                            return (
+                                <GenericTreemap
+                                    key={categoryData.category}
+                                    title={categoryData.category}
+                                    data={categoryData.skills.map(s => ({ name: s.skill, value: s.count }))}
+                                    baseCategoryColor={baseCategoryColor}
+                                    renderCellContent={({ name, width, height, textColor }) => {
+                                        const showText = width > 50 && height > 30;
+                                        return (
+                                            <div className="w-full h-full flex flex-col items-center justify-center overflow-hidden p-1" style={{ color: textColor }}>
+                                                <SkillIcon skill={name} className={`${showText ? 'w-8 h-8' : 'w-5 h-5'} mb-1`} />
+                                                {showText && <p className="text-xs font-semibold text-center truncate w-full">{name}</p>}
+                                            </div>
+                                        );
+                                    }}
+                                    renderTooltipContent={({ name, value }) => (
+                                        <BaseTooltip
+                                            title={name}
+                                            value={value}
+                                            color={baseColor}
+                                            textColor={tooltipTextColor}
+                                            icon={<SkillIcon skill={name} className="w-6 h-6" />}
+                                        />
+                                    )}
+                                />
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
