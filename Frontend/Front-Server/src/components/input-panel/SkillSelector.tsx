@@ -1,27 +1,30 @@
 // src/components/input-panel/SkillSelector.tsx
 import React, { useState } from 'react';
 import { useAppSelector, useAppDispatch } from '../../services/state/hooks';
-import { toggleSkill } from '../../services/state/features/search/searchSlice';
+import { toggleSkill, resetSearch } from '../../services/state/features/search/searchSlice'; // Import resetSearch
 import { UserMode } from '../../types';
-import { Code, Search } from 'lucide-react'; // Added Search icon
+import { Code, Search } from 'lucide-react'; 
 import { CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS } from '../../constants';
 import chroma from 'chroma-js';
+import { ClearButton } from '../../components/common/ClearButton'; // Import ClearButton
 
 export const SkillSelector: React.FC = () => {
   const dispatch = useAppDispatch();
   const mode = useAppSelector((state) => state.ui.userMode);
-  const { 
-    selectedSkills, 
-    skillCategories, 
-    skillsLoaded 
-  } = useAppSelector((state) => state.search);
+  const { skillCategories, skillsLoaded } = useAppSelector((state) => state.search);
+  const { selectedSkills } = useAppSelector((state) => state.search[mode]);
 
-  const [searchTerm, setSearchTerm] = useState(''); // New state for search term
+  const [searchTerm, setSearchTerm] = useState('');
 
   const handleSkillToggle = (skill: string) => {
-    dispatch(toggleSkill(skill));
+    dispatch(toggleSkill({ userMode: mode, skill }));
   };
   
+  const handleClearSkills = () => {
+    dispatch(resetSearch(mode)); // Reset only skills for current mode
+    setSearchTerm(''); // Clear local search term
+  };
+
   const themeColors = mode === UserMode.CANDIDATE ? CANDIDATE_THEME_COLORS : RECRUITER_THEME_COLORS;
   const primaryColor = themeColors[0];
   const ringColor = chroma(primaryColor).alpha(0.4).hex();
@@ -42,10 +45,13 @@ export const SkillSelector: React.FC = () => {
 
   return (
     <section>
-      <label className="block text-sm font-semibold text-slate-700 mb-3 uppercase tracking-wider flex items-center gap-2">
-        <Code className="w-4 h-4" />
-        Tech Stack (Select Multiple)
-      </label>
+      <div className="flex items-center justify-between text-sm font-semibold text-slate-700 mb-3 uppercase tracking-wider">
+        <label className="flex items-center gap-2">
+          <Code className="w-4 h-4" />
+          Tech Stack (Select Multiple)
+        </label>
+        <ClearButton onClear={handleClearSkills} label="Clear" />
+      </div>
       {/* Search Input Field */}
       <div className="relative mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />

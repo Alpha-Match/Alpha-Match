@@ -16,7 +16,7 @@ export const SearchButton: React.FC<SearchButtonProps> = ({
   isLoading,
 }) => {
   const mode = useAppSelector((state) => state.ui.userMode);
-  const { selectedSkills } = useAppSelector((state) => state.search);
+  const { selectedSkills } = useAppSelector((state) => state.search[mode]);
   const isCandidate = mode === UserMode.CANDIDATE;
 
   const themeColors = isCandidate ? CANDIDATE_THEME_COLORS : RECRUITER_THEME_COLORS;

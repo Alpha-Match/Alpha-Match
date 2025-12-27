@@ -3,7 +3,6 @@ import { InputPanelHeader } from './InputPanelHeader';
 import { ExperienceSelector } from './ExperienceSelector';
 import { SkillSelector } from './SkillSelector';
 import { SearchButton } from './SearchButton';
-import { ClearButton } from './ClearButton'; // New Import
 
 interface InputPanelProps {
   onSearch: () => void;
@@ -25,8 +24,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
       </div>
 
       {/* Footer Action */}
-      <div className="p-6 border-t border-slate-100 bg-white flex space-x-4"> {/* Adjusted to flex container */}
-        <ClearButton />
+      <div className="p-6 border-t border-slate-100 bg-white">
         <SearchButton onSearch={onSearch} isLoading={isLoading} />
       </div>
     </div>

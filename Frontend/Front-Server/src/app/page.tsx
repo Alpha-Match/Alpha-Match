@@ -25,8 +25,8 @@ const HomePage: React.FC = () => {
   const dispatch = useAppDispatch();
   
   // Redux 스토어에서 상태 가져오기
-  const { selectedSkills, selectedExperience } = useAppSelector((state) => state.search);
   const { userMode, viewResetCounter, pageViewMode, selectedMatchId } = useAppSelector((state) => state.ui);
+  const { selectedSkills, selectedExperience } = useAppSelector((state) => state.search[userMode]);
   
   const { runSearch, loading, error, matches } = useSearchMatches();
   
@@ -53,7 +53,7 @@ const HomePage: React.FC = () => {
    * 검색 실행 핸들러
    */
   const handleSearch = () => {
-    dispatch(setSearchPerformed());
+    dispatch(setSearchPerformed(userMode));
     runSearch(userMode, selectedSkills, selectedExperience);
     dispatch(setPageViewMode('results'));
     dispatch(setSelectedMatchId(null));
