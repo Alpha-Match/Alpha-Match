@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLazyQuery } from '@apollo/client/react';
 import { MatchItem, SkillMatch, UserMode } from '../types';
 import { SEARCH_MATCHES_QUERY } from '../services/api/queries/search';
@@ -48,7 +48,7 @@ export const useSearchMatches = () => {
    * @function runSearch
    * @description Executes the GraphQL query to initiate a search with sanitized variables.
    */
-  const runSearch = (mode: UserMode, skills?: (string | null)[], experience?: string | null) => {
+  const runSearch = useCallback((mode: UserMode, skills?: (string | null)[], experience?: string | null) => {
     lastQueryMode.current = mode; // Store the mode for the current query
 
     // Sanitize variables to prevent GraphQL type errors
@@ -62,7 +62,7 @@ export const useSearchMatches = () => {
         experience: sanitizedExperience,
       },
     });
-  };
+  }, [runSearchQuery]); // Dependency on runSearchQuery
 
   return {
     runSearch,
@@ -71,4 +71,3 @@ export const useSearchMatches = () => {
     matches: modeMatches[currentUiMode], // Return matches for the currently active UI mode
   };
 };
-
