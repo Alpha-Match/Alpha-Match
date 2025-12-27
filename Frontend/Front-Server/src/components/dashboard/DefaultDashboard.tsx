@@ -8,19 +8,19 @@
 import React from 'react';
 import chroma from 'chroma-js';
 import { useAppSelector } from '../../services/state/hooks';
-import { UserMode } from '../../types';
+import { UserMode, DashboardData, DashboardVars } from '../../types';
 import { RECRUITER_THEME_COLORS, CANDIDATE_THEME_COLORS } from '../../constants';
 import CategoryPieChart from './CategoryPieChart';
 import GenericTreemap from './GenericTreemap';
 import BaseTooltip from '../common/BaseTooltip';
 import SkillIcon from '../common/SkillIcon';
-import { useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 import { GET_DASHBOARD_DATA } from '../../services/api/queries/dashboard';
 
 export default function DefaultDashboard() {
     const userMode = useAppSelector((state) => state.ui.userMode);
 
-    const { loading, error, data } = useQuery(GET_DASHBOARD_DATA, {
+    const { loading, error, data } = useQuery<DashboardData, DashboardVars>(GET_DASHBOARD_DATA, {
         variables: { userMode: userMode },
     });
 

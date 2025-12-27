@@ -54,3 +54,21 @@ export interface SimulationResponse {
   vectorVisualization: SkillMatch[];
   matches: MatchItem[];
 }
+
+export interface DashboardSkill {
+  skill: string;
+  count: number;
+}
+
+export interface DashboardCategory {
+  category: string;
+  skills: DashboardSkill[];
+}
+
+export interface DashboardData {
+  dashboardData: DashboardCategory[];
+}
+
+export interface DashboardVars {
+  userMode: UserMode;
+}
