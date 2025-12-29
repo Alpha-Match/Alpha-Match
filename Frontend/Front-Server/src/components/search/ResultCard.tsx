@@ -23,11 +23,11 @@ const ResultCard: React.FC<ResultCardProps> = ({ match, onSelect, activeColor })
   return (
     <button
       onClick={onSelect}
-      className="w-full text-left bg-slate-800/50 shadow-md rounded-lg p-6 border border-slate-700 hover:bg-slate-700/50 hover:border-[var(--active-color)] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--active-color)]"
+      className="w-full text-left bg-panel-main shadow-md rounded-lg p-6 border border-border/30 hover:bg-panel-2 hover:border-primary transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary"
       style={{ '--active-color': activeColor } as React.CSSProperties}
     >
       <div className="flex justify-between items-start mb-2">
-        <h3 className="text-xl font-semibold text-gray-200">{match.title}</h3>
+        <h3 className="text-xl font-semibold text-text-primary">{match.title}</h3>
         {match.score !== undefined && (
           <span 
             className="text-sm font-medium px-2.5 py-0.5 rounded-full"
@@ -37,21 +37,21 @@ const ResultCard: React.FC<ResultCardProps> = ({ match, onSelect, activeColor })
           </span>
         )}
       </div>
-      <p className="text-gray-400 text-lg mb-1">{match.company}</p>
-      <p className="text-gray-500 text-sm mb-3">
+      <p className="text-text-secondary text-lg mb-1">{match.company}</p>
+      <p className="text-text-tertiary text-sm mb-3">
         경력: {match.experience !== null && match.experience !== undefined ? `${match.experience}년 이상` : '신입/경력무관'}
       </p>
       <div className="flex flex-wrap gap-2 mt-4">
         {match.skills.slice(0, 5).map((skill, index) => (
           <span
             key={index}
-            className="px-3 py-1 bg-gray-600/50 text-gray-300 rounded-full text-xs font-medium"
+            className="px-3 py-1 bg-panel-2 text-text-secondary rounded-full text-xs font-medium"
           >
             {skill}
           </span>
         ))}
         {match.skills.length > 5 && (
-            <span className="px-3 py-1 bg-gray-700 text-gray-400 rounded-full text-xs font-medium">
+            <span className="px-3 py-1 bg-panel-2 text-text-tertiary rounded-full text-xs font-medium">
                 +{match.skills.length - 5}
             </span>
         )}

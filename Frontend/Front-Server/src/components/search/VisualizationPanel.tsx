@@ -23,43 +23,44 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
 
   if (isInitial) {
     return (
-      <div className="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center bg-slate-50/50">
-        <div className="bg-white p-6 rounded-full shadow-sm mb-4">
-          <Database className="w-16 h-16 text-slate-300" />
+      <div className="h-full flex flex-col items-center justify-center text-text-tertiary p-8 text-center bg-panel-main">
+        <div className="bg-background p-6 rounded-full shadow-sm mb-4">
+          <Database className="w-16 h-16 text-text-tertiary" />
         </div>
-        <h3 className="text-xl font-semibold text-slate-600 mb-2">Ready to Analyze</h3>
+        <h3 className="text-xl font-semibold text-text-secondary mb-2">분석 준비 완료</h3>
         <p className="max-w-md mx-auto">
-          Select your criteria on the left to initialize the pgvector simulation. 
-          We will visualize the semantic similarity between your profile and our database.
+          좌측에서 조건을 선택하여 pgvector 시뮬레이션을 초기화하세요.
+          프로필과 데이터베이스 간의 의미론적 유사성을 시각화합니다.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col bg-slate-50 overflow-hidden">
+    <div className="h-full flex flex-col bg-background overflow-hidden">
       
-      {/* Top: Visualization */}
-      <div className="h-[40%] bg-white border-b border-slate-200 p-4 shadow-sm flex flex-col relative">
+      {/* 상단: 시각화 */}
+      <div className="h-[40%] bg-panel-main border-b border-border p-4 shadow-sm flex flex-col relative">
         <div className="absolute top-4 left-6 z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 rounded-full border border-slate-200">
-            <BarChart3 className="w-4 h-4 text-slate-500" />
-            <span className="text-xs font-bold text-slate-600 uppercase tracking-wide">Vector Similarity Analysis</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-panel-2 rounded-full border border-border">
+            <BarChart3 className="w-4 h-4 text-text-tertiary" />
+            <span className="text-xs font-bold text-text-secondary uppercase tracking-wide">벡터 유사도 분석</span>
           </div>
         </div>
         
         <div className="flex-1 w-full mt-4">
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart cx="50%" cy="50%" outerRadius="70%" data={vectorData}>
-              <PolarGrid stroke="#e2e8f0" />
-              <PolarAngleAxis dataKey="skill" tick={{ fill: '#64748b', fontSize: 11 }} />
+              <PolarGrid stroke="rgb(var(--color-border))" />
+              <PolarAngleAxis dataKey="skill" tick={{ fill: 'rgb(var(--color-text-secondary))', fontSize: 11 }} />
               <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
               <Tooltip 
                 contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                itemStyle={{ fontSize: '12px', fontWeight: 600 }}
+                itemStyle={{ fontSize: '12px', fontWeight: 600, color: 'rgb(var(--color-text-primary))' }}
+                wrapperStyle={{ backgroundColor: 'rgb(var(--color-panel-main))' }}
               />
               <Radar
-                name={isCandidate ? "Job Seeker Profile" : "Job Requirement"}
+                name={isCandidate ? "구직자 프로필" : "직무 요구사항"}
                 dataKey="userValue"
                 stroke={primaryThemeColor}
                 strokeWidth={2}
@@ -67,36 +68,36 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
                 fillOpacity={0.3}
               />
               <Radar
-                name="Market Match"
+                name="시장 일치도"
                 dataKey="marketValue"
-                stroke="#10b981"
+                stroke="#10b981" // Green color for market match, can be themed if needed
                 strokeWidth={2}
                 fill="#10b981"
                 fillOpacity={0.3}
               />
-              <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+              <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '10px', color: 'rgb(var(--color-text-secondary))' }} />
             </RadarChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      {/* Bottom: List Results */}
-      <div className="flex-1 flex flex-col overflow-hidden bg-slate-50">
-        <div className="px-6 py-3 bg-white border-b border-slate-200 flex justify-between items-center">
-          <h3 className="font-bold text-slate-700 text-lg">
-            Top 10 {isCandidate ? "Recommended Job Positions" : "Matched Candidate Profiles"}
+      {/* 하단: 결과 목록 */}
+      <div className="flex-1 flex flex-col overflow-hidden bg-background">
+        <div className="px-6 py-3 bg-panel-main border-b border-border flex justify-between items-center">
+          <h3 className="font-bold text-text-primary text-lg">
+            상위 10개 {isCandidate ? "추천 채용 공고" : "매칭된 후보자 프로필"}
           </h3>
           <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-md font-medium">
-            Based on Cosine Distance
+            코사인 유사도 기반
           </span>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {matches.map((item) => (
-            <div key={item.id} className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200 group cursor-pointer relative overflow-hidden">
+            <div key={item.id} className="bg-panel-main rounded-xl p-5 border border-border/50 shadow-sm hover:shadow-md hover:border-primary transition-all duration-200 group cursor-pointer relative overflow-hidden">
               
-              {/* Similarity Score Indicator */}
-              <div className="absolute right-0 top-0 bottom-0 w-1.5 bg-slate-100">
+              {/* 유사도 점수 지표 */}
+              <div className="absolute right-0 top-0 bottom-0 w-1.5 bg-panel-2">
                 <div 
                   className="absolute bottom-0 w-full transition-all duration-1000 ease-out"
                   style={{ 
@@ -108,41 +109,41 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
 
               <div className="flex justify-between items-start pr-4">
                 <div>
-                  <h4 className="text-lg font-bold group-hover:text-slate-900 transition-colors text-slate-800" style={{'--hover-color': primaryThemeColor} as React.CSSProperties}
+                  <h4 className="text-lg font-bold group-hover:text-primary transition-colors text-text-primary"
                     onMouseEnter={(e) => e.currentTarget.style.color = primaryThemeColor}
                     onMouseLeave={(e) => e.currentTarget.style.color = ''}
                   >
                     {item.title}
                   </h4>
-                  <div className="flex items-center text-slate-500 text-sm mt-1 gap-2">
+                  <div className="flex items-center text-text-secondary text-sm mt-1 gap-2">
                     {isCandidate ? <Building className="w-3.5 h-3.5" /> : <User className="w-3.5 h-3.5" />}
                     <span className="font-medium">{item.company}</span>
                   </div>
                 </div>
                 
                 <div className="text-right">
-                  <div className="text-2xl font-black text-slate-800 tracking-tight">
+                  <div className="text-2xl font-black text-text-primary tracking-tight">
                     {(item.score * 100).toFixed(0)}%
                   </div>
-                  <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Match Score</div>
+                  <div className="text-[10px] text-text-tertiary uppercase font-bold tracking-wider">매치 점수</div>
                 </div>
               </div>
 
-              <p className="text-slate-600 text-sm mt-3 leading-relaxed">
+              <p className="text-text-secondary text-sm mt-3 leading-relaxed">
                 {item.description}
               </p>
 
-              {/* Tags */}
+              {/* 태그 */}
               <div className="flex flex-wrap gap-2 mt-4">
                 {item.skills.map((tag: string, idx: number) => (
-                  <span key={idx} className="px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded font-medium border border-slate-200">
+                  <span key={idx} className="px-2 py-1 bg-panel-2 text-text-secondary text-xs rounded font-medium border border-border">
                     {tag}
                   </span>
                 ))}
               </div>
 
-              {/* Footer Meta */}
-              <div className="flex items-center gap-4 mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500">
+              {/* 푸터 메타 */}
+              <div className="flex items-center gap-4 mt-4 pt-3 border-t border-border text-xs text-text-tertiary">
                 {item.location && (
                   <span className="flex items-center gap-1">
                     <MapPin className="w-3 h-3" /> {item.location}
@@ -153,8 +154,8 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
                     <DollarSign className="w-3 h-3" /> {item.salary}
                   </span>
                 )}
-                <div className="ml-auto flex items-center gap-1 font-semibold text-slate-400 group-hover:text-slate-700">
-                  View Details <ChevronRight className="w-3 h-3" />
+                <div className="ml-auto flex items-center gap-1 font-semibold text-text-secondary group-hover:text-primary">
+                  상세 보기 <ChevronRight className="w-3 h-3" />
                 </div>
               </div>
             </div>

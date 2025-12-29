@@ -1,15 +1,13 @@
 // Frontend/Front-Server/src/components/dashboard/GenericTreemap.tsx
 import React, { useRef } from 'react';
 import { ResponsiveContainer, Treemap } from 'recharts';
-import chroma from 'chroma-js';
 import Tippy from '@tippyjs/react';
-
 import { useAppDispatch, useAppSelector } from '../../services/state/hooks';
 import { setActiveTooltip } from '../../services/state/features/ui/uiSlice';
-
+import chroma from 'chroma-js'; // chroma-js is still needed for the scale, which is fine.
 
 /* ------------------------------------------------------------------
- * Sub Component Props
+ * 서브 컴포넌트 Props
  * ------------------------------------------------------------------ */
 interface CustomizedTreemapContentProps {
     /** Recharts에서 주입되는 기본 좌표/데이터 */
@@ -26,7 +24,7 @@ interface CustomizedTreemapContentProps {
 }
 
 /* ------------------------------------------------------------------
- * Customized Treemap Cell
+ * 커스텀 Treemap 셀
  * ------------------------------------------------------------------ */
 const CustomizedTreemapContent: React.FC<CustomizedTreemapContentProps> = (props) => {
     const {
@@ -38,45 +36,27 @@ const CustomizedTreemapContent: React.FC<CustomizedTreemapContentProps> = (props
     const dispatch = useAppDispatch();
     const { activeTooltipId } = useAppSelector((state) => state.ui);
 
-    /**
-     * 🔑 핵심 포인트
-     * - Tippy는 반드시 HTMLElement를 reference로 요구
-     * - SVG <g> / <rect> 는 ref 대상이 아님
-     * - foreignObject 내부 div를 tooltip 기준점으로 사용
-     */
     const divRef = useRef<HTMLDivElement | null>(null);
-    /** 현재 셀이 활성 tooltip인지 여부 */
     const isVisible = activeTooltipId === id;
-    /* -----------------------------
-     * Color 계산
-     * ----------------------------- */
+
     const treemapColorScale = chroma.scale([
         baseCategoryColor,
         chroma(baseCategoryColor).brighten(2).hex()
     ]).domain([maxSkillValue, 0]);
 
-    const calculatedFill = treemapColorScale(value);
-    const hoverStrokeColor = chroma(baseCategoryColor).brighten(2).hex();
-    const strokeTextColor = chroma(baseCategoryColor).luminance() > 0.5 ? '#333' : '#eee';
+    const calculatedFill = treemapColorScale(value).hex();
+    
+    // Use CSS variables for theme-aware colors
+    const textColor = 'rgb(var(--color-text-primary))';
+    const hoverStrokeColor = 'rgb(var(--color-primary-light))';
+
 
     return (
         <>
-            {/* =========================================================
-             * Tooltip 기준점 (HTML Element)
-             * =========================================================
-             * - foreignObject 안에 div를 두어 HTMLElement 확보
-             * - 실제 화면에는 보이지 않지만 tooltip positioning 기준
-             */}
             <foreignObject x={x} y={y} width={width} height={height}>
                 <div ref={divRef} />
             </foreignObject>
 
-            {/* =========================================================
-             * Tippy Tooltip
-             * =========================================================
-             * ❗ children로 SVG를 감싸지 않는다
-             * ❗ reference prop을 통해 명시적으로 HTMLElement 지정
-             */}
             <Tippy
                 content={renderTooltipContent({ name, value })}
                 visible={isVisible}
@@ -86,32 +66,24 @@ const CustomizedTreemapContent: React.FC<CustomizedTreemapContentProps> = (props
                 reference={divRef.current}
             />
 
-            {/* =========================================================
-             * 실제 Treemap SVG 렌더링
-             * ========================================================= */}
             <g
                 onMouseEnter={() => dispatch(setActiveTooltip(id))}
                 onMouseLeave={() => dispatch(setActiveTooltip(null))}
                 style={{ cursor: 'pointer' }}
             >
-                {/* Background Rect */}
                 <rect
                     x={x}
                     y={y}
                     width={width}
                     height={height}
                     style={{
-                        fill: calculatedFill.hex(),
-                        stroke: isVisible ? hoverStrokeColor : strokeTextColor,
+                        fill: calculatedFill,
+                        stroke: isVisible ? hoverStrokeColor : 'rgb(var(--color-background))',
                         strokeWidth: isVisible ? 3 : 1,
-                        filter: isVisible
-                            ? 'drop-shadow(0 0 8px rgba(160,240,237,0.7))'
-                            : 'none',
                         transition: 'all 0.2s ease-out',
                     }}
                 />
 
-                {/* Cell Content */}
                 <foreignObject
                     x={x + 4}
                     y={y + 4}
@@ -123,7 +95,7 @@ const CustomizedTreemapContent: React.FC<CustomizedTreemapContentProps> = (props
                         value,
                         width,
                         height,
-                        textColor: strokeTextColor,
+                        textColor: textColor,
                     })}
                 </foreignObject>
             </g>
@@ -133,7 +105,7 @@ const CustomizedTreemapContent: React.FC<CustomizedTreemapContentProps> = (props
 
 
 /* ------------------------------------------------------------------
- * Main Component Props
+ * 메인 컴포넌트 Props
  * ------------------------------------------------------------------ */
 interface GenericTreemapProps {
     title: string;
@@ -145,32 +117,29 @@ interface GenericTreemapProps {
 }
 
 /* ------------------------------------------------------------------
- * GenericTreemap Component
+ * GenericTreemap 컴포넌트
  * ------------------------------------------------------------------ */
 const GenericTreemap: React.FC<GenericTreemapProps> = ({ title, data, baseCategoryColor, renderCellContent, renderTooltipContent }) => {
     if (!data) return null;
 
-    /** color scale 기준 최대값 */
     const maxSkillValue = Math.max(...data.map(s => s.value), 0);
-    
-    // 데이터를 값에 따라 내림차순으로 정렬하여 일관된 레이아웃 보장
     const sortedData = [...data].sort((a, b) => b.value - a.value);
 
     return (
-        <div className="bg-slate-800/50 p-4 rounded-lg shadow-lg flex flex-col">
-            <h3 className="text-xl font-semibold mb-3 text-gray-300">{title}</h3>
+        <div className="bg-panel-main p-4 rounded-lg shadow-lg flex flex-col">
+            <h3 className="text-xl font-semibold mb-3 text-text-primary">{title}</h3>
             <div className="flex-1 w-full h-full">
                 <ResponsiveContainer width="100%" height={250}>
                     <Treemap
                         data={sortedData}
                         dataKey="value"
                         aspectRatio={1}
-                        stroke="#fff"
+                        stroke="rgb(var(--color-text-primary))"
                         fill={baseCategoryColor}
                         content={(props) => (
                             <CustomizedTreemapContent
                                 {...props}
-                                id={`${title}-${props.name}`} // Unique ID for tooltip
+                                id={`${title}-${props.name}`} // 툴팁을 위한 고유 ID
                                 baseCategoryColor={baseCategoryColor}
                                 maxSkillValue={maxSkillValue}
                                 renderCellContent={renderCellContent}

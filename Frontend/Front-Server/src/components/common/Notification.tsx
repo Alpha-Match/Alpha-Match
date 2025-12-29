@@ -11,7 +11,7 @@ const icons = {
   info: <Info className="w-6 h-6 text-blue-500" />,
 };
 
-// Define a type for the custom event detail that matches the action payload
+// 액션 페이로드와 일치하는 커스텀 이벤트 상세 타입을 정의
 type NotificationEventDetail = {
   message: string;
   type: 'error' | 'success' | 'info';
@@ -26,10 +26,10 @@ export const Notification = () => {
       dispatch(showNotification(event.detail));
     };
 
-    // Listen for the custom event dispatched from the Apollo error link
+    // Apollo 에러 링크에서 디스패치된 커스텀 이벤트를 리스닝
     document.addEventListener('show-notification', handleNotificationEvent as EventListener);
 
-    // Cleanup the event listener on component unmount
+    // 컴포넌트 언마운트 시 이벤트 리스너 정리
     return () => {
       document.removeEventListener('show-notification', handleNotificationEvent as EventListener);
     };
@@ -39,7 +39,7 @@ export const Notification = () => {
     if (open) {
       const timer = setTimeout(() => {
         dispatch(hideNotification());
-      }, 5000); // Auto-hide after 5 seconds
+      }, 5000); // 5초 후 자동 숨김
 
       return () => clearTimeout(timer);
     }
@@ -49,22 +49,27 @@ export const Notification = () => {
     return null;
   }
 
+  const borderColorClass = {
+    error: 'border-red-500',
+    success: 'border-green-500',
+    info: 'border-blue-500',
+  }[type];
+
   return (
     <div 
-      className="fixed bottom-5 right-5 bg-white shadow-lg rounded-lg p-4 max-w-sm min-w-[320px] z-[100] border-l-4 transition-all duration-300 ease-in-out transform animate-slide-in-up"
-      style={{ borderColor: type === 'error' ? '#ef4444' : type === 'success' ? '#22c55e' : '#3b82f6' }}
+      className={`fixed bottom-5 right-5 bg-panel-main shadow-lg rounded-lg p-4 max-w-sm min-w-[320px] z-[100] border-l-4 transition-all duration-300 ease-in-out transform animate-slide-in-up ${borderColorClass}`}
     >
       <div className="flex items-start">
         <div className="flex-shrink-0">
           {icons[type]}
         </div>
         <div className="ml-3 w-full flex-1 pt-0.5">
-          <p className="text-sm font-medium text-gray-900 break-words">{message}</p>
+          <p className="text-sm font-medium text-text-primary break-words">{message}</p>
         </div>
         <div className="ml-4 flex-shrink-0 flex">
           <button
             onClick={() => dispatch(hideNotification())}
-            className="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="bg-transparent rounded-md inline-flex text-text-tertiary hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
           >
             <span className="sr-only">Close</span>
             <XCircle className="h-5 w-5" />

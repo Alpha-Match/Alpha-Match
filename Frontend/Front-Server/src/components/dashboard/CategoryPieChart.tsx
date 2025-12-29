@@ -11,7 +11,7 @@ const CustomPieLabel = ({ cx, cy, midAngle, outerRadius, percent }: any) => {
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
   
     return (
-      <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central">
+      <text x={x} y={y} className="fill-text-primary" textAnchor="middle" dominantBaseline="central">
         {`${(percent * 100).toFixed(0)}%`}
       </text>
     );
@@ -27,8 +27,8 @@ interface CategoryPieChartProps {
 // --- Main Component ---
 const CategoryPieChart: React.FC<CategoryPieChartProps> = ({ data, colorScale, baseColor }) => {
     return (
-        <div className="bg-slate-800/50 p-6 rounded-lg shadow-lg">
-            <h3 className="text-xl font-semibold mb-4 text-gray-300">직무별 점유율</h3>
+        <div className="bg-panel-main p-6 rounded-lg shadow-lg">
+            <h3 className="text-xl font-semibold mb-4 text-text-secondary">직무별 점유율</h3>
             <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                     <Pie
@@ -47,7 +47,7 @@ const CategoryPieChart: React.FC<CategoryPieChartProps> = ({ data, colorScale, b
                     </Pie>
                     {/* Recharts' own tooltip is disabled to allow for a consistent UX with Tippy.js if needed elsewhere */}
                     {/* <Tooltip contentStyle={{ display: 'none' }} /> */}
-                    <Legend wrapperStyle={{ color: '#A0AEC0' }}/>
+                    <Legend wrapperStyle={{ fill: 'var(--color-text-secondary)' }}/>
                 </PieChart>
             </ResponsiveContainer>
         </div>
