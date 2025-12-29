@@ -92,7 +92,7 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
           </span>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
           {matches.map((item) => (
             <div key={item.id} className="bg-panel-main rounded-xl p-5 border border-border/50 shadow-sm hover:shadow-md hover:border-primary transition-all duration-200 group cursor-pointer relative overflow-hidden">
               

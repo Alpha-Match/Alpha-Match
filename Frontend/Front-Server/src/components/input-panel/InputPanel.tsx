@@ -18,7 +18,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
       <InputPanelHeader />
 
       {/* Scrollable Form Content - Contains individual selector panels */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4"> {/* Adjusted space-y */}
+      <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar"> {/* Adjusted space-y */}
         <SkillSelector />
         <ExperienceSelector />
       </div>

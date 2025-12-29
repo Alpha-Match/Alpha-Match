@@ -71,7 +71,7 @@ const MatchDetailPanel: React.FC<MatchDetailPanelProps> = ({ match, onBack }) =>
         </div>
 
         {/* 상세 설명 */}
-        <div className="prose prose-invert max-w-none">
+        <div className="prose prose-invert max-w-none custom-scrollbar overflow-y-auto">
           {renderDescription(match.description || '')}
         </div>
 
