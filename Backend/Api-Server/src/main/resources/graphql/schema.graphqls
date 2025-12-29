@@ -96,6 +96,7 @@ type DashboardCategoryData {
 Match Item (Frontend Compatible)
 Unified result type for both Recruit and Candidate searches
 Maps to Frontend MatchItem interface
+Used for LIST views (searchMatches) - does not include description
 """
 type MatchItem {
     id: ID!
@@ -104,7 +105,37 @@ type MatchItem {
     score: Float!
     skills: [String!]!
     experience: Int
-    description: String
+}
+
+"""
+Recruit Detail (Single Item View)
+Full recruit information including description
+Used for DETAIL views (getRecruit)
+"""
+type RecruitDetail {
+    id: ID!
+    position: String!
+    companyName: String!
+    experienceYears: Int
+    primaryKeyword: String
+    englishLevel: String
+    skills: [String!]!
+    description: String!
+    publishedAt: String
+}
+
+"""
+Candidate Detail (Single Item View)
+Full candidate information including description
+Used for DETAIL views (getCandidate)
+"""
+type CandidateDetail {
+    id: ID!
+    positionCategory: String!
+    experienceYears: Int
+    originalResume: String
+    skills: [String!]!
+    description: String!
 }
 
 """
@@ -228,14 +259,16 @@ type Query {
     searchCandidates(input: CandidateSearchInput!): CandidateSearchResult!
 
     """
-    Get Recruit by ID
+    Get Recruit by ID (Detail View)
+    - Returns full recruit information including description
     """
-    getRecruit(recruitId: ID!): Recruit
+    getRecruit(id: ID!): RecruitDetail
 
     """
-    Get Candidate by ID
+    Get Candidate by ID (Detail View)
+    - Returns full candidate information including description
     """
-    getCandidate(candidateId: ID!): Candidate
+    getCandidate(id: ID!): CandidateDetail
 
     """
     Get all available skills

@@ -110,14 +110,25 @@
   - **Skill_dic**: 105건, 1.69s, 62.2 rps ✅
   - **총 처리량**: 206,334건, 44m 46.6s, 평균 76.8 rps
   - 리포트: `Backend/Batch-Server/docs/hist/2025-12-26_02_Performance_Test_Report.md`
+- **Api-Server Clean Architecture 전면 리팩토링 (2025-12-29)**:
+  - 3-Layer 원칙 적용 (Domain → Application → Infrastructure)
+  - Application Services 이동: SearchService, DashboardService, CacheService → application/service/
+  - GraphQL 이동: resolver, type, input → infrastructure/graphql/ (Input Adapter)
+  - Configuration 이동: CacheConfig, CorsConfig, R2dbcConfig → infrastructure/config/
+  - Domain Layer 정리 (빈 service 디렉토리 삭제, SkillNormalizationService는 Domain Service로 유지)
+  - 총 16개 파일 이동, 의존성 방향 검증 완료
+  - Gradle Build 성공 (29s, 9 tasks)
+  - 리포트: `Backend/Api-Server/docs/hist/2025-12-29_02_Complete_Clean_Architecture_Refactoring.md`
 
 ### 🔄 진행 중
 - 없음
 
 ### ⏳ 예정
 - 청크 사이즈 튜닝 (100, 500, 1000 비교)
-- API Server 설계 및 구현
-- GraphQL 구현 (Resolver → Service → Cache → DB)
+- Redis 연동 및 실제 성능 테스트
+- CacheService 적용 확대 (getSkillCategories, Dashboard, Detail 조회)
+- gRPC Server 구현 (캐시 무효화 수신)
+- GraphQL Mutation 구현 (캐시 무효화 API)
 - Frontend: GraphQL 쿼리 구현 (대시보드 제외), React Query 캐싱
 - 성능 최적화 및 모니터링
 
@@ -245,4 +256,4 @@ Batch Server가 자동으로 Python Server에 연결하여 데이터를 수신�
 
 ---
 
-**최종 수정일:** 2025-12-26 (전체 도메인 성능 테스트 완료, JVM 최적화)
+**최종 수정일:** 2025-12-29 (Api-Server Clean Architecture 전면 리팩토링 완료)

@@ -46,60 +46,70 @@
 - `src/main/java/com/alpha/api/config/grpc/GrpcClientConfig.java` - AI Backend 연동
 - `src/main/proto/cache_service.proto` - Cache 서비스 Proto 정의
 
-### 🎯 GraphQL Layer
-
-**Resolver:**
-- `src/main/java/com/alpha/api/graphql/resolver/QueryResolver.java` - Query 처리
-- `src/main/java/com/alpha/api/graphql/resolver/MutationResolver.java` - Mutation 처리
-
-**Type:**
-- `src/main/java/com/alpha/api/graphql/type/RecruitType.java` - GraphQL 타입
-- `src/main/java/com/alpha/api/graphql/type/CandidateType.java`
-- `src/main/java/com/alpha/api/graphql/input/SearchInput.java` - Input 타입
-
-### 📦 Domain Layer (Port)
+### 📦 Domain Layer (비즈니스 핵심)
 
 **Recruit 도메인:**
 - `src/main/java/com/alpha/api/domain/recruit/entity/Recruit.java` - Domain Model
 - `src/main/java/com/alpha/api/domain/recruit/entity/RecruitDescription.java`
 - `src/main/java/com/alpha/api/domain/recruit/entity/RecruitSkillsEmbedding.java`
-- `src/main/java/com/alpha/api/domain/recruit/repository/RecruitRepository.java` - Port Interface
-- `src/main/java/com/alpha/api/domain/recruit/service/RecruitService.java` - Service Layer
+- `src/main/java/com/alpha/api/domain/recruit/repository/RecruitRepository.java` - Port Interface (기본 CRUD)
+- `src/main/java/com/alpha/api/domain/recruit/repository/RecruitSearchRepository.java` - Port Interface (벡터 검색)
 
 **Candidate 도메인:**
 - `src/main/java/com/alpha/api/domain/candidate/entity/Candidate.java`
 - `src/main/java/com/alpha/api/domain/candidate/entity/CandidateDescription.java`
 - `src/main/java/com/alpha/api/domain/candidate/entity/CandidateSkillsEmbedding.java`
-- `src/main/java/com/alpha/api/domain/candidate/repository/CandidateRepository.java`
-- `src/main/java/com/alpha/api/domain/candidate/service/CandidateService.java`
+- `src/main/java/com/alpha/api/domain/candidate/repository/CandidateRepository.java` - Port Interface (기본 CRUD)
+- `src/main/java/com/alpha/api/domain/candidate/repository/CandidateSearchRepository.java` - Port Interface (벡터 검색)
 
 **Skill Dictionary 도메인:**
 - `src/main/java/com/alpha/api/domain/skilldic/entity/SkillCategoryDic.java`
 - `src/main/java/com/alpha/api/domain/skilldic/entity/SkillEmbeddingDic.java`
 - `src/main/java/com/alpha/api/domain/skilldic/repository/SkillEmbeddingDicRepository.java`
-- `src/main/java/com/alpha/api/domain/skilldic/service/SkillNormalizationService.java` - 스킬 정규화
+- `src/main/java/com/alpha/api/domain/skilldic/service/SkillNormalizationService.java` - Domain Service (스킬 정규화, 벡터 계산)
 
-**Cache 도메인:**
-- `src/main/java/com/alpha/api/domain/cache/service/CacheService.java` - 캐시 관리
-- `src/main/java/com/alpha/api/domain/cache/service/CacheInvalidationService.java` - 캐시 무효화
+**Cache Port:**
+- `src/main/java/com/alpha/api/domain/cache/port/CachePort.java` - Port Interface (캐싱 추상화)
 
-### 🏗️ Infrastructure Layer (Adapter)
+**Common:**
+- `src/main/java/com/alpha/api/domain/common/SkillCount.java` - Value Object
+
+### 🎯 Application Layer (Use Case 구현)
+
+**DTO:**
+- `src/main/java/com/alpha/api/application/dto/RecruitSearchResult.java`
+- `src/main/java/com/alpha/api/application/dto/CandidateSearchResult.java`
+
+**Application Services:**
+- `src/main/java/com/alpha/api/application/service/SearchService.java` - 검색 Use Case (스킬 기반 매칭)
+- `src/main/java/com/alpha/api/application/service/DashboardService.java` - 대시보드 Use Case (통계 생성)
+- `src/main/java/com/alpha/api/application/service/CacheService.java` - 캐싱 Use Case (Multi-layer Cache 관리)
+
+### 🏗️ Infrastructure Layer (기술 구현)
 
 **Persistence (R2DBC):**
-- `src/main/java/com/alpha/api/infrastructure/persistence/RecruitR2dbcRepository.java`
-- `src/main/java/com/alpha/api/infrastructure/persistence/RecruitDescriptionR2dbcRepository.java`
-- `src/main/java/com/alpha/api/infrastructure/persistence/RecruitSkillsEmbeddingR2dbcRepository.java`
-- `src/main/java/com/alpha/api/infrastructure/persistence/CandidateR2dbcRepository.java`
-- `src/main/java/com/alpha/api/infrastructure/persistence/CandidateDescriptionR2dbcRepository.java`
-- `src/main/java/com/alpha/api/infrastructure/persistence/CandidateSkillsEmbeddingR2dbcRepository.java`
+- `src/main/java/com/alpha/api/infrastructure/persistence/RecruitR2dbcRepository.java` - RecruitRepository 구현
+- `src/main/java/com/alpha/api/infrastructure/persistence/RecruitCustomRepositoryImpl.java` - RecruitSearchRepository 구현
+- `src/main/java/com/alpha/api/infrastructure/persistence/CandidateR2dbcRepository.java` - CandidateRepository 구현
+- `src/main/java/com/alpha/api/infrastructure/persistence/CandidateCustomRepositoryImpl.java` - CandidateSearchRepository 구현
 - `src/main/java/com/alpha/api/infrastructure/persistence/SkillEmbeddingDicR2dbcRepository.java`
 
-**gRPC Server (캐시 무효화 수신):**
+**GraphQL (Input Adapter):**
+- `src/main/java/com/alpha/api/infrastructure/graphql/resolver/QueryResolver.java` - Query Resolver
+- `src/main/java/com/alpha/api/infrastructure/graphql/type/` - GraphQL 타입 정의
+- `src/main/java/com/alpha/api/infrastructure/graphql/input/` - GraphQL Input 타입
+
+**Cache (Output Adapter):**
+- `src/main/java/com/alpha/api/infrastructure/cache/CaffeineCacheAdapter.java` - CachePort 구현 (L1)
+- `src/main/java/com/alpha/api/infrastructure/cache/RedisCacheAdapter.java` - CachePort 구현 (L2)
+
+**gRPC Server (Input Adapter - 캐시 무효화 수신):**
 - `src/main/java/com/alpha/api/infrastructure/grpc/server/CacheInvalidateServiceImpl.java` - Batch Server로부터 수신
 
-**Cache:**
-- `src/main/java/com/alpha/api/infrastructure/cache/CaffeineCacheAdapter.java` - L1 Cache
-- `src/main/java/com/alpha/api/infrastructure/cache/RedisCacheAdapter.java` - L2 Cache
+**Configuration (Framework 설정):**
+- `src/main/java/com/alpha/api/infrastructure/config/CacheConfig.java` - Caffeine + Redis 설정
+- `src/main/java/com/alpha/api/infrastructure/config/CorsConfig.java` - CORS 설정
+- `src/main/java/com/alpha/api/infrastructure/config/R2dbcConfig.java` - R2DBC + PGvector 설정
 
 ### 📋 설정 파일
 
@@ -112,21 +122,45 @@
 ## 🚀 현재 구현 상태
 
 ### ✅ 완료
-- 없음 (구현 시작 전)
+- **Spring Boot 프로젝트 초기 설정** (build.gradle, R2DBC, Redis, gRPC)
+- **Entity 구현** (Recruit, Candidate, Skill Dictionary - 9개 엔티티)
+- **R2DBC Repository 구현** (pgvector 쿼리 포함)
+  - Port 인터페이스 (Domain Layer): RecruitRepository, RecruitSearchRepository, CandidateRepository, CandidateSearchRepository
+  - Adapter 구현 (Infrastructure Layer): R2dbcRepository, CustomRepositoryImpl
+- **Service Layer 구현** (Reactive Mono/Flux)
+  - SearchService (검색 통합)
+  - SkillNormalizationService (스킬 정규화)
+  - DashboardService (통계)
+- **GraphQL Schema 설계** (schema.graphqls - 7개 쿼리, 3개 뮤테이션)
+- **GraphQL Resolver 구현** (QueryResolver)
+- **Multi-layer Caching 시스템** (2025-12-29)
+  - CachePort (Domain Layer) + CacheService
+  - CaffeineCacheAdapter (L1) + RedisCacheAdapter (L2)
+  - ObjectMapper Bean 추가 (Jackson serialization)
+- **Postman 컬렉션** (7개 테스트 쿼리 + 성능 측정 스크립트)
+- **Clean Architecture 전면 리팩토링** (2025-12-29)
+  - 3-Layer 원칙 적용 (Domain → Application → Infrastructure)
+  - 총 16개 파일 이동 (Services 3개, GraphQL 10개, Config 3개)
+  - 의존성 방향 검증 완료
+  - Gradle Build 성공 (29s, 9 tasks)
+  - 히스토리 문서: `docs/hist/2025-12-29_02_Complete_Clean_Architecture_Refactoring.md`
+- **Caffeine 캐시 성능 테스트** (2025-12-29) ✅
+  - Cold Start (DB): 338.98ms
+  - Warm Cache (L1): 26.36ms
+  - Speedup: 12.9x faster (92.2% improvement)
+  - TTL 10초 정확히 작동
+  - 히스토리 문서: `docs/hist/2025-12-29_03_Caffeine_Cache_Performance_Test.md`
 
 ### 🔄 진행 중
 - 없음
 
 ### ⏳ 예정 (우선순위 순)
-1. Spring Boot 프로젝트 초기 설정 (build.gradle)
-2. Entity 구현 (Recruit, Candidate, Skill Dictionary)
-3. R2DBC Repository 구현 (pgvector 쿼리)
-4. Service Layer 구현 (Reactive Mono/Flux)
-5. GraphQL Schema 설계 (schema.graphqls)
-6. GraphQL Resolver 구현
-7. Caffeine + Redis 멀티 레이어 캐싱
-8. gRPC Server (캐시 무효화 수신)
-9. 스킬 정규화 로직 구현
+1. **TTL 최적화** (getSkillCategories: 10s → 60s, Dashboard: 30s)
+2. **Dashboard 캐싱 적용** (getDashboardData)
+3. **Redis L2 캐시 연동 및 성능 테스트**
+4. **gRPC Server 구현** (캐시 무효화 수신)
+5. **GraphQL Mutation 구현** (캐시 무효화 API)
+6. **부하 테스트** (동시 요청 100/1000/10000)
 
 ---
 
@@ -219,4 +253,23 @@ http://localhost:8080/graphiql
 
 ---
 
-**최종 수정일:** 2025-12-23
+---
+
+## 📜 히스토리 문서
+
+### 2025-12-29
+- **아키텍처 리팩토링 및 캐싱 구현**: `docs/hist/2025-12-29_01_Architecture_Refactoring_and_Caching_Implementation.md`
+  - Clean Architecture 적용 (Port-Adapter 패턴)
+  - Repository 계층 분리 (RecruitSearchRepository, CandidateSearchRepository)
+  - Multi-layer Caching 시스템 구현 (CacheService + Caffeine/Redis Adapter)
+  - Postman 컬렉션 및 성능 테스트 스크립트 작성
+- **Clean Architecture 전면 리팩토링**: `docs/hist/2025-12-29_02_Complete_Clean_Architecture_Refactoring.md`
+  - 3-Layer 분리 (Domain → Application → Infrastructure)
+  - 16개 파일 이동 및 의존성 방향 검증
+- **Caffeine 캐시 성능 테스트**: `docs/hist/2025-12-29_03_Caffeine_Cache_Performance_Test.md`
+  - L1 캐시 성능 측정 (12.9x speedup)
+  - ObjectMapper Bean 추가
+
+---
+
+**최종 수정일:** 2025-12-29 (Caffeine 캐시 성능 테스트 완료)
