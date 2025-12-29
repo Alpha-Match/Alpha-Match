@@ -12,7 +12,6 @@ import SearchResultPanel from '../search/SearchResultPanel';
 import DefaultDashboard from '../dashboard/DefaultDashboard';
 import MatchDetailPanel from '../search/MatchDetailPanel';
 import { LoadingSpinner } from '../common/LoadingSpinner';
-import { ApolloError } from '@apollo/client';
 
 type PageViewMode = 'dashboard' | 'results' | 'detail';
 
@@ -22,7 +21,7 @@ interface MainContentPanelProps {
   matches: MatchItem[];
   selectedMatchId: string | null;
   loading: boolean;
-  error: ApolloError | Error | null;
+  error: Error | null; // Changed from ApolloError | Error | null
   activeColor: string;
   onMatchSelect: (match: MatchItem) => void;
   onBackToList: () => void;
@@ -45,7 +44,7 @@ export const MainContentPanel: React.FC<MainContentPanelProps> = ({
       if (!selectedMatch) {
         // 상세 보기 상태에서 사용자가 모드를 전환할 때 발생할 수 있습니다.
         // 안전한 뷰로 대체합니다. 간단한 메시지로 충분합니다.
-        return <div className="text-center text-gray-400">매치 상세 정보를 찾을 수 없습니다. 목록으로 돌아가세요.</div>;
+        return <div className="text-center text-text-tertiary">매치 상세 정보를 찾을 수 없습니다. 목록으로 돌아가세요.</div>;
       }
       return <MatchDetailPanel match={selectedMatch} onBack={onBackToList} />;
 

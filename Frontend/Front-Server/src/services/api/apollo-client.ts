@@ -1,10 +1,20 @@
-import { ApolloClient, InMemoryCache, HttpLink, from } from "@apollo/client";
+import { ApolloClient, InMemoryCache, HttpLink, ApolloLink } from "@apollo/client";
 import { onError } from "@apollo/client/link/error";
 import { CombinedGraphQLErrors, ServerError } from '@apollo/client/errors';
 
-const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || "http://localhost:8080/graphql";
+const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || "http://localhost:8088/graphql";
+const API_TIMEOUT_MS = 20 * 1000; // 20 seconds
 
-const httpLink = new HttpLink({ uri: GRAPHQL_ENDPOINT });
+const httpLink = new HttpLink({
+  uri: GRAPHQL_ENDPOINT,
+  fetchOptions: {
+    signal: (() => {
+      const controller = new AbortController();
+      setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+      return controller.signal;
+    })(),
+  },
+});
 
 const errorLink = onError(({ error }) => {
   let userMessage = "An unexpected error occurred.";
@@ -19,9 +29,13 @@ const errorLink = onError(({ error }) => {
     console.error(`[Server error]: ${error.message}`);
     userMessage = 'Server is not responding. Please try again later.';
   } else if (error) {
-    // This catches generic network errors or others.
+    // This catches generic network errors or others, including AbortError for timeouts.
     console.error(`[Network error]: ${error.message}`);
-    userMessage = 'Server connection failed. Please check your network.';
+    if (error.name === 'AbortError') {
+      userMessage = `Request timed out after ${API_TIMEOUT_MS / 1000} seconds. Please try again.`;
+    } else {
+      userMessage = 'Server connection failed. Please check your network.';
+    }
   }
 
   document.dispatchEvent(new CustomEvent('show-notification', {
@@ -32,7 +46,7 @@ const errorLink = onError(({ error }) => {
 // Export a factory function that creates a new client instance
 export const makeClient = () => {
     return new ApolloClient({
-        link: from([errorLink, httpLink]),
+        link: ApolloLink.from([errorLink, httpLink]), // Use ApolloLink.from
         cache: new InMemoryCache(),
         ssrMode: typeof window === 'undefined', // Enable SSR mode on the server
     });
