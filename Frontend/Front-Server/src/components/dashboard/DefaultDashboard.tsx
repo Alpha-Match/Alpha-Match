@@ -42,19 +42,18 @@ export default function DefaultDashboard() {
     const baseColor = themeColors[0];
     const categoryColorScale = chroma.scale([baseColor, chroma(baseColor).brighten(2)])
                                      .domain([0, sortedCategoryTotals.length - 1]);
-    const tooltipTextColor = chroma(baseColor).luminance() > 0.5 ? '#222' : '#fff';
 
     return (
-        <div className="p-6 h-full text-white animate-fade-in">
+        <div className="p-6 h-full text-text-primary animate-fade-in">
             {/* 상단 안내 패널 */}
-            <div className="bg-slate-800/50 p-6 rounded-lg shadow-lg text-center mb-8">
-                <p className="text-gray-400">좌측 패널에서 원하는 기술 스택과 경력을 선택하여 검색을 시작하세요.</p>
+            <div className="bg-panel-main p-6 rounded-lg shadow-lg text-center mb-8">
+                <p className="text-text-secondary">좌측 패널에서 원하는 기술 스택과 경력을 선택하여 검색을 시작하세요.</p>
             </div>
 
-            <h2 className="text-3xl font-bold text-gray-200 my-4">전체 직무 선호도 대시보드</h2>
+            <h2 className="text-3xl font-bold text-text-primary my-4">전체 직무 선호도 대시보드</h2>
 
             {dashboardData.length === 0 ? (
-                <div className="flex justify-center items-center h-64"><p className="text-gray-400">No dashboard data available.</p></div>
+                <div className="flex justify-center items-center h-64"><p className="text-text-secondary">대시보드 데이터가 없습니다.</p></div>
             ) : (
                 <div className="space-y-8">
                     <CategoryPieChart
@@ -88,7 +87,6 @@ export default function DefaultDashboard() {
                                             title={name}
                                             value={value}
                                             color={baseColor}
-                                            textColor={tooltipTextColor}
                                             icon={<SkillIcon skill={name} className="w-6 h-6" />}
                                         />
                                     )}
