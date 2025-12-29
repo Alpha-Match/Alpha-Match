@@ -1,0 +1,271 @@
+# Alpha-Match GraphQL Schema
+# API Server GraphQL API Definition
+# - Recruit Search (by skills)
+# - Candidate Search (by skills)
+# - Frontend Integration (searchMatches, skillCategories)
+
+# ===== Types =====
+
+"""
+Recruit (Job Posting)
+Corresponds to table_specification.md: recruit + recruit_description + recruit_skills_embedding
+"""
+type Recruit {
+    recruitId: ID!
+    position: String!
+    companyName: String!
+    experienceYears: Int
+    primaryKeyword: String
+    englishLevel: String
+    publishedAt: String
+    skills: [String!]!
+    description: RecruitDescription
+    similarityScore: Float
+}
+
+"""
+Recruit Description (Full Job Description)
+"""
+type RecruitDescription {
+    recruitId: ID!
+    longDescription: String!
+    descriptionLang: String
+}
+
+"""
+Candidate (Job Seeker)
+Corresponds to table_specification.md: candidate + candidate_description + candidate_skills_embedding
+"""
+type Candidate {
+    candidateId: ID!
+    positionCategory: String!
+    experienceYears: Int
+    originalResume: String!
+    skills: [String!]!
+    description: CandidateDescription
+    similarityScore: Float
+}
+
+"""
+Candidate Description (Full Resume)
+"""
+type CandidateDescription {
+    candidateId: ID!
+    originalResume: String!
+    resumeLang: String
+}
+
+"""
+Skill Embedding Dictionary
+"""
+type SkillEmbedding {
+    skillId: ID!
+    categoryId: ID!
+    skill: String!
+    category: String
+}
+
+"""
+Skill Category with Skills
+For Frontend AppInitializer (GET_SKILL_CATEGORIES)
+"""
+type SkillCategory {
+    category: String!
+    skills: [String!]!
+}
+
+"""
+Dashboard Skill Statistics
+For Frontend DefaultDashboard (GET_DASHBOARD_DATA)
+"""
+type DashboardSkillStat {
+    skill: String!
+    count: Int!
+}
+
+"""
+Dashboard Category Data
+Category-level aggregation for dashboard visualization
+"""
+type DashboardCategoryData {
+    category: String!
+    skills: [DashboardSkillStat!]!
+}
+
+"""
+Match Item (Frontend Compatible)
+Unified result type for both Recruit and Candidate searches
+Maps to Frontend MatchItem interface
+"""
+type MatchItem {
+    id: ID!
+    title: String!
+    company: String!
+    score: Float!
+    skills: [String!]!
+    experience: Int
+    description: String
+}
+
+"""
+Skill Match (Vector Visualization)
+For Frontend VisualizationPanel
+"""
+type SkillMatch {
+    skill: String!
+    isCore: Boolean!
+    x: Float!
+    y: Float!
+}
+
+"""
+Search Matches Result (Frontend Compatible)
+Response type for searchMatches query
+"""
+type SearchMatchesResult {
+    matches: [MatchItem!]!
+    vectorVisualization: [SkillMatch!]!
+}
+
+"""
+Search Result (Original)
+"""
+type SearchResult {
+    totalCount: Int!
+    items: [Recruit!]!
+}
+
+"""
+Candidate Search Result (Original)
+"""
+type CandidateSearchResult {
+    totalCount: Int!
+    items: [Candidate!]!
+}
+
+# ===== Enums =====
+
+"""
+User Mode (Frontend Compatible)
+CANDIDATE: Job seeker searching for jobs (searches Recruit)
+RECRUITER: Recruiter searching for candidates (searches Candidate)
+"""
+enum UserMode {
+    CANDIDATE
+    RECRUITER
+}
+
+# ===== Inputs =====
+
+"""
+Search Input
+"""
+input SearchInput {
+    skills: [String!]!
+    experienceYears: Int
+    limit: Int
+    offset: Int
+    similarityThreshold: Float
+}
+
+"""
+Candidate Search Input
+"""
+input CandidateSearchInput {
+    skills: [String!]!
+    experienceYears: Int
+    limit: Int
+    offset: Int
+    similarityThreshold: Float
+}
+
+# ===== Queries =====
+
+type Query {
+    """
+    Unified Search (Frontend Compatible)
+    - Matches Frontend SEARCH_MATCHES_QUERY
+    - mode: CANDIDATE searches Recruits, RECRUITER searches Candidates
+    - experience: String format "0-2 Years", "3-5 Years", etc.
+    - Returns: matches + vectorVisualization
+    """
+    searchMatches(
+        mode: UserMode!
+        skills: [String!]!
+        experience: String!
+    ): SearchMatchesResult!
+
+    """
+    Get Skill Categories (Frontend Compatible)
+    - Matches Frontend GET_SKILL_CATEGORIES
+    - Returns: Array of {category, skills[]}
+    - Used by AppInitializer to populate skill selector
+    """
+    skillCategories: [SkillCategory!]!
+
+    """
+    Get Dashboard Data (Frontend Compatible)
+    - Matches Frontend GET_DASHBOARD_DATA
+    - Returns: Category-level skill statistics
+    - userMode: Determines whether to show recruit or candidate statistics
+    """
+    dashboardData(userMode: UserMode!): [DashboardCategoryData!]!
+
+    """
+    Search Recruits by skills (Vector Similarity Search)
+    - Input: List of skill names
+    - Output: Top N similar job postings
+    - Uses: skill_embedding_dic -> recruit_skills_embedding
+    """
+    searchRecruits(input: SearchInput!): SearchResult!
+
+    """
+    Search Candidates by skills (Vector Similarity Search)
+    - Input: List of skill names
+    - Output: Top N similar candidates
+    - Uses: skill_embedding_dic -> candidate_skills_embedding
+    """
+    searchCandidates(input: CandidateSearchInput!): CandidateSearchResult!
+
+    """
+    Get Recruit by ID
+    """
+    getRecruit(recruitId: ID!): Recruit
+
+    """
+    Get Candidate by ID
+    """
+    getCandidate(candidateId: ID!): Candidate
+
+    """
+    Get all available skills
+    """
+    getAllSkills: [SkillEmbedding!]!
+
+    """
+    Get skills by category
+    """
+    getSkillsByCategory(category: String!): [SkillEmbedding!]!
+}
+
+# ===== Mutations =====
+
+type Mutation {
+    """
+    Invalidate cache for a specific recruit
+    - Used by Batch Server after data update
+    """
+    invalidateRecruitCache(recruitId: ID!): Boolean!
+
+    """
+    Invalidate cache for a specific candidate
+    - Used by Batch Server after data update
+    """
+    invalidateCandidateCache(candidateId: ID!): Boolean!
+
+    """
+    Invalidate all caches
+    - Used after bulk data update
+    """
+    invalidateAllCaches: Boolean!
+}
