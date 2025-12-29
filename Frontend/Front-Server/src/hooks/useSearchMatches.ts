@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useLazyQuery } from '@apollo/client/react';
+import { CombinedGraphQLErrors, ServerError } from '@apollo/client/errors';
 import { MatchItem, SkillMatch, UserMode } from '../types';
 import { SEARCH_MATCHES_QUERY } from '../services/api/queries/search';
-import { useAppSelector } from '../services/state/hooks'; // Import useAppSelector
+import { useAppSelector } from '../services/state/hooks';
 
 interface SearchMatchesData {
   searchMatches: {
@@ -12,62 +13,65 @@ interface SearchMatchesData {
 }
 
 export const useSearchMatches = () => {
-  const currentUiMode = useAppSelector((state) => state.ui.userMode); // Get current mode from Redux
+  const currentUiMode = useAppSelector((state) => state.ui.userMode);
 
   const [modeMatches, setModeMatches] = useState<Record<UserMode, MatchItem[]>>({
     [UserMode.CANDIDATE]: [],
     [UserMode.RECRUITER]: [],
   });
 
-  const [runSearchQuery, { loading, error, data }] = useLazyQuery<SearchMatchesData>(SEARCH_MATCHES_QUERY);
+  const [runSearchQuery, { loading }] = useLazyQuery<SearchMatchesData>(SEARCH_MATCHES_QUERY);
+  const [error, setError] = useState<Error | null>(null);
 
-  // Keep track of the mode for which the last query was run
-  const lastQueryMode = useRef<UserMode | null>(null);
-
-  useEffect(() => {
-    if (data && data.searchMatches) {
-      console.log("Received data from API:", data.searchMatches);
-      if (lastQueryMode.current) {
-        setModeMatches(prev => ({
-          ...prev,
-          [lastQueryMode.current]: data.searchMatches.matches,
-        }));
-      }
-    } else if (error) {
-      console.error("GraphQL query error in useSearchMatches:", error);
-      if (lastQueryMode.current) {
-        setModeMatches(prev => ({
-          ...prev,
-          [lastQueryMode.current]: [], // Clear matches for the mode that encountered an error
-        }));
-      }
-    }
-  }, [data, error]);
-
-  /**
-   * @function runSearch
-   * @description Executes the GraphQL query to initiate a search with sanitized variables.
-   */
-  const runSearch = useCallback((mode: UserMode, skills?: (string | null)[], experience?: string | null) => {
-    lastQueryMode.current = mode; // Store the mode for the current query
-
-    // Sanitize variables to prevent GraphQL type errors
+  const runSearch = useCallback(async (mode: UserMode, skills?: (string | null)[], experience?: string | null) => {
     const sanitizedSkills = skills ? skills.filter((s): s is string => !!s) : [];
     const sanitizedExperience = experience || "";
+    
+    setError(null);
 
-    runSearchQuery({
-      variables: {
-        mode,
-        skills: sanitizedSkills,
-        experience: sanitizedExperience,
-      },
-    });
-  }, [runSearchQuery]); // Dependency on runSearchQuery
+    try {
+      const { data } = await runSearchQuery({
+        variables: {
+          mode,
+          skills: sanitizedSkills,
+          experience: sanitizedExperience,
+        },
+      });
+
+      if (data && data.searchMatches) {
+        setModeMatches(prev => ({
+          ...prev,
+          [mode]: data.searchMatches.matches,
+        }));
+      }
+    } catch (e: unknown) {
+        const err = e as Error;
+        setError(err);
+        
+        let userMessage = "An unexpected error occurred during the search.";
+        if (CombinedGraphQLErrors.is(err)) {
+            userMessage = err.errors.map(e => e.message).join(' ');
+        } else if (ServerError.is(err)) {
+            userMessage = 'Server is not responding. Please try again later.';
+        } else {
+            userMessage = 'A network error occurred. Please check your connection.';
+        }
+        
+        document.dispatchEvent(new CustomEvent('show-notification', {
+            detail: { message: userMessage, type: 'error' }
+        }));
+
+        setModeMatches(prev => ({
+          ...prev,
+          [mode]: [],
+        }));
+    }
+  }, [runSearchQuery]);
 
   return {
     runSearch,
     loading,
-    error: error || null,
-    matches: modeMatches[currentUiMode], // Return matches for the currently active UI mode
+    error,
+    matches: modeMatches[currentUiMode],
   };
 };

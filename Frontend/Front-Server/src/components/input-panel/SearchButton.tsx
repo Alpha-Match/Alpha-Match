@@ -22,9 +22,9 @@ export const SearchButton: React.FC<SearchButtonProps> = ({
   const themeColors = isCandidate ? CANDIDATE_THEME_COLORS : RECRUITER_THEME_COLORS;
   const primaryColor = themeColors[0];
   
-  // To better match the original gradient, we shift the hue for the end color.
-  // For the blue (candidate) theme, we shift towards purple.
-  // For the purple (recruiter) theme, we shift towards pink.
+  // 원본 그라데이션과 더 잘 일치시키기 위해 끝 색상의 색조를 변경합니다.
+  // 파란색(지원자) 테마의 경우 보라색으로 이동합니다.
+  // 보라색(리크루터) 테마의 경우 분홍색으로 이동합니다.
   const gradientEndColor = isCandidate
     ? chroma(primaryColor).set('hsl.h', '+40').hex()
     : chroma(primaryColor).set('hsl.h', '+30').hex();
@@ -37,11 +37,11 @@ export const SearchButton: React.FC<SearchButtonProps> = ({
   };
 
   return (
-    <div className="p-6 border-t border-slate-100 bg-white">
+    <div className="p-6 border-t border-border">
       <button
         onClick={onSearch}
         disabled={isLoading || selectedSkills.length === 0}
-        className="w-full py-3 px-4 rounded-xl text-white font-bold text-lg shadow-lg transform transition hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        className="w-full py-3 px-4 rounded-xl text-white text-lg font-bold flex items-center justify-center gap-2 transition-all duration-200 focus:outline-none focus:ring-2 transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed"
         style={gradientStyle}
       >
         {isLoading ? (
@@ -62,3 +62,4 @@ export const SearchButton: React.FC<SearchButtonProps> = ({
     </div>
   );
 };
+
