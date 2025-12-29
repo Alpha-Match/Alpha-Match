@@ -14,17 +14,17 @@ export const InputPanel: React.FC<InputPanelProps> = ({
   isLoading,
 }) => {
   return (
-    <div className="h-full flex flex-col bg-white border-r border-slate-200 shadow-sm overflow-hidden">
+    <div className="h-full flex flex-col bg-panel-sidebar rounded-lg shadow-lg overflow-hidden">
       <InputPanelHeader />
 
-      {/* Scrollable Form Content */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-8">
-        {/* <ExperienceSelector /> */}
+      {/* Scrollable Form Content - Contains individual selector panels */}
+      <div className="flex-1 overflow-y-auto p-6 space-y-4"> {/* Adjusted space-y */}
         <SkillSelector />
+        <ExperienceSelector />
       </div>
 
       {/* Footer Action */}
-      <div className="p-6 border-t border-slate-100 bg-white">
+      <div className="p-6 bg-panel-sidebar border-t border-border/30">
         <SearchButton onSearch={onSearch} isLoading={isLoading} />
       </div>
     </div>
