@@ -141,12 +141,56 @@ netstat -ano | findstr ":8000"
 ### 4.1 증상
 - 마이그레이션 스크립트 실행 실패
 - 스키마 불일치 오류
+- Flyway 자동 설정이 작동하지 않음 (Spring Boot 4.0 업그레이드 후)
 
 ### 4.2 원인
 - 기존 테이블과 마이그레이션 스크립트 충돌
 - 수동 스키마 변경 후 Flyway 히스토리 불일치
+- **Spring Boot 4.0 의존성 변경** (아래 4.3.1 참조)
 
 ### 4.3 해결 방법
+
+#### 4.3.1 Spring Boot 4.0 Flyway 의존성 변경 (필수)
+
+> ⚠️ **중요:** Spring Boot 3.x → 4.0 마이그레이션 시 반드시 확인!
+
+**변경 사항:**
+- Spring Boot 3.x: Flyway JAR만 있으면 자동 설정됨
+- **Spring Boot 4.0**: `spring-boot-starter-flyway` 명시적 추가 필수
+
+**build.gradle (Gradle):**
+```groovy
+dependencies {
+    // Spring Boot 4.0 requires starter (not just flyway-core)
+    implementation 'org.springframework.boot:spring-boot-starter-flyway'
+
+    // PostgreSQL 사용 시 추가 필수
+    implementation 'org.flywaydb:flyway-database-postgresql'
+}
+```
+
+**pom.xml (Maven):**
+```xml
+<dependencies>
+    <!-- Spring Boot 4.0 requires starter -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-flyway</artifactId>
+    </dependency>
+
+    <!-- PostgreSQL 사용 시 추가 필수 -->
+    <dependency>
+        <groupId>org.flywaydb</groupId>
+        <artifactId>flyway-database-postgresql</artifactId>
+    </dependency>
+</dependencies>
+```
+
+**참고:** 테스트 환경에서는 `spring-boot-starter-flyway-test`도 추가 권장
+
+**공식 문서:** [Spring Boot 4.0 Migration Guide](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide)
+
+#### 4.3.2 히스토리 충돌 해결
 ```sql
 -- Flyway 히스토리 테이블 확인
 SELECT * FROM flyway_schema_history;

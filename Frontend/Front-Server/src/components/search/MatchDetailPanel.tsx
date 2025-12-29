@@ -5,7 +5,7 @@
  *              운영체제: Windows
  */
 import React from 'react';
-import { MatchItem } from '../types/appTypes';
+import { MatchItem } from '../../types';
 import { ChevronLeft } from 'lucide-react';
 
 interface MatchDetailPanelProps {
@@ -72,7 +72,7 @@ const MatchDetailPanel: React.FC<MatchDetailPanelProps> = ({ match, onBack }) =>
 
         {/* 상세 설명 */}
         <div className="prose prose-invert max-w-none">
-          {renderDescription(match.description)}
+          {renderDescription(match.description || '')}
         </div>
 
         {/* 직무 적합도 대시보드 (Placeholder) */}

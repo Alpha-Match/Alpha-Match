@@ -53,7 +53,7 @@ export const useSearchMatches = () => {
 
     // Sanitize variables to prevent GraphQL type errors
     const sanitizedSkills = skills ? skills.filter((s): s is string => !!s) : [];
-    const sanitizedExperience = experience || null;
+    const sanitizedExperience = experience || "";
 
     runSearchQuery({
       variables: {

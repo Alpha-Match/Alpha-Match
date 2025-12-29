@@ -11,7 +11,7 @@ export const CANDIDATE_THEME_COLORS = [
 ];
 
 export const RECRUITER_THEME_COLORS = [
-    '#3B1E54', // Dark Purple
+    '#7202ce', // Dark Purple
     '#9B7EBD', // Medium Purple
     '#D4BEE4',
   '#FFF2F2',

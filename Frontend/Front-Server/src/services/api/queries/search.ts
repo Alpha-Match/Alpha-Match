@@ -1,7 +1,7 @@
 import { gql } from '@apollo/client';
 
 export const SEARCH_MATCHES_QUERY = gql`
-  query SearchMatches($mode: UserMode!, $skills: [String!], $experience: String) {
+  query SearchMatches($mode: UserMode!, $skills: [String!]!, $experience: String!) {
     searchMatches(mode: $mode, skills: $skills, experience: $experience) {
       matches {
         id

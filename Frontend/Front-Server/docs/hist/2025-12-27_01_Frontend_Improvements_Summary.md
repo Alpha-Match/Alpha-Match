@@ -49,5 +49,8 @@
 - `DefaultDashboard.tsx`를 `useQuery`에서 Apollo Client의 `useSuspenseQuery`로 리팩토링하여 React Suspense 기반 데이터 페칭을 활용하도록 했습니다.
 - `page.tsx`에서는 `DefaultDashboard`를 `<Suspense>`와 `QueryBoundary`로 감싸 로딩 및 에러 상태를 선언적으로 처리하도록 했습니다.
 
-### 3.6. `page.tsx` React Hooks 규칙 위반 에러 수정
-- `useEffect` 내부에서 `useAppSelector`를 호출하여 발생한 "You might have mismatching versions of React and the renderer" 에러를 수정했습니다. `isInitial` 상태를 훅의 최상위 레벨에서 가져오도록 변경하고 `useEffect`의 의존성 배열에 추가했습니다.
+### 3.7. `useSearchMatches.ts` 무한 재시도 버그 수정
+- `useSearchMatches` 훅에서 `runSearch` 함수가 렌더링마다 새로운 참조를 생성하여 `page.tsx`의 `useEffect`를 불필요하게 재실행시키는 문제를 해결했습니다. `runSearch` 함수를 `useCallback`으로 메모이제이션하여 참조 안정성을 확보했습니다.
+
+### 3.8. `page.tsx` React Hooks 규칙 위반 에러 수정
+- `useEffect` 내부에서 `useAppSelector`를 호출하여 발생한 "You might have mismatching versions of React and the renderer" 에러를 수정했습니다. `isInitial` 상태를 훅의 최상위 레벨에서 가져오도록 변경하고 `useEffect`의 의존성 배열에 추가했습니다. 이는 React Hooks 규칙("Hooks는 최상위에서만 호출되어야 한다")을 준수하도록 합니다.
