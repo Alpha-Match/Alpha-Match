@@ -1,0 +1,69 @@
+name: Create Complete Domain
+version: 1.0.0
+
+inputs:
+  domain: string
+  tables: array
+
+steps:
+  - id: read_table_spec
+    tool: Read
+    file: /Backend/docs/table_specification.md
+    extract: [tables, columns, relationships]
+
+  - id: read_guides
+    tool: Read
+    files:
+      - /Backend/Api-Server/docs/GraphQL_API_개발_가이드.md
+      - /Backend/Api-Server/docs/Reactive_프로그래밍_가이드.md
+      - /Backend/Api-Server/docs/캐싱_전략_가이드.md
+
+  - id: find_patterns
+    tool: Glob
+    pattern: "**/Batch-Server/domain/{{domain}}/**/*.java"
+
+  - id: generate_entities
+    template: prompts/entity-gen.md
+    foreach: tables
+
+  - id: generate_repositories
+    template: prompts/repository-gen.md
+    foreach: tables
+
+  - id: generate_service
+    template: prompts/service-gen.md
+
+  - id: generate_graphql
+    template: prompts/resolver-gen.md
+
+  - id: generate_tests
+    template: prompts/test-gen.md
+
+  - id: create_todos
+    tool: TodoWrite
+    todos:
+      - Entity 클래스 생성
+      - Repository (Port + Adapter) 생성
+      - Service 생성
+      - GraphQL Schema 정의
+      - Resolver 생성
+      - 테스트 작성
+
+output:
+  format: |
+    # {{domain}} Domain Plan
+
+    ## Entity ({{tables.length}})
+    {{entities}}
+
+    ## Repository (Port + Adapter)
+    {{repositories}}
+
+    ## Service
+    {{service}}
+
+    ## GraphQL
+    {{graphql}}
+
+    ## Tests
+    {{tests}}

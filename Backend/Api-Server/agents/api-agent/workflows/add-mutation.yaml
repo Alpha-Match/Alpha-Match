@@ -1,0 +1,46 @@
+name: Add GraphQL Mutation
+version: 1.0.0
+
+inputs:
+  domain: string
+  mutationName: string
+  mutationType: enum[create, update, delete]
+
+steps:
+  - id: check_service
+    tool: Read
+    file: /Backend/Api-Server/domain/{{domain}}/service/{{Service}}.java
+
+  - id: extend_schema
+    output: |
+      extend type Mutation {
+        {{mutationName}}({{args}}): {{returnType}}
+      }
+      input {{MutationName}}Input { {{fields}} }
+
+  - id: add_input_type
+    output: |
+      @Data
+      public class {{MutationName}}Input { {{fields}} }
+
+  - id: add_mutation_resolver
+    template: prompts/resolver-gen.md
+
+  - id: add_test
+    template: prompts/test-gen.md
+
+output:
+  format: |
+    # Add Mutation: {{mutationName}}
+
+    ## Schema
+    {{schema}}
+
+    ## Input Type
+    {{inputType}}
+
+    ## Resolver
+    {{resolver}}
+
+    ## Test
+    {{test}}

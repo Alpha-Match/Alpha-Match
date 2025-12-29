@@ -1,0 +1,71 @@
+spring:
+  application:
+    name: api-server
+
+  # GraphQL Configuration
+  graphql:
+    graphiql:
+      enabled: true
+      path: /graphiql
+    schema:
+      locations: classpath:graphql/
+      file-extensions: .graphqls
+
+  # R2DBC Configuration (Reactive Database)
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5433/alpha_match
+    username: postgres
+    password: season@heaven!2
+    pool:
+      initial-size: 10
+      max-size: 20
+      max-idle-time: 30m
+      validation-query: SELECT 1
+
+  # Redis Configuration (L2 Cache)
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 20
+          max-idle: 10
+          min-idle: 5
+
+  # Cache Configuration
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=10000,expireAfterWrite=10s
+
+# gRPC Server Configuration
+grpc:
+  server:
+    port: 50052  # Batch Server will connect to this port for cache invalidation
+
+# HTTP Server Configuration
+server:
+  port: 8088
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    com.alpha.api: DEBUG
+    io.r2dbc: DEBUG
+    org.springframework.data.r2dbc: DEBUG
+    org.springframework.graphql: DEBUG
+
+# Application-specific Configuration
+app:
+  cache:
+    l1:
+      ttl: 10s
+      max-size: 10000
+    l2:
+      ttl: 10m
+  vector:
+    dimension: 384
+    similarity-threshold: 0.7
