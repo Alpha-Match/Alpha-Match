@@ -69,7 +69,7 @@ const HomePage: React.FC = () => {
           />
         </div>
 
-        <div className="flex-1 h-full relative z-10 bg-background p-6 overflow-y-auto">
+        <div className="flex-1 h-full relative z-10 bg-background p-6 overflow-y-auto custom-scrollbar">
           <MainContentPanel
             userMode={userMode}
             pageViewMode={pageViewMode as "dashboard" | "results" | "detail"}
