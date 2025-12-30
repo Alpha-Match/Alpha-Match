@@ -15,7 +15,7 @@ import com.alpha.api.domain.skilldic.entity.SkillEmbeddingDic;
 import com.alpha.api.domain.skilldic.repository.SkillCategoryDicRepository;
 import com.alpha.api.domain.skilldic.repository.SkillEmbeddingDicRepository;
 import com.alpha.api.domain.skilldic.service.SkillNormalizationService;
-import com.alpha.api.infrastructure.graphql.type.*;
+import com.alpha.api.presentation.graphql.type.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -53,15 +53,24 @@ public class SearchService {
      * Search matches (Frontend searchMatches query)
      * - mode: CANDIDATE searches Recruits, RECRUITER searches Candidates
      * - experience: String format "0-2 Years", "3-5 Years", etc.
+     * - limit: Max number of results (default: 10)
+     * - offset: Number of results to skip for pagination (default: 0)
      * - Returns: matches + vectorVisualization
      *
      * @param mode UserMode (CANDIDATE or RECRUITER)
      * @param skills List of skill names
      * @param experience Experience level string
+     * @param limit Max number of results (nullable)
+     * @param offset Number of results to skip (nullable)
      * @return Mono<SearchMatchesResult>
      */
-    public Mono<SearchMatchesResult> searchMatches(UserMode mode, List<String> skills, String experience) {
-        log.info("searchMatches called - mode: {}, skills: {}, experience: {}", mode, skills, experience);
+    public Mono<SearchMatchesResult> searchMatches(UserMode mode, List<String> skills, String experience, Integer limit, Integer offset) {
+        log.info("searchMatches called - mode: {}, skills: {}, experience: {}, limit: {}, offset: {}",
+                mode, skills, experience, limit, offset);
+
+        // Default values
+        int finalLimit = (limit != null && limit > 0) ? limit : 10;
+        int finalOffset = (offset != null && offset >= 0) ? offset : 0;
 
         // Normalize skills to query vector
         return skillNormalizationService.normalizeSkillsToQueryVector(skills)
@@ -72,10 +81,10 @@ public class SearchService {
                     // Search based on mode
                     if (mode == UserMode.CANDIDATE) {
                         // Job seeker searching for jobs
-                        return searchRecruits(queryVector, expRange, skills);
+                        return searchRecruits(queryVector, expRange, skills, finalLimit, finalOffset);
                     } else {
                         // Recruiter searching for candidates
-                        return searchCandidates(queryVector, expRange, skills);
+                        return searchCandidates(queryVector, expRange, skills, finalLimit, finalOffset);
                     }
                 });
     }
@@ -86,13 +95,16 @@ public class SearchService {
      * @param queryVector Query vector
      * @param expRange Experience range
      * @param skills Original skill names
+     * @param limit Max number of results
+     * @param offset Number of results to skip
      * @return Mono<SearchMatchesResult>
      */
-    private Mono<SearchMatchesResult> searchRecruits(String queryVector, ExperienceRange expRange, List<String> skills) {
+    private Mono<SearchMatchesResult> searchRecruits(String queryVector, ExperienceRange expRange, List<String> skills, int limit, int offset) {
         Double similarityThreshold = 0.3; // Lowered for testing (original: 0.7)
-        Integer limit = 10; // default top 10
 
-        return recruitSearchRepository.findSimilarByVectorWithScore(queryVector, similarityThreshold, limit, expRange.getMinYears(), expRange.getMaxYears())
+        return recruitSearchRepository.findSimilarByVectorWithScore(queryVector, similarityThreshold, limit + offset, expRange.getMinYears(), expRange.getMaxYears())
+                .skip(offset) // Skip offset results for pagination
+                .take(limit) // Take only limit results
                 .flatMap(recruitSearchResult -> {
                     Recruit recruit = recruitSearchResult.getRecruit();
                     Double similarityScore = recruitSearchResult.getSimilarityScore();
@@ -102,12 +114,13 @@ public class SearchService {
                             .map(recruitSkill -> recruitSkill.getSkill())
                             .collectList()
                             .map(recruitSkills -> {
-                                // Convert to MatchItem (no description for list view)
+                                // Convert to MatchItem with Hybrid Score
+                                double hybridScore = calculateHybridScore(similarityScore, skills, recruitSkills);
                                 return MatchItem.builder()
                                         .id(recruit.getRecruitId().toString())
                                         .title(recruit.getPosition())
                                         .company(recruit.getCompanyName())
-                                        .score(similarityScore) // Use actual similarity score from database
+                                        .score(hybridScore) // Use Hybrid Score (vector + set-based)
                                         .skills(recruitSkills)
                                         .experience(recruit.getExperienceYears())
                                         .build();
@@ -130,13 +143,16 @@ public class SearchService {
      * @param queryVector Query vector
      * @param expRange Experience range
      * @param skills Original skill names
+     * @param limit Max number of results
+     * @param offset Number of results to skip
      * @return Mono<SearchMatchesResult>
      */
-    private Mono<SearchMatchesResult> searchCandidates(String queryVector, ExperienceRange expRange, List<String> skills) {
+    private Mono<SearchMatchesResult> searchCandidates(String queryVector, ExperienceRange expRange, List<String> skills, int limit, int offset) {
         Double similarityThreshold = 0.7;
-        Integer limit = 10;
 
-        return candidateSearchRepository.findSimilarByVectorWithScore(queryVector, similarityThreshold, limit, expRange.getMinYears(), expRange.getMaxYears())
+        return candidateSearchRepository.findSimilarByVectorWithScore(queryVector, similarityThreshold, limit + offset, expRange.getMinYears(), expRange.getMaxYears())
+                .skip(offset) // Skip offset results for pagination
+                .take(limit) // Take only limit results
                 .flatMap(candidateSearchResult -> {
                     Candidate candidate = candidateSearchResult.getCandidate();
                     Double similarityScore = candidateSearchResult.getSimilarityScore();
@@ -146,12 +162,13 @@ public class SearchService {
                             .map(candidateSkill -> candidateSkill.getSkill())
                             .collectList()
                             .map(candidateSkills -> {
-                                // Convert to MatchItem (no description for list view)
+                                // Convert to MatchItem with Hybrid Score
+                                double hybridScore = calculateHybridScore(similarityScore, skills, candidateSkills);
                                 return MatchItem.builder()
                                         .id(candidate.getCandidateId().toString())
                                         .title(candidate.getOriginalResume()) // TODO: Use name if available
                                         .company(candidate.getPositionCategory())
-                                        .score(similarityScore) // Use actual similarity score from database
+                                        .score(hybridScore) // Use Hybrid Score (vector + set-based)
                                         .skills(candidateSkills)
                                         .experience(candidate.getExperienceYears())
                                         .build();
@@ -253,6 +270,44 @@ public class SearchService {
             // Default
             return new ExperienceRange(0, 999);
         }
+    }
+
+    /**
+     * Calculate Hybrid Score (Vector Similarity + Set-based Similarity)
+     * - Combines cosine similarity with set overlap metrics
+     * - Addresses the issue where single skill match gives 100% similarity
+     *
+     * @param vectorSimilarity Cosine similarity from database (0.0 ~ 1.0)
+     * @param selectedSkills User-selected skills
+     * @param targetSkills Target entity's skills (recruit or candidate)
+     * @return Hybrid score (0.0 ~ 1.0)
+     */
+    private double calculateHybridScore(double vectorSimilarity, List<String> selectedSkills, List<String> targetSkills) {
+        // 1. Vector similarity (기존 코사인 유사도)
+        double vectorSim = vectorSimilarity;
+
+        // 2. Set-based similarity
+        Set<String> selectedSet = new HashSet<>(selectedSkills);
+        Set<String> targetSet = new HashSet<>(targetSkills);
+
+        // Intersection (교집합)
+        Set<String> intersection = new HashSet<>(selectedSet);
+        intersection.retainAll(targetSet);
+
+        // Overlap ratio: 선택한 스킬 중 매칭된 비율
+        double overlapRatio = selectedSet.isEmpty() ? 0.0 : (double) intersection.size() / selectedSet.size();
+
+        // Coverage ratio: 공고/후보자 스킬 중 커버된 비율
+        double coverageRatio = targetSet.isEmpty() ? 0.0 : (double) intersection.size() / targetSet.size();
+
+        // 3. Hybrid Score (가중 평균)
+        // 40% vector similarity + 30% overlap ratio + 30% coverage ratio
+        double finalScore = (0.4 * vectorSim) + (0.3 * overlapRatio) + (0.3 * coverageRatio);
+
+        log.debug("Hybrid Score - vectorSim: {}, overlapRatio: {}, coverageRatio: {}, finalScore: {}",
+                vectorSim, overlapRatio, coverageRatio, finalScore);
+
+        return finalScore;
     }
 
     /**

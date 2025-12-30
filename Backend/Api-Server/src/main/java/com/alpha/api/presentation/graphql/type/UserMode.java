@@ -1,4 +1,4 @@
-package com.alpha.api.infrastructure.graphql.type;
+package com.alpha.api.presentation.graphql.type;
 
 /**
  * UserMode (GraphQL Enum)

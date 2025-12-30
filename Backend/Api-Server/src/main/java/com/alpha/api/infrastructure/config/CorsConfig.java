@@ -35,8 +35,7 @@ public class CorsConfig {
                 "http://127.0.0.1:3000"
         ));
 
-        // Allow all HTTP methods (GET, POST, PUT, DELETE, OPTIONS, etc.)
-        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        config.setAllowedMethods(Arrays.asList("POST", "OPTIONS"));
 
         // Allow all headers (including GraphQL-specific headers)
         config.setAllowedHeaders(List.of("*"));

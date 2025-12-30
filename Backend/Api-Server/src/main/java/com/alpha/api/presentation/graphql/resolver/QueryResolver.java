@@ -1,4 +1,4 @@
-package com.alpha.api.infrastructure.graphql.resolver;
+package com.alpha.api.presentation.graphql.resolver;
 
 import com.alpha.api.domain.candidate.entity.Candidate;
 import com.alpha.api.domain.candidate.repository.CandidateDescriptionRepository;
@@ -10,7 +10,7 @@ import com.alpha.api.domain.recruit.entity.Recruit;
 import com.alpha.api.domain.recruit.repository.RecruitDescriptionRepository;
 import com.alpha.api.domain.recruit.repository.RecruitRepository;
 import com.alpha.api.domain.recruit.repository.RecruitSkillRepository;
-import com.alpha.api.infrastructure.graphql.type.*;
+import com.alpha.api.presentation.graphql.type.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.graphql.data.method.annotation.Argument;
@@ -22,10 +22,10 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * GraphQL Query Resolver
- * - Handles all Query operations
- * - Frontend compatible queries: searchMatches, skillCategories, dashboardData
- * - Uses Spring for GraphQL annotations
+ * GraphQL Query Resolver (Presentation Layer)
+ * - Input Adapter: Handles GraphQL requests from Frontend
+ * - Delegates to Application Services (Use Cases)
+ * - Returns GraphQL-specific types
  */
 @Slf4j
 @Controller
@@ -48,22 +48,29 @@ public class QueryResolver {
      *   - mode: CANDIDATE (searches Recruits) or RECRUITER (searches Candidates)
      *   - skills: List of skill names (e.g., ["Java", "Python"])
      *   - experience: Experience level string (e.g., "3-5 Years")
+     *   - limit: Max number of results (default: 10)
+     *   - offset: Number of results to skip for pagination (default: 0)
      * - Returns: SearchMatchesResult {matches[], vectorVisualization[]}
      *
      * @param mode UserMode enum
      * @param skills List of skill names
      * @param experience Experience level string
+     * @param limit Max number of results (nullable)
+     * @param offset Number of results to skip (nullable)
      * @return Mono<SearchMatchesResult>
      */
     @QueryMapping
     public Mono<SearchMatchesResult> searchMatches(
             @Argument UserMode mode,
             @Argument List<String> skills,
-            @Argument String experience) {
+            @Argument String experience,
+            @Argument Integer limit,
+            @Argument Integer offset) {
 
-        log.info("GraphQL Query: searchMatches - mode: {}, skills: {}, experience: {}", mode, skills, experience);
+        log.info("GraphQL Query: searchMatches - mode: {}, skills: {}, experience: {}, limit: {}, offset: {}",
+                mode, skills, experience, limit, offset);
 
-        return searchService.searchMatches(mode, skills, experience)
+        return searchService.searchMatches(mode, skills, experience, limit, offset)
                 .doOnSuccess(result -> log.info("searchMatches returned {} matches", result.getMatches().size()))
                 .doOnError(error -> log.error("searchMatches error: {}", error.getMessage(), error));
     }

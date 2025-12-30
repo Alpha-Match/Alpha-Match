@@ -47,7 +47,7 @@ grpc:
 
 # HTTP Server Configuration
 server:
-  port: 8088
+  port: 8080
 
 # Logging Configuration
 logging:
