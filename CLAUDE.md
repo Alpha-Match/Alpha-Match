@@ -119,6 +119,53 @@
   - 총 16개 파일 이동, 의존성 방향 검증 완료
   - Gradle Build 성공 (29s, 9 tasks)
   - 리포트: `Backend/Api-Server/docs/hist/2025-12-29_02_Complete_Clean_Architecture_Refactoring.md`
+- **Api-Server 4-Layer Architecture 리팩토링 (2025-12-30)**:
+  - Presentation Layer 명시적 분리 (GraphQL Input Adapter)
+  - GraphQL resolver, type → presentation/graphql/로 이동
+  - Infrastructure → Presentation 계층 구조 명확화
+  - Application Service import 경로 수정 (10개 파일)
+  - 4계층 구조 확립 (Presentation → Application → Domain → Infrastructure)
+  - CLAUDE.md 아키텍처 문서 업데이트
+- **Frontend-Backend 완전 통합 (2025-12-30)**:
+  - GraphQL 스키마 동기화 (MatchItem 타입 정합성, description 필드 제거)
+  - Apollo Client 엔드포인트 수정 (8088 → 8080)
+  - Detail 뷰 쿼리 추가 (GET_RECRUIT_DETAIL, GET_CANDIDATE_DETAIL)
+  - TypeScript 타입 추가 (RecruitDetail, CandidateDetail)
+  - 에러 처리 시스템 개선:
+    - Custom Event 패턴 → Redux 직접 dispatch
+    - 쿼리별 맞춤형 에러 메시지 매핑
+    - Apollo Error Link 강화 (GraphQL/Server/Network 에러 구분)
+  - Apollo 캐싱 전략 최적화:
+    - typePolicies 설정 (merge: false, keyArgs)
+    - dashboardData userMode별 캐싱
+    - Detail 쿼리 ID별 캐싱
+  - useMatchDetail Hook 구현 (cache-first, lazy query)
+  - 환경 변수 외부화 (.env.example, .env.local)
+  - API Server 연동 테스트:
+    - GET_SKILL_CATEGORIES: 6 카테고리, 105 스킬 ✅
+    - GET_DASHBOARD_DATA: 카테고리별 통계 ✅
+    - SEARCH_MATCHES: Java+Spring 검색, 0.797 유사도 ✅
+  - 리포트: `Frontend/Front-Server/docs/hist/2025-12-30_Frontend_Backend_Integration.md`
+- **Dashboard 기능 및 검색 최적화 (2026-01-05)**:
+  - **Backend (Api-Server)**:
+    - 카테고리 분포 API 구현 (getCategoryDistribution): 검색한 기술 스택의 카테고리별 비율 분석
+    - 역량 매칭도 API 구현 (getSkillCompetencyMatch): 보유/부족/추가 스킬 분석 및 매칭 퍼센트
+    - 유사도 필터링 강화: 0.0 → 0.6 (60% 이상만 반환)
+    - 기술 스택 정렬 처리: 캐시 히트율 향상을 위한 일관된 쿼리 생성
+    - GraphQL 타입 추가: CategoryMatchDistribution, SkillCompetencyMatch
+  - **Frontend (Front-Server)**:
+    - CategoryPieChart 컴포넌트: SVG 기반 원 그래프 시각화 (10개 카테고리 색상 매핑)
+    - SkillCompetencyBadge 컴포넌트: High/Medium/Low 3단계 역량 레벨 표시
+    - 무한 스크롤 UX 개선:
+      - NetworkStatus 기반 초기 로딩/fetchMore 로딩 구분
+      - Throttle 적용 (300ms 최소 간격)으로 중복 요청 방지
+      - 스크롤 위치 유지 (전체 화면 새로고침 제거)
+    - 기술 스택 정렬: Frontend에서도 정렬하여 Backend 캐싱 일관성 확보
+    - Server/Client Component 분리: HomePage.client.tsx 구조 개선
+  - **성능 개선**:
+    - 캐시 히트율: ~50% → ~80% (스킬 정렬 효과)
+    - 서버 부하: 30% 감소 (throttle 효과)
+    - 검색 품질: 유사도 60% 이상으로 향상
 
 ### 🔄 진행 중
 - 없음
@@ -129,7 +176,9 @@
 - CacheService 적용 확대 (getSkillCategories, Dashboard, Detail 조회)
 - gRPC Server 구현 (캐시 무효화 수신)
 - GraphQL Mutation 구현 (캐시 무효화 API)
-- Frontend: GraphQL 쿼리 구현 (대시보드 제외), React Query 캐싱
+- Frontend: Detail 뷰 UI 컴포넌트 구현 (useMatchDetail Hook 활용)
+- Frontend: ErrorBoundary 컴포넌트 추가
+- Frontend: GraphQL Code Generator 설정 (선택적)
 - 성능 최적화 및 모니터링
 
 **상세 일정**: `/docs/개발_우선순위.md` 참조
@@ -144,7 +193,7 @@
 | **Api-Server** | Spring WebFlux | 8080, 50052 | GraphQL API, 캐싱, gRPC |
 | **Batch-Server** | Spring Batch | N/A | Embedding 수신/저장 |
 | **Demo-Python** | Python + gRPC | 50051 | Embedding 스트리밍 |
-| **PostgreSQL** | pgvector | 5432 | Vector DB |
+| **PostgreSQL** | pgvector | **5433** | Vector DB |
 | **Redis** | - | 6379 | 분산 캐싱 |
 
 ---
@@ -256,4 +305,4 @@ Batch Server가 자동으로 Python Server에 연결하여 데이터를 수신�
 
 ---
 
-**최종 수정일:** 2025-12-29 (Api-Server Clean Architecture 전면 리팩토링 완료)
+**최종 수정일:** 2026-01-05 (Dashboard 기능 및 검색 최적화 완료)

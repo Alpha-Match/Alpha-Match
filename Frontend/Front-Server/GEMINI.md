@@ -26,17 +26,19 @@
 
 ### 🚀 엔트리포인트 (App Router)
 
-- `src/app/layout.tsx` - 루트 레이아웃
-- `src/app/page.tsx` - 메인 페이지
+- `src/app/layout.tsx` - 루트 레이아웃 (Server Component)
+- `src/app/page.tsx` - 메인 페이지 (Server Component, async)
+- `src/app/_components/HomePage.client.tsx` - 홈페이지 클라이언트 컴포넌트
 
 ### ⚙️ Configuration
 
-- `src/services/api/apollo-client.ts` - Apollo Client 설정
+- `src/lib/server/api.ts` - 서버 사이드 API 함수 (Server Components용)
+- `src/services/api/apollo-client.ts` - Apollo Client 설정 (클라이언트 전용)
 - `src/services/state/` - Redux 스토어 및 슬라이스
   - `src/services/state/store.ts` - Redux Store
   - `src/services/state/hooks.ts` - Custom Redux Hooks
-  - `src/services/state/features/ui/uiSlice.ts` - UI 상태 슬라이스
-  - `src/services/state/features/search/searchSlice.ts` - 검색 조건 슬라이스
+  - `src/services/state/features/ui/uiSlice.ts` - UI 상태 슬라이스 (도메인별 분리: CANDIDATE/RECRUITER)
+  - `src/services/state/features/search/searchSlice.ts` - 검색 조건 슬라이스 (도메인별 분리)
   - `src/services/state/features/notification/notificationSlice.ts` - 전역 알림 슬라이스
 
 ### 🎨 Components (기능/화면 단위)
@@ -49,34 +51,12 @@
 
 ### 📡 GraphQL & Hooks
 
-- `src/graphql/queries/` - GraphQL 쿼리
-- `src/hooks/` - 커스텀 React Hooks (e.g., `useSearchMatches`)
+- `src/services/api/queries/` - GraphQL 쿼리 정의
+- `src/hooks/` - 커스텀 React Hooks
+  - `useSearchMatches` - 검색 실행 및 Redux ViewModel 연동
+  - `useMatchDetail` - 상세 정보 조회 (도메인별 분리)
 
 ---
-
-## 🚀 현재 구현 상태
-
-### ✅ 완료
-- Apollo Client 4.0, 전역 에러 처리, 동적 TECH_STACKS 연동
-- 검색 결과 리스트 뷰 및 텍스트 축약 구현
-- **중앙 집중형 테마 시스템 구현 및 적용:**
-  - Tailwind CSS를 활용한 시맨틱 CSS 변수 기반 테마 시스템 구축 (`tailwind.config.ts`, `src/app/globals.css`)
-  - 다크/라이트 모드 및 `userMode` (CANDIDATE/RECRUITER)에 따른 동적 테마 (배경, 텍스트, 보더 컬러) 적용 (`ThemeManager.tsx`)
-  - `userMode`에 따라 동적으로 변경되는 로고 및 액센트 컬러 (`Header.tsx`)
-  - InputPanel 내 각 Selector 컴포넌트(SkillSelector, ExperienceSelector) 및 SearchButton이 독립적인 패널 디자인을 가지도록 리팩토링 (`InputPanel.tsx`, `InputPanelHeader.tsx`, `SkillSelector.tsx`, `ExperienceSelector.tsx`, `SearchButton.tsx`)
-  - 모든 공통 컴포넌트 (`BaseTooltip`, `ClearButton`, `LoadingSpinner`, `Notification`, `ThemeToggle`, `QueryBoundary`, `SkillIcon`) 및 대시보드/검색 결과 컴포넌트 (`CategoryPieChart`, `DefaultDashboard`, `GenericTreemap`, `MatchDetailPanel`, `ResultCard`, `SearchResultPanel`, `VisualizationPanel`)에서 하드코딩된 스타일 제거 및 테마 클래스 전면 적용.
-  - 테마 적용 커스텀 스크롤바 구현 및 관련 컴포넌트 (`InputPanel`, `SkillSelector`, `page.tsx`, `MatchDetailPanel`, `VisualizationPanel`)에 적용.
-- `useSearchMatches` 훅 Apollo Client v4 패턴으로 리팩토링 및 전역 알림 시스템 연동.
-- `page.tsx` 리팩토링을 통한 훅 및 렌더링 로직 단순화.
-- 코드 주석 한국어화 및 UI 텍스트 원본 유지.
-
-### 🔄 진행 중
-- 없음.
-
-### ⏳ 예정
-- GraphQL 쿼리 구현 (API Server 연동)
-- 벡터 유사도 시각화 상세 구현
-- 단위/E2E 테스트 코드 작성
 
 ## ⚠️ AI가 반드시 알아야 할 규칙
 
@@ -88,12 +68,51 @@
 
 ### 2. Next.js App Router 패턴
 - `src/app/` - 페이지 및 레이아웃
-- Server Component vs Client Component 구분
-- `'use client'` 지시어 사용 시점 명확히
+- **Server Component vs Client Component 구분:**
+  - Server Component: 기본값, 서버에서만 실행, async 가능, 초기 데이터 fetch에 활용
+  - Client Component: `'use client'` 명시, useState/useEffect/Redux/Event Handler 사용
+  - 패턴: Server Component에서 데이터 fetch → Client Component에 props 전달
+- `lib/server/` - Server Components 전용 API 함수 (클라이언트 번들에 포함되지 않음)
 
-### 3. 상태 관리 분리
-- **서버 상태**: Apollo Client (GraphQL 캐시)
-- **클라이언트 상태**: Redux Toolkit (UI 상태, 필터 등)
+### 3. 상태 관리 분리 (ViewModel 패턴)
+
+본 프로젝트는 **3-Layer 상태 관리**를 통해 ViewModel 패턴을 구현합니다:
+
+```
+┌─────────────────────────────────────┐
+│  View Layer (React Components)      │
+└───────────────┬─────────────────────┘
+                │
+┌───────────────▼─────────────────────┐
+│  ViewModel Layer (Redux Toolkit)    │ ← UI 상태 + 검색 결과 캐시
+│  - searchSlice: {                   │
+│      CANDIDATE: {                   │
+│        selectedSkills,              │
+│        selectedExperience,          │
+│        matches ← 영구 보존          │
+│      },                             │
+│      RECRUITER: { ... }             │
+│    }                                │
+│  - uiSlice: pageViewMode 등         │
+└───────────────┬─────────────────────┘
+                │
+┌───────────────▼─────────────────────┐
+│  Data Layer (Apollo Client)         │ ← 네트워크 캐시
+│  InMemoryCache (GraphQL)            │
+└─────────────────────────────────────┘
+```
+
+**핵심 원칙:**
+- **Apollo Client**: GraphQL API 통신 및 네트워크 레벨 캐시 (InMemoryCache)
+- **Redux Toolkit**: ViewModel - 도메인별 UI 상태 및 검색 결과 영구 저장
+  - `searchSlice.matches`: 검색 결과를 Redux에 저장하여 모드 전환 시에도 보존
+  - `uiSlice`: 도메인별 pageViewMode, selectedMatchId 저장
+- **Multiple Back Stacks**: 각 UserMode(CANDIDATE/RECRUITER)가 독립적인 상태 스택 유지
+
+**주의사항:**
+- Hook의 useState로 matches를 관리하지 말 것 (컴포넌트 재렌더링 시 손실)
+- 반드시 `dispatch(setMatches({ userMode, matches }))`로 Redux에 저장
+- 뒤로가기 시 Redux 캐시를 먼저 확인: `matches.length === 0` 체크 후 API 호출
 
 ### 4. 타입 안정성
 - 모든 컴포넌트에 Props 타입 정의
@@ -109,7 +128,30 @@
 
 ### 6. 에러 처리
 - Apollo Error Link로 전역 에러 처리 (`APOLLO_CLIENT_PATTERNS.md` 참조)
-- Redux notificationSlice로 사용자 알림```
+- Redux notificationSlice로 사용자 알림
+- 컴포넌트 레벨 에러 처리: QueryBoundary 활용
+
+### 7. 트러블슈팅
+- **ViewModel & Multiple Back Stacks**: `docs/troubleshooting/ViewModel_Multiple_Back_Stacks.md`
+  - Redux useState 사용 시 주의사항
+  - 모드 전환 시 상태 손실 문제 해결
+  - useEffect 의존성 배열 최적화
+
 ---
 
-**최종 수정일:** 2025-12-26
+## 📚 추가 참고 문서
+
+- **히스토리**: `docs/hist/` - 주요 변경 이력 (읽기 전용)
+  - `2025-12-30_Server_Components_Migration.md` - Server Components 아키텍처 구축
+  - `2025-12-30_ViewModel_Multiple_Back_Stacks.md` - ViewModel 패턴 및 Multiple Back Stacks 구현
+- **개선 계획**: `docs/Frontend_Improvement_Plan.md` - 향후 개선 로드맵
+
+---
+
+**최종 수정일:** 2026-01-05
+**주요 업데이트:**
+- Dashboard 분석 컴포넌트 (CategoryPieChart, SkillCompetencyBadge)
+- 무한 스크롤 UX 개선 (NetworkStatus 기반 로딩 구분, Throttle)
+- 기술 스택 정렬 (캐시 일관성 향상)
+- Server/Client Component 분리 (HomePage.client.tsx)
+- 검색 UX 개선 (자동 검색 방지, 캐시 활용)

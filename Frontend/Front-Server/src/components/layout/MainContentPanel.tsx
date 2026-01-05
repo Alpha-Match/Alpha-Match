@@ -2,8 +2,9 @@
 /**
  * @file MainContentPanel.tsx
  * @description 현재 페이지 뷰 모드에 따라 메인 콘텐츠 영역을 렌더링합니다.
- * @version 1.0.0
- * @date 2025-12-29
+ *              무한 스크롤 지원 추가
+ * @version 1.2.0
+ * @date 2025-12-31
  */
 import React, { Suspense } from 'react';
 import { MatchItem, UserMode } from '../../types';
@@ -21,10 +22,17 @@ interface MainContentPanelProps {
   matches: MatchItem[];
   selectedMatchId: string | null;
   loading: boolean;
+  fetchingMore?: boolean;
   error: Error | null; // Changed from ApolloError | Error | null
   activeColor: string;
   onMatchSelect: (match: MatchItem) => void;
   onBackToList: () => void;
+  onBackToDashboard: () => void;
+  // Infinite scroll props
+  loadMore?: () => void;
+  hasMore?: boolean;
+  // Selected skills for category distribution and competency match
+  selectedSkills?: string[];
 }
 
 export const MainContentPanel: React.FC<MainContentPanelProps> = ({
@@ -33,20 +41,30 @@ export const MainContentPanel: React.FC<MainContentPanelProps> = ({
   matches,
   selectedMatchId,
   loading,
+  fetchingMore = false,
   error,
   activeColor,
   onMatchSelect,
   onBackToList,
+  onBackToDashboard,
+  loadMore,
+  hasMore,
+  selectedSkills = [],
 }) => {
   switch (pageViewMode) {
     case 'detail':
-      const selectedMatch = matches.find((m) => m.id === selectedMatchId);
-      if (!selectedMatch) {
-        // 상세 보기 상태에서 사용자가 모드를 전환할 때 발생할 수 있습니다.
-        // 안전한 뷰로 대체합니다. 간단한 메시지로 충분합니다.
+      if (!selectedMatchId) {
         return <div className="text-center text-text-tertiary">매치 상세 정보를 찾을 수 없습니다. 목록으로 돌아가세요.</div>;
       }
-      return <MatchDetailPanel match={selectedMatch} onBack={onBackToList} />;
+      return (
+        <MatchDetailPanel
+          matchId={selectedMatchId}
+          userMode={userMode}
+          onBack={onBackToList}
+          activeColor={activeColor}
+          searchedSkills={selectedSkills}
+        />
+      );
 
     case 'results':
       return (
@@ -54,7 +72,12 @@ export const MainContentPanel: React.FC<MainContentPanelProps> = ({
           <SearchResultPanel
             matches={matches}
             onMatchSelect={onMatchSelect}
+            onBackToDashboard={onBackToDashboard}
             activeColor={activeColor}
+            loadMore={loadMore}
+            hasMore={hasMore}
+            loading={fetchingMore}
+            selectedSkills={selectedSkills}
           />
         </QueryBoundary>
       );

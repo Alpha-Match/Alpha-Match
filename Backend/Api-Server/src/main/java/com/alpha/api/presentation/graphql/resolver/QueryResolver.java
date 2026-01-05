@@ -4,6 +4,7 @@ import com.alpha.api.domain.candidate.entity.Candidate;
 import com.alpha.api.domain.candidate.repository.CandidateDescriptionRepository;
 import com.alpha.api.domain.candidate.repository.CandidateRepository;
 import com.alpha.api.domain.candidate.repository.CandidateSkillRepository;
+import com.alpha.api.application.service.CacheService;
 import com.alpha.api.application.service.DashboardService;
 import com.alpha.api.application.service.SearchService;
 import com.alpha.api.domain.recruit.entity.Recruit;
@@ -34,6 +35,7 @@ public class QueryResolver {
 
     private final SearchService searchService;
     private final DashboardService dashboardService;
+    private final CacheService cacheService;
     private final RecruitRepository recruitRepository;
     private final RecruitDescriptionRepository recruitDescriptionRepository;
     private final RecruitSkillRepository recruitSkillRepository;
@@ -80,6 +82,7 @@ public class QueryResolver {
      * - Matches Frontend GET_SKILL_CATEGORIES
      * - Returns: Array of {category, skills[]}
      * - Used by Frontend AppInitializer to populate skill selector
+     * - Cache Warming: Preloaded on startup (24h TTL)
      *
      * @return Mono<List<SkillCategory>>
      */
@@ -87,7 +90,8 @@ public class QueryResolver {
     public Mono<List<SkillCategory>> skillCategories() {
         log.info("GraphQL Query: skillCategories");
 
-        return searchService.getSkillCategories()
+        String key = CacheService.skillCategoriesKey();
+        return cacheService.getOrLoadStaticUnchecked(key, () -> searchService.getSkillCategories())
                 .doOnSuccess(categories -> log.info("skillCategories returned {} categories", categories.size()))
                 .doOnError(error -> log.error("skillCategories error: {}", error.getMessage(), error));
     }
@@ -97,6 +101,7 @@ public class QueryResolver {
      * - Matches Frontend GET_DASHBOARD_DATA
      * - Returns: Category-level skill statistics
      * - userMode: CANDIDATE shows recruit statistics, RECRUITER shows candidate statistics
+     * - Cache Warming: Preloaded on startup for both modes (24h TTL)
      *
      * @param userMode User mode enum
      * @return Mono<List<DashboardCategoryData>>
@@ -105,7 +110,8 @@ public class QueryResolver {
     public Mono<List<DashboardCategoryData>> dashboardData(@Argument UserMode userMode) {
         log.info("GraphQL Query: dashboardData - userMode: {}", userMode);
 
-        return dashboardService.getDashboardData(userMode)
+        String key = CacheService.dashboardKey(userMode.name());
+        return cacheService.getOrLoadStaticUnchecked(key, () -> dashboardService.getDashboardData(userMode))
                 .doOnSuccess(data -> log.info("dashboardData returned {} categories", data.size()))
                 .doOnError(error -> log.error("dashboardData error: {}", error.getMessage(), error));
     }
@@ -195,5 +201,49 @@ public class QueryResolver {
                 })
                 .doOnSuccess(detail -> log.info("getCandidate returned detail for id: {}", id))
                 .doOnError(error -> log.error("getCandidate error for id {}: {}", id, error.getMessage(), error));
+    }
+
+    /**
+     * getCategoryDistribution Query (Pie Chart Data)
+     * - Returns category distribution for selected skills
+     * - Example: [Java, Spring Boot, MySQL] → Backend 66%, Database 33%
+     * - Used by Frontend SearchResultPanel for pie chart visualization
+     *
+     * @param skills List of skill names
+     * @return Mono<List<CategoryMatchDistribution>>
+     */
+    @QueryMapping
+    public Mono<List<CategoryMatchDistribution>> getCategoryDistribution(@Argument List<String> skills) {
+        log.info("GraphQL Query: getCategoryDistribution - skills: {}", skills);
+
+        return searchService.getCategoryDistribution(skills)
+                .doOnSuccess(distributions -> log.info("getCategoryDistribution returned {} categories", distributions.size()))
+                .doOnError(error -> log.error("getCategoryDistribution error: {}", error.getMessage(), error));
+    }
+
+    /**
+     * getSkillCompetencyMatch Query (Detail Page - Skill Gap Analysis)
+     * - Compares searched skills vs target (recruit/candidate) skills
+     * - Returns: matched, missing, extra skills + matching percentage
+     * - Used by Frontend MatchDetailPanel for skill gap visualization
+     *
+     * @param mode UserMode (CANDIDATE → analyze recruit, RECRUITER → analyze candidate)
+     * @param targetId Recruit ID or Candidate ID
+     * @param searchedSkills User's selected skills from search
+     * @return Mono<SkillCompetencyMatch>
+     */
+    @QueryMapping
+    public Mono<SkillCompetencyMatch> getSkillCompetencyMatch(
+            @Argument UserMode mode,
+            @Argument String targetId,
+            @Argument List<String> searchedSkills) {
+
+        log.info("GraphQL Query: getSkillCompetencyMatch - mode: {}, targetId: {}, searchedSkills: {}",
+                mode, targetId, searchedSkills);
+
+        return searchService.getSkillCompetencyMatch(mode, targetId, searchedSkills)
+                .doOnSuccess(match -> log.info("getSkillCompetencyMatch returned - matchingPercentage: {}%, competencyLevel: {}",
+                        match.getMatchingPercentage(), match.getCompetencyLevel()))
+                .doOnError(error -> log.error("getSkillCompetencyMatch error: {}", error.getMessage(), error));
     }
 }

@@ -38,16 +38,47 @@ export interface SkillMatch {
   y: number;
 }
 
+/**
+ * MatchItem - LIST 뷰용 매칭 결과
+ * API-Server의 MatchItem 타입과 일치
+ * Detail 정보는 별도 쿼리(getRecruit/getCandidate)로 조회
+ */
 export interface MatchItem {
   id: string;
   title: string;
-  company: string; // Corresponds to 'subtitle' in the old interface
-  score: number; // Corresponds to 'similarityScore' in the old interface
-  skills: string[]; // Corresponds to 'tags' in the old interface
-  experience?: number | null; // 경력 정보 추가
-  description?: string;
-  location?: string;
-  salary?: string;
+  company: string;
+  score: number;
+  skills: string[];
+  experience?: number | null;
+}
+
+/**
+ * RecruitDetail - 채용 공고 상세 정보
+ * API-Server의 RecruitDetail 타입과 일치
+ */
+export interface RecruitDetail {
+  id: string;
+  position: string;
+  companyName: string;
+  experienceYears?: number | null;
+  primaryKeyword?: string | null;
+  englishLevel?: string | null;
+  skills: string[];
+  description: string;
+  publishedAt?: string | null;
+}
+
+/**
+ * CandidateDetail - 후보자 상세 정보
+ * API-Server의 CandidateDetail 타입과 일치
+ */
+export interface CandidateDetail {
+  id: string;
+  positionCategory: string;
+  experienceYears?: number | null;
+  originalResume?: string | null;
+  skills: string[];
+  description: string;
 }
 
 export interface SimulationResponse {
@@ -71,4 +102,40 @@ export interface DashboardData {
 
 export interface DashboardVars {
   userMode: UserMode;
+}
+
+/**
+ * SkillCategory - 스킬 카테고리 정보
+ * API-Server의 SkillCategory 타입과 일치
+ */
+export interface SkillCategory {
+  category: string;
+  skills: string[];
+}
+
+/**
+ * CategoryMatchDistribution - 카테고리별 매칭 분포 (Pie Chart 데이터)
+ * API-Server의 CategoryMatchDistribution 타입과 일치
+ * 예: [Java, Spring Boot, MySQL] → Backend 66%, Database 33%
+ */
+export interface CategoryMatchDistribution {
+  category: string;
+  percentage: number;
+  matchedSkills: string[];
+  skillCount: number;
+}
+
+/**
+ * SkillCompetencyMatch - 역량 매칭도 분석 결과
+ * API-Server의 SkillCompetencyMatch 타입과 일치
+ * 검색 기술 vs 대상(공고/이력서) 기술 비교
+ */
+export interface SkillCompetencyMatch {
+  matchedSkills: string[];      // 교집합 (공통 스킬)
+  missingSkills: string[];      // 부족한 스킬 (target에만 있음)
+  extraSkills: string[];        // 추가 스킬 (searched에만 있음)
+  matchingPercentage: number;   // 매칭 비율 (0-100)
+  competencyLevel: string;      // "High", "Medium", "Low"
+  totalTargetSkills: number;    // 대상 전체 스킬 수
+  totalSearchedSkills: number;  // 검색 전체 스킬 수
 }

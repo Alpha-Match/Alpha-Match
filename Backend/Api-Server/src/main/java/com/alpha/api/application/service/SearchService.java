@@ -72,8 +72,14 @@ public class SearchService {
         int finalLimit = (limit != null && limit > 0) ? limit : 10;
         int finalOffset = (offset != null && offset >= 0) ? offset : 0;
 
+        // Sort skills for consistent caching and processing
+        List<String> sortedSkills = skills.stream()
+                .sorted()
+                .collect(Collectors.toList());
+        log.debug("Sorted skills: {}", sortedSkills);
+
         // Normalize skills to query vector
-        return skillNormalizationService.normalizeSkillsToQueryVector(skills)
+        return skillNormalizationService.normalizeSkillsToQueryVector(sortedSkills)
                 .flatMap(queryVector -> {
                     // Parse experience range
                     ExperienceRange expRange = parseExperienceString(experience);
@@ -81,10 +87,10 @@ public class SearchService {
                     // Search based on mode
                     if (mode == UserMode.CANDIDATE) {
                         // Job seeker searching for jobs
-                        return searchRecruits(queryVector, expRange, skills, finalLimit, finalOffset);
+                        return searchRecruits(queryVector, expRange, sortedSkills, finalLimit, finalOffset);
                     } else {
                         // Recruiter searching for candidates
-                        return searchCandidates(queryVector, expRange, skills, finalLimit, finalOffset);
+                        return searchCandidates(queryVector, expRange, sortedSkills, finalLimit, finalOffset);
                     }
                 });
     }
@@ -100,7 +106,7 @@ public class SearchService {
      * @return Mono<SearchMatchesResult>
      */
     private Mono<SearchMatchesResult> searchRecruits(String queryVector, ExperienceRange expRange, List<String> skills, int limit, int offset) {
-        Double similarityThreshold = 0.3; // Lowered for testing (original: 0.7)
+        Double similarityThreshold = 0.6; // Filter results with similarity >= 60%
 
         return recruitSearchRepository.findSimilarByVectorWithScore(queryVector, similarityThreshold, limit + offset, expRange.getMinYears(), expRange.getMaxYears())
                 .skip(offset) // Skip offset results for pagination
@@ -128,10 +134,15 @@ public class SearchService {
                 })
                 .collectList()
                 .flatMap(matches -> {
+                    // Sort by hybrid score (descending - highest first)
+                    List<MatchItem> sortedMatches = matches.stream()
+                            .sorted((m1, m2) -> Double.compare(m2.getScore(), m1.getScore()))
+                            .collect(Collectors.toList());
+
                     // Generate vector visualization
                     return generateVectorVisualization(skills)
                             .map(vectorVisualization -> SearchMatchesResult.builder()
-                                    .matches(matches)
+                                    .matches(sortedMatches)
                                     .vectorVisualization(vectorVisualization)
                                     .build());
                 });
@@ -148,7 +159,7 @@ public class SearchService {
      * @return Mono<SearchMatchesResult>
      */
     private Mono<SearchMatchesResult> searchCandidates(String queryVector, ExperienceRange expRange, List<String> skills, int limit, int offset) {
-        Double similarityThreshold = 0.7;
+        Double similarityThreshold = 0.6; // Filter results with similarity >= 60%
 
         return candidateSearchRepository.findSimilarByVectorWithScore(queryVector, similarityThreshold, limit + offset, expRange.getMinYears(), expRange.getMaxYears())
                 .skip(offset) // Skip offset results for pagination
@@ -176,10 +187,15 @@ public class SearchService {
                 })
                 .collectList()
                 .flatMap(matches -> {
+                    // Sort by hybrid score (descending - highest first)
+                    List<MatchItem> sortedMatches = matches.stream()
+                            .sorted((m1, m2) -> Double.compare(m2.getScore(), m1.getScore()))
+                            .collect(Collectors.toList());
+
                     // Generate vector visualization
                     return generateVectorVisualization(skills)
                             .map(vectorVisualization -> SearchMatchesResult.builder()
-                                    .matches(matches)
+                                    .matches(sortedMatches)
                                     .vectorVisualization(vectorVisualization)
                                     .build());
                 });
@@ -308,6 +324,176 @@ public class SearchService {
                 vectorSim, overlapRatio, coverageRatio, finalScore);
 
         return finalScore;
+    }
+
+    /**
+     * Get category distribution for selected skills (Pie Chart Data)
+     * - Input: List of skill names
+     * - Output: Category distribution with percentages
+     * - Used by Frontend SearchResultPanel for pie chart visualization
+     * - Example: [Java, Spring Boot, MySQL] → Backend 66%, Database 33%
+     *
+     * @param skills List of skill names
+     * @return Mono<List<CategoryMatchDistribution>>
+     */
+    public Mono<List<CategoryMatchDistribution>> getCategoryDistribution(List<String> skills) {
+        log.info("getCategoryDistribution called - skills: {}", skills);
+
+        if (skills == null || skills.isEmpty()) {
+            return Mono.just(List.of());
+        }
+
+        // Normalize skill names (case-insensitive)
+        List<String> normalizedSkills = skills.stream()
+                .map(String::trim)
+                .map(String::toLowerCase)
+                .distinct()
+                .collect(Collectors.toList());
+
+        // Fetch skill categories from DB
+        return Flux.fromIterable(normalizedSkills)
+                .flatMap(skill -> skillEmbeddingDicRepository.findBySkill(skill))
+                .flatMap(skillEmbedding -> {
+                    // Fetch category name for each skill
+                    return skillCategoryDicRepository.findById(skillEmbedding.getCategoryId())
+                            .map(categoryDic -> new SkillCategoryPair(
+                                    categoryDic.getCategory(),
+                                    skillEmbedding.getSkill()
+                            ));
+                })
+                .collectList()
+                .map(skillCategoryPairs -> {
+                    // Group by category
+                    Map<String, List<String>> categoryMap = skillCategoryPairs.stream()
+                            .collect(Collectors.groupingBy(
+                                    SkillCategoryPair::getCategory,
+                                    Collectors.mapping(SkillCategoryPair::getSkill, Collectors.toList())
+                            ));
+
+                    // Calculate percentages
+                    int totalSkills = skillCategoryPairs.size();
+                    if (totalSkills == 0) {
+                        return List.<CategoryMatchDistribution>of();
+                    }
+
+                    return categoryMap.entrySet().stream()
+                            .map(entry -> {
+                                String category = entry.getKey();
+                                List<String> categorySkills = entry.getValue();
+                                int count = categorySkills.size();
+                                double percentage = (count * 100.0) / totalSkills;
+
+                                return CategoryMatchDistribution.builder()
+                                        .category(category)
+                                        .percentage(percentage)
+                                        .matchedSkills(categorySkills)
+                                        .skillCount(count)
+                                        .build();
+                            })
+                            .sorted((d1, d2) -> Double.compare(d2.getPercentage(), d1.getPercentage())) // Descending order
+                            .collect(Collectors.toList());
+                });
+    }
+
+    /**
+     * Get skill competency match analysis (Detail Page)
+     * - mode: CANDIDATE → analyze recruit, RECRUITER → analyze candidate
+     * - targetId: Recruit ID or Candidate ID
+     * - searchedSkills: User's selected skills from search
+     * - Returns: Matching degree + missing/extra skills
+     * - Used by Frontend MatchDetailPanel for skill gap visualization
+     *
+     * @param mode UserMode (CANDIDATE or RECRUITER)
+     * @param targetId Recruit ID or Candidate ID
+     * @param searchedSkills User's selected skills
+     * @return Mono<SkillCompetencyMatch>
+     */
+    public Mono<SkillCompetencyMatch> getSkillCompetencyMatch(UserMode mode, String targetId, List<String> searchedSkills) {
+        log.info("getSkillCompetencyMatch called - mode: {}, targetId: {}, searchedSkills: {}", mode, targetId, searchedSkills);
+
+        if (searchedSkills == null || searchedSkills.isEmpty()) {
+            return Mono.error(new IllegalArgumentException("searchedSkills cannot be empty"));
+        }
+
+        // Normalize searched skills (case-insensitive)
+        Set<String> searchedSet = searchedSkills.stream()
+                .map(String::trim)
+                .map(String::toLowerCase)
+                .collect(Collectors.toSet());
+
+        // Fetch target skills based on mode
+        Mono<List<String>> targetSkillsMono;
+        if (mode == UserMode.CANDIDATE) {
+            // Analyze Recruit
+            targetSkillsMono = recruitSkillRepository.findByRecruitId(UUID.fromString(targetId))
+                    .map(recruitSkill -> recruitSkill.getSkill().toLowerCase())
+                    .collectList();
+        } else {
+            // Analyze Candidate
+            targetSkillsMono = candidateSkillRepository.findByCandidateId(UUID.fromString(targetId))
+                    .map(candidateSkill -> candidateSkill.getSkill().toLowerCase())
+                    .collectList();
+        }
+
+        return targetSkillsMono.map(targetSkillsList -> {
+            Set<String> targetSet = new HashSet<>(targetSkillsList);
+
+            // Calculate intersections and differences
+            Set<String> matched = new HashSet<>(searchedSet);
+            matched.retainAll(targetSet); // Intersection
+
+            Set<String> missing = new HashSet<>(targetSet);
+            missing.removeAll(searchedSet); // Target only
+
+            Set<String> extra = new HashSet<>(searchedSet);
+            extra.removeAll(targetSet); // Searched only
+
+            // Calculate matching percentage
+            int totalTarget = targetSet.size();
+            int matchedCount = matched.size();
+            double matchingPercentage = totalTarget == 0 ? 0.0 : (matchedCount * 100.0) / totalTarget;
+
+            // Determine competency level
+            String competencyLevel;
+            if (matchingPercentage >= 80.0) {
+                competencyLevel = "High";
+            } else if (matchingPercentage >= 50.0) {
+                competencyLevel = "Medium";
+            } else {
+                competencyLevel = "Low";
+            }
+
+            return SkillCompetencyMatch.builder()
+                    .matchedSkills(new ArrayList<>(matched))
+                    .missingSkills(new ArrayList<>(missing))
+                    .extraSkills(new ArrayList<>(extra))
+                    .matchingPercentage(matchingPercentage)
+                    .competencyLevel(competencyLevel)
+                    .totalTargetSkills(totalTarget)
+                    .totalSearchedSkills(searchedSet.size())
+                    .build();
+        });
+    }
+
+    /**
+     * Helper class for grouping skills by category
+     */
+    private static class SkillCategoryPair {
+        private final String category;
+        private final String skill;
+
+        public SkillCategoryPair(String category, String skill) {
+            this.category = category;
+            this.skill = skill;
+        }
+
+        public String getCategory() {
+            return category;
+        }
+
+        public String getSkill() {
+            return skill;
+        }
     }
 
     /**

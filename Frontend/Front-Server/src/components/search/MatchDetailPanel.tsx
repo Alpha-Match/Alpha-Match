@@ -1,88 +1,246 @@
-// Frontend/Front-Server/src/components/search/MatchDetailPanel.tsx
 /**
  * @file MatchDetailPanel.tsx
- * @description 선택된 검색 결과(채용 공고 또는 지원자)의 상세 정보를 표시하는 패널 컴포넌트
- *              운영체제: Windows
+ * @description 선택된 검색 결과의 상세 정보를 표시하는 패널 컴포넌트
+ *              useMatchDetail Hook을 사용하여 서버에서 상세 데이터를 가져옵니다.
+ *              Recruit/Candidate 도메인별로 다른 UI를 렌더링합니다.
+ * @version 2.0.0
+ * @date 2025-12-30
  */
-import React from 'react';
-import { MatchItem } from '../../types';
-import { ChevronLeft } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { ChevronLeft, Briefcase, User, Calendar, Globe, Award } from 'lucide-react';
+import { useMatchDetail } from '../../hooks/useMatchDetail';
+import { UserMode } from '../../types';
+import { LoadingSpinner } from '../common/LoadingSpinner';
+import SkillCompetencyBadge from './SkillCompetencyBadge';
 
 interface MatchDetailPanelProps {
-  match: MatchItem;
+  matchId: string;
+  userMode: UserMode;
   onBack: () => void;
+  activeColor: string;
+  searchedSkills?: string[];
 }
 
-const MatchDetailPanel: React.FC<MatchDetailPanelProps> = ({ match, onBack }) => {
-  // 간단한 마크다운 형식의 설명을 HTML로 렌더링
-  const renderDescription = (text: string = '') => {
-    return text
-      .split('\n')
-      .map(line => line.trim())
-      .map((line, index) => {
-        if (line.startsWith('### ')) {
-          return <h3 key={index} className="text-xl font-semibold mt-6 mb-2 text-text-primary">{line.substring(4)}</h3>;
-        }
-        if (line.startsWith('- ')) {
-          return <li key={index} className="ml-5 list-disc text-text-secondary">{line.substring(2)}</li>;
-        }
-        return <p key={index} className="text-text-secondary mb-2">{line}</p>;
-      });
-  };
+const MatchDetailPanel: React.FC<MatchDetailPanelProps> = ({
+  matchId,
+  userMode,
+  onBack,
+  activeColor,
+  searchedSkills = []
+}) => {
+  const { fetchDetail, loading, recruitDetail, candidateDetail, error } = useMatchDetail();
 
-  return (
-    <div className="p-6 h-full text-text-primary animate-fade-in">
-      <button
-        onClick={onBack}
-        className="flex items-center text-text-interactive hover:text-primary-light transition-colors duration-200 mb-6"
-      >
-        <ChevronLeft size={20} className="mr-1" />
-        뒤로가기
-      </button>
+  useEffect(() => {
+    fetchDetail(userMode, matchId);
+  }, [matchId, userMode, fetchDetail]);
 
-      <div className="bg-panel-main p-8 rounded-lg">
-        {/* 헤더 */}
-        <div className="flex justify-between items-start mb-4">
-          <h2 className="text-3xl font-bold text-text-primary">{match.title}</h2>
-          {match.score !== undefined && (
-            <span className="bg-green-500/20 text-green-300 text-lg font-medium px-4 py-1 rounded-full">
-              적합도: {(match.score * 100).toFixed(1)}%
-            </span>
-          )}
-        </div>
-        <p className="text-text-secondary text-xl mb-4">{match.company}</p>
-        <p className="text-text-tertiary mb-6">
-          경력: {match.experience !== null && match.experience !== undefined ? `${match.experience}년 이상` : '신입/경력무관'}
-        </p>
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <LoadingSpinner size={48} color={activeColor} />
+      </div>
+    );
+  }
 
-        {/* 기술 스택 */}
-        <div className="mb-8">
-          <h3 className="text-lg font-semibold mb-3 text-text-primary">보유/요구 기술 스택</h3>
-          <div className="flex flex-wrap gap-2">
-            {match.skills.map((skill, index) => (
-              <span
-                key={index}
-                className="px-3 py-1 bg-panel-2 text-text-secondary rounded-full text-sm font-medium"
-              >
-                {skill}
+  if (error) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center text-text-tertiary">
+        <p className="text-lg mb-4">상세 정보를 불러올 수 없습니다.</p>
+        <button
+          onClick={onBack}
+          className="px-4 py-2 bg-panel-main border border-border rounded-lg hover:bg-panel-2 transition-colors"
+        >
+          목록으로 돌아가기
+        </button>
+      </div>
+    );
+  }
+
+  // Recruit Detail (CANDIDATE 모드: 채용 공고 상세)
+  if (userMode === UserMode.CANDIDATE && recruitDetail) {
+    return (
+      <div className="p-6 h-full overflow-y-auto custom-scrollbar animate-fade-in">
+        <button
+          onClick={onBack}
+          className="flex items-center text-text-interactive hover:text-primary-light transition-colors duration-200 mb-6"
+        >
+          <ChevronLeft size={20} className="mr-1" />
+          뒤로가기
+        </button>
+
+        <div className="bg-panel-main p-8 rounded-lg border border-border/30">
+          {/* 헤더 */}
+          <div className="flex items-start gap-4 mb-6">
+            <div className="p-3 bg-panel-2 rounded-lg">
+              <Briefcase size={32} className="text-primary" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-3xl font-bold text-text-primary mb-2">{recruitDetail.position}</h2>
+              <p className="text-text-secondary text-xl">{recruitDetail.companyName}</p>
+            </div>
+          </div>
+
+          {/* 메타 정보 */}
+          <div className="grid grid-cols-2 gap-4 mb-8 p-4 bg-panel-2 rounded-lg">
+            <div className="flex items-center gap-2">
+              <Award className="text-text-tertiary" size={18} />
+              <span className="text-text-secondary">
+                경력: {recruitDetail.experienceYears ? `${recruitDetail.experienceYears}년 이상` : '신입/경력무관'}
               </span>
-            ))}
+            </div>
+            {recruitDetail.englishLevel && (
+              <div className="flex items-center gap-2">
+                <Globe className="text-text-tertiary" size={18} />
+                <span className="text-text-secondary">영어: {recruitDetail.englishLevel}</span>
+              </div>
+            )}
+            {recruitDetail.publishedAt && (
+              <div className="flex items-center gap-2">
+                <Calendar className="text-text-tertiary" size={18} />
+                <span className="text-text-secondary">
+                  게시일: {new Date(recruitDetail.publishedAt).toLocaleDateString('ko-KR')}
+                </span>
+              </div>
+            )}
+            {recruitDetail.primaryKeyword && (
+              <div className="flex items-center gap-2">
+                <span className="text-text-tertiary text-sm">주요 키워드:</span>
+                <span className="text-text-secondary">{recruitDetail.primaryKeyword}</span>
+              </div>
+            )}
+          </div>
+
+          {/* 기술 스택 */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold mb-3 text-text-primary">요구 기술 스택</h3>
+            <div className="flex flex-wrap gap-2">
+              {recruitDetail.skills.map((skill, index) => (
+                <span
+                  key={index}
+                  className="px-3 py-1.5 bg-panel-2 text-text-secondary rounded-full text-sm font-medium border border-border/20"
+                >
+                  {skill}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* 상세 설명 */}
-        <div className="prose prose-invert max-w-none custom-scrollbar overflow-y-auto">
-          {renderDescription(match.description || '')}
-        </div>
+        {/* 역량 매칭도 분석 */}
+        {searchedSkills && searchedSkills.length > 0 && (
+          <SkillCompetencyBadge
+            mode={userMode}
+            targetId={matchId}
+            searchedSkills={searchedSkills}
+            activeColor={activeColor}
+          />
+        )}
 
-        {/* 직무 적합도 대시보드 (Placeholder) */}
-        <div className="mt-12">
-            <h3 className="text-2xl font-bold text-text-primary mb-4">직무 적합도 분석</h3>
-            <div className="bg-panel-2 p-6 rounded-lg text-center">
-                <p className="text-text-secondary">여기에 지원자의 기술 스택과 해당 공고의 적합도를 분석하는 대시보드가 표시됩니다.</p>
+        <div className="bg-panel-main p-8 rounded-lg border border-border/30">
+          {/* 상세 설명 */}
+          <div>
+            <h3 className="text-lg font-semibold mb-3 text-text-primary">상세 정보</h3>
+            <div className="prose prose-invert max-w-none">
+              <p className="text-text-secondary whitespace-pre-wrap leading-relaxed">
+                {recruitDetail.description}
+              </p>
             </div>
+          </div>
         </div>
       </div>
+    );
+  }
+
+  // Candidate Detail (RECRUITER 모드: 후보자 상세)
+  if (userMode === UserMode.RECRUITER && candidateDetail) {
+    return (
+      <div className="p-6 h-full overflow-y-auto custom-scrollbar animate-fade-in">
+        <button
+          onClick={onBack}
+          className="flex items-center text-text-interactive hover:text-primary-light transition-colors duration-200 mb-6"
+        >
+          <ChevronLeft size={20} className="mr-1" />
+          뒤로가기
+        </button>
+
+        <div className="bg-panel-main p-8 rounded-lg border border-border/30">
+          {/* 헤더 */}
+          <div className="flex items-start gap-4 mb-6">
+            <div className="p-3 bg-panel-2 rounded-lg">
+              <User size={32} className="text-primary" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-3xl font-bold text-text-primary mb-2">후보자 프로필</h2>
+              <p className="text-text-secondary text-xl">{candidateDetail.positionCategory}</p>
+            </div>
+          </div>
+
+          {/* 메타 정보 */}
+          <div className="grid grid-cols-2 gap-4 mb-8 p-4 bg-panel-2 rounded-lg">
+            <div className="flex items-center gap-2">
+              <Award className="text-text-tertiary" size={18} />
+              <span className="text-text-secondary">
+                경력: {candidateDetail.experienceYears ? `${candidateDetail.experienceYears}년` : '신입'}
+              </span>
+            </div>
+          </div>
+
+          {/* 기술 스택 */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold mb-3 text-text-primary">보유 기술 스택</h3>
+            <div className="flex flex-wrap gap-2">
+              {candidateDetail.skills.map((skill, index) => (
+                <span
+                  key={index}
+                  className="px-3 py-1.5 bg-panel-2 text-text-secondary rounded-full text-sm font-medium border border-border/20"
+                >
+                  {skill}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* 역량 매칭도 분석 */}
+        {searchedSkills && searchedSkills.length > 0 && (
+          <SkillCompetencyBadge
+            mode={userMode}
+            targetId={matchId}
+            searchedSkills={searchedSkills}
+            activeColor={activeColor}
+          />
+        )}
+
+        <div className="bg-panel-main p-8 rounded-lg border border-border/30">
+          {/* 상세 설명 */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold mb-3 text-text-primary">상세 정보</h3>
+            <div className="prose prose-invert max-w-none">
+              <p className="text-text-secondary whitespace-pre-wrap leading-relaxed">
+                {candidateDetail.description}
+              </p>
+            </div>
+          </div>
+
+          {/* 원본 이력서 (있는 경우) */}
+          {candidateDetail.originalResume && (
+            <div>
+              <h3 className="text-lg font-semibold mb-3 text-text-primary">원본 이력서</h3>
+              <div className="p-4 bg-panel-2 rounded-lg border border-border/20">
+                <p className="text-text-tertiary text-sm whitespace-pre-wrap">
+                  {candidateDetail.originalResume}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full flex items-center justify-center text-text-tertiary">
+      <p>데이터를 불러오는 중...</p>
     </div>
   );
 };

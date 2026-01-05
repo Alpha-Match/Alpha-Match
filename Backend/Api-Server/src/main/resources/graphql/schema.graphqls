@@ -174,6 +174,33 @@ type CandidateSearchResult {
     items: [Candidate!]!
 }
 
+"""
+Category Match Distribution (Pie Chart Data)
+For Frontend SearchResultPanel - shows category distribution of selected skills
+Example: [Java, Spring Boot, MySQL] → Backend 66%, Database 33%
+"""
+type CategoryMatchDistribution {
+    category: String!
+    percentage: Float!          # 0-100
+    matchedSkills: [String!]!   # Skills in this category
+    skillCount: Int!            # Number of skills in this category
+}
+
+"""
+Skill Competency Match Result
+Compares searched skills vs target (recruit/candidate) skills
+For Frontend MatchDetailPanel - shows skill gap analysis
+"""
+type SkillCompetencyMatch {
+    matchedSkills: [String!]!      # Intersection (common skills)
+    missingSkills: [String!]!      # Skills only in target
+    extraSkills: [String!]!        # Skills only in searched
+    matchingPercentage: Float!     # Match ratio 0-100
+    competencyLevel: String!       # "High" (80%+), "Medium" (50-80%), "Low" (<50%)
+    totalTargetSkills: Int!        # Total skills in target
+    totalSearchedSkills: Int!      # Total skills searched
+}
+
 # ===== Enums =====
 
 """
@@ -218,12 +245,16 @@ type Query {
     - Matches Frontend SEARCH_MATCHES_QUERY
     - mode: CANDIDATE searches Recruits, RECRUITER searches Candidates
     - experience: String format "0-2 Years", "3-5 Years", etc.
+    - limit: Max number of results (default: 10)
+    - offset: Number of results to skip for pagination (default: 0)
     - Returns: matches + vectorVisualization
     """
     searchMatches(
         mode: UserMode!
         skills: [String!]!
         experience: String!
+        limit: Int
+        offset: Int
     ): SearchMatchesResult!
 
     """
@@ -279,6 +310,29 @@ type Query {
     Get skills by category
     """
     getSkillsByCategory(category: String!): [SkillEmbedding!]!
+
+    """
+    Get Category Distribution for Selected Skills (Pie Chart Data)
+    - Input: List of skill names
+    - Output: Category distribution with percentages
+    - Used by Frontend SearchResultPanel for pie chart visualization
+    - Example: [Java, Spring Boot, MySQL] → [{category: "Backend", percentage: 66.67, ...}, {category: "Database", percentage: 33.33, ...}]
+    """
+    getCategoryDistribution(skills: [String!]!): [CategoryMatchDistribution!]!
+
+    """
+    Get Skill Competency Match Analysis (Detail Page)
+    - mode: CANDIDATE → analyze recruit, RECRUITER → analyze candidate
+    - targetId: Recruit ID or Candidate ID
+    - searchedSkills: User's selected skills from search
+    - Returns: Matching degree + missing/extra skills
+    - Used by Frontend MatchDetailPanel for skill gap visualization
+    """
+    getSkillCompetencyMatch(
+        mode: UserMode!
+        targetId: ID!
+        searchedSkills: [String!]!
+    ): SkillCompetencyMatch!
 }
 
 # ===== Mutations =====
