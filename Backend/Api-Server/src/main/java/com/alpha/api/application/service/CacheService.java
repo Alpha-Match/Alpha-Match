@@ -27,6 +27,10 @@ public class CacheService {
     private static final Duration L1_TTL = Duration.ofSeconds(10);
     private static final Duration L2_TTL = Duration.ofMinutes(10);
 
+    // Static data TTLs (for Cache Warming)
+    private static final Duration STATIC_L1_TTL = Duration.ofHours(24);
+    private static final Duration STATIC_L2_TTL = Duration.ofHours(24);
+
     /**
      * Get from cache with fallback to source
      * - L1 (Caffeine) → L2 (Redis) → Source
@@ -102,6 +106,108 @@ public class CacheService {
     public Mono<Long> invalidateAll() {
         log.info("Cache invalidate all");
         return invalidateByPrefix("*");
+    }
+
+    /**
+     * Warm cache with static data (24-hour TTL)
+     * - Used for skillCategories and dashboardData on application startup
+     * - Populates both L1 (Caffeine) and L2 (Redis)
+     * - Does NOT reload from source if already cached
+     *
+     * @param key Cache key
+     * @param value Data to cache
+     * @param <T> Value type
+     * @return Mono of Boolean (true if successful)
+     */
+    public <T> Mono<Boolean> warmCache(String key, T value) {
+        log.info("Cache warming: key={}", key);
+        return Mono.when(
+                l1Cache.put(key, value, STATIC_L1_TTL),
+                l2Cache.put(key, value, STATIC_L2_TTL)
+        ).thenReturn(true)
+                .doOnSuccess(result -> log.info("Cache warmed successfully: key={}", key))
+                .doOnError(error -> log.error("Cache warming failed: key={}, error={}", key, error.getMessage()));
+    }
+
+    /**
+     * Get static data from cache (24-hour TTL)
+     * - Used for skillCategories and dashboardData
+     * - Falls back to source if not cached
+     *
+     * @param key Cache key
+     * @param valueType Value class type
+     * @param source Data source (DB query)
+     * @param <T> Value type
+     * @return Mono of value
+     */
+    public <T> Mono<T> getOrLoadStatic(String key, Class<T> valueType, Supplier<Mono<T>> source) {
+        log.debug("Static cache lookup: key={}", key);
+
+        return l1Cache.get(key, valueType)
+                .doOnNext(value -> log.debug("L1 static cache HIT: key={}", key))
+                .switchIfEmpty(Mono.defer(() -> {
+                    log.debug("L1 static cache MISS: key={}", key);
+                    return l2Cache.get(key, valueType)
+                            .doOnNext(value -> log.debug("L2 static cache HIT: key={}", key))
+                            .flatMap(value -> {
+                                // Populate L1 on L2 hit
+                                return l1Cache.put(key, value, STATIC_L1_TTL)
+                                        .thenReturn(value);
+                            })
+                            .switchIfEmpty(Mono.defer(() -> {
+                                log.debug("L2 static cache MISS: key={}, loading from source", key);
+                                return source.get()
+                                        .flatMap(value -> {
+                                            // Populate both L1 and L2 on source load
+                                            return Mono.when(
+                                                    l1Cache.put(key, value, STATIC_L1_TTL),
+                                                    l2Cache.put(key, value, STATIC_L2_TTL)
+                                            ).thenReturn(value);
+                                        });
+                            }));
+                }));
+    }
+
+    /**
+     * Get static data from cache without type constraint (24-hour TTL)
+     * - Used for complex types like List<T>
+     * - Falls back to source if not cached
+     * - Type safety is handled by caller
+     *
+     * @param key Cache key
+     * @param source Data source (DB query)
+     * @param <T> Value type
+     * @return Mono of value
+     */
+    @SuppressWarnings("unchecked")
+    public <T> Mono<T> getOrLoadStaticUnchecked(String key, Supplier<Mono<T>> source) {
+        log.debug("Static cache lookup (unchecked): key={}", key);
+
+        return l1Cache.get(key, Object.class)
+                .map(obj -> (T) obj)
+                .doOnNext(value -> log.debug("L1 static cache HIT: key={}", key))
+                .switchIfEmpty(Mono.defer(() -> {
+                    log.debug("L1 static cache MISS: key={}", key);
+                    return l2Cache.get(key, Object.class)
+                            .map(obj -> (T) obj)
+                            .doOnNext(value -> log.debug("L2 static cache HIT: key={}", key))
+                            .flatMap(value -> {
+                                // Populate L1 on L2 hit
+                                return l1Cache.put(key, value, STATIC_L1_TTL)
+                                        .thenReturn(value);
+                            })
+                            .switchIfEmpty(Mono.defer(() -> {
+                                log.debug("L2 static cache MISS: key={}, loading from source", key);
+                                return source.get()
+                                        .flatMap(value -> {
+                                            // Populate both L1 and L2 on source load
+                                            return Mono.when(
+                                                    l1Cache.put(key, value, STATIC_L1_TTL),
+                                                    l2Cache.put(key, value, STATIC_L2_TTL)
+                                            ).thenReturn(value);
+                                        });
+                            }));
+                }));
     }
 
     /**
