@@ -1,9 +1,8 @@
-import type { Metadata } from "next";
+import type {Metadata} from "next";
 import "./globals.css";
 import Providers from "./providers";
-import { AppInitializer } from "../components/layout/AppInitializer";
-import { Notification } from "../components/common/Notification";
-import { ThemeManager } from "../components/layout/ThemeManager";
+import {Notification} from "../components/common/Notification";
+import {ThemeManager} from "../components/layout/ThemeManager";
 
 export const metadata: Metadata = {
   title: "Alpha-Match",
@@ -20,7 +19,6 @@ export default function RootLayout({
       <body>
         <Providers>
           <ThemeManager />
-          <AppInitializer />
           {children}
           <Notification />
         </Providers>

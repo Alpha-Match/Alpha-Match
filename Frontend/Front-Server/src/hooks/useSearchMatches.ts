@@ -5,7 +5,7 @@ import { CombinedGraphQLErrors, ServerError } from '@apollo/client/errors';
 import { MatchItem, SkillMatch, UserMode } from '../types';
 import { SEARCH_MATCHES_QUERY } from '../services/api/queries/search';
 import { useAppSelector, useAppDispatch } from '../services/state/hooks';
-import { setMatches } from '../services/state/features/search/searchSlice';
+import { setMatches, setSearchedSkills } from '../services/state/features/search/searchSlice';
 
 const PAGE_SIZE = 20; // 한 번에 로드할 개수
 const LOAD_MORE_THROTTLE_MS = 300; // 무한 스크롤 요청 간 최소 간격 (ms)
@@ -75,6 +75,13 @@ export const useSearchMatches = () => {
           matches: data.searchMatches.matches,
         })
       );
+      // 검색에 사용된 스킬을 Redux에 저장
+      dispatch(
+        setSearchedSkills({
+          userMode: searchParams.mode,
+          skills: searchParams.skills,
+        })
+      );
 
       // 더 이상 데이터가 없으면 hasMore = false
       if (data.searchMatches.matches.length < PAGE_SIZE) {
@@ -112,6 +119,12 @@ export const useSearchMatches = () => {
           setMatches({
             userMode: searchParams.mode,
             matches: [],
+          })
+        );
+        dispatch(
+          setSearchedSkills({
+            userMode: searchParams.mode,
+            skills: [],
           })
         );
       }

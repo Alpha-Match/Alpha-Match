@@ -10,6 +10,8 @@ export const SkillSelector: React.FC = () => {
   const { skillCategories, skillsLoaded } = useAppSelector((state) => state.search);
   const { selectedSkills } = useAppSelector((state) => state.search[mode]);
 
+  console.log('[Debug] SkillSelector rendering. skillsLoaded:', skillsLoaded, 'skillCategories count:', skillCategories.length);
+
   const [searchTerm, setSearchTerm] = useState('');
 
   const handleSkillToggle = (skill: string) => {
@@ -22,9 +24,14 @@ export const SkillSelector: React.FC = () => {
   };
 
   // 검색어로 스킬 필터링
-  const filteredSkills = skillCategories.filter(skill =>
-    skill.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCategories = skillCategories
+    .map(category => ({
+      ...category,
+      skills: (category.skills ?? []).filter(skill =>
+        skill.toLowerCase().includes(searchTerm.toLowerCase())
+      ),
+    }))
+    .filter(category => category.skills.length > 0);
 
   return (
     <section className="bg-panel-main p-4 rounded-lg shadow-sm border border-border space-y-3">
@@ -74,32 +81,41 @@ export const SkillSelector: React.FC = () => {
           {!skillsLoaded && (
             <div className="text-center text-text-tertiary text-sm py-4">기술 스택 로딩 중...</div>
           )}
-          {skillsLoaded && filteredSkills.length === 0 && searchTerm !== '' && (
+          {skillsLoaded && filteredCategories.length === 0 && searchTerm !== '' && (
             <div className="text-center text-text-tertiary text-sm py-4">일치하는 기술 스택이 없습니다.</div>
           )}
-          {skillsLoaded && filteredSkills.map((skill, idx) => {
-            const isSelected = selectedSkills.includes(skill);
-            return (
-              <button
-                key={`${skill}-${idx}`}
-                onClick={() => handleSkillToggle(skill)}
-                className={`group flex items-center w-full p-2 rounded-md transition-colors duration-150 ${
-                  isSelected ? 'bg-primary/10 border border-primary' : 'border border-transparent hover:bg-panel-main'
-                }`}
-              >
-                <div 
-                  className={`w-5 h-5 rounded border-2 flex items-center justify-center mr-3 transition-colors ${
-                    isSelected ? 'bg-primary border-primary' : 'border-text-tertiary group-hover:border-primary'
-                  }`}
-                >
-                  {isSelected && <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
-                </div>
-                <span className={`text-sm ${isSelected ? 'font-semibold text-primary' : 'text-text-secondary group-hover:text-text-primary'}`}>
-                  {skill}
-                </span>
-              </button>
-            );
-          })}
+          {skillsLoaded && filteredCategories.map((category) => (
+            <div key={category.category}>
+              <h3 className="text-xs font-bold text-text-tertiary uppercase tracking-wider px-2 py-3">
+                {category.category}
+              </h3>
+              <div className="grid grid-cols-1 gap-1">
+                {category.skills.map((skill, idx) => {
+                  const isSelected = selectedSkills.includes(skill);
+                  return (
+                    <button
+                      key={`${skill}-${idx}`}
+                      onClick={() => handleSkillToggle(skill)}
+                      className={`group flex items-center w-full p-2 rounded-md transition-colors duration-150 ${
+                        isSelected ? 'bg-primary/10 border border-primary' : 'border border-transparent hover:bg-panel-main'
+                      }`}
+                    >
+                      <div 
+                        className={`w-5 h-5 rounded border-2 flex items-center justify-center mr-3 transition-colors ${
+                          isSelected ? 'bg-primary border-primary' : 'border-text-tertiary group-hover:border-primary'
+                        }`}
+                      >
+                        {isSelected && <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                      </div>
+                      <span className={`text-sm ${isSelected ? 'font-semibold text-primary' : 'text-text-secondary group-hover:text-text-primary'}`}>
+                        {skill}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
       <p className="text-xs text-text-tertiary mt-2 text-right">

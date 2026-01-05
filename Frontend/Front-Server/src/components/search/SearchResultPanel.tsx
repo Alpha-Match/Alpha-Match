@@ -5,13 +5,14 @@
  *              범용 MatchItem 배열을 받아 ResultListItem 컴포넌트를 사용하여 렌더링합니다.
  *              Intersection Observer를 통한 무한 스크롤 지원
  *              운영체제: Windows
- * @version 1.3.0
- * @date 2025-12-31
+ * @version 1.4.0
+ * @date 2026-01-06
  */
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { MatchItem } from '../../types';
-import ResultListItem from './ResultListItem'; // ResultList -> ResultListItem
+import { useIntersectionObserver } from '../../hooks/useIntersectionObserver';
+import ResultListItem from './ResultListItem';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import CategoryPieChart from './CategoryPieChart';
 
@@ -25,7 +26,7 @@ interface SearchResultPanelProps {
   hasMore?: boolean;
   loading?: boolean;
   // Category distribution
-  selectedSkills?: string[];
+  searchedSkills?: string[];
 }
 
 const SearchResultPanel: React.FC<SearchResultPanelProps> = ({
@@ -36,42 +37,17 @@ const SearchResultPanel: React.FC<SearchResultPanelProps> = ({
   loadMore,
   hasMore = false,
   loading = false,
-  selectedSkills = []
+  searchedSkills = []
 }) => {
-  const sentinelRef = useRef<HTMLDivElement>(null);
-
-  // Debug: Log matches to diagnose "no results" issue
-  console.log('[SearchResultPanel] Received matches:', matches.length, matches);
-
-  // Intersection Observer for infinite scroll
-  useEffect(() => {
-    if (!loadMore || !hasMore || loading) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        // When sentinel element is visible, load more results
-        if (entries[0].isIntersecting) {
-          loadMore();
-        }
-      },
-      {
-        root: null, // viewport
-        rootMargin: '100px', // trigger 100px before reaching the sentinel
-        threshold: 0.1,
-      }
-    );
-
-    const currentSentinel = sentinelRef.current;
-    if (currentSentinel) {
-      observer.observe(currentSentinel);
+  // 무한 스크롤 로직을 커스텀 훅으로 분리
+  const sentinelRef = useIntersectionObserver<HTMLDivElement>(() => {
+    if (hasMore && !loading && loadMore) {
+      loadMore();
     }
-
-    return () => {
-      if (currentSentinel) {
-        observer.unobserve(currentSentinel);
-      }
-    };
-  }, [loadMore, hasMore, loading]);
+  }, {
+    threshold: 0.1,
+    rootMargin: '100px',
+  });
 
   if (matches.length === 0 && !loading) {
     return (
@@ -98,8 +74,8 @@ const SearchResultPanel: React.FC<SearchResultPanelProps> = ({
       </div>
 
       {/* Category Distribution Pie Chart */}
-      {selectedSkills && selectedSkills.length > 0 && (
-        <CategoryPieChart skills={selectedSkills} activeColor={activeColor} />
+      {searchedSkills && searchedSkills.length > 0 && (
+        <CategoryPieChart skills={searchedSkills} activeColor={activeColor} />
       )}
 
       <ul className="space-y-3">
@@ -134,3 +110,4 @@ const SearchResultPanel: React.FC<SearchResultPanelProps> = ({
 };
 
 export default SearchResultPanel;
+

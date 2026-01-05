@@ -31,8 +31,8 @@ interface MainContentPanelProps {
   // Infinite scroll props
   loadMore?: () => void;
   hasMore?: boolean;
-  // Selected skills for category distribution and competency match
-  selectedSkills?: string[];
+  // Searched skills for category distribution and competency match
+  searchedSkills?: string[];
 }
 
 export const MainContentPanel: React.FC<MainContentPanelProps> = ({
@@ -49,7 +49,7 @@ export const MainContentPanel: React.FC<MainContentPanelProps> = ({
   onBackToDashboard,
   loadMore,
   hasMore,
-  selectedSkills = [],
+  searchedSkills = [],
 }) => {
   switch (pageViewMode) {
     case 'detail':
@@ -62,7 +62,7 @@ export const MainContentPanel: React.FC<MainContentPanelProps> = ({
           userMode={userMode}
           onBack={onBackToList}
           activeColor={activeColor}
-          searchedSkills={selectedSkills}
+          searchedSkills={searchedSkills}
         />
       );
 
@@ -77,7 +77,7 @@ export const MainContentPanel: React.FC<MainContentPanelProps> = ({
             loadMore={loadMore}
             hasMore={hasMore}
             loading={fetchingMore}
-            selectedSkills={selectedSkills}
+            searchedSkills={searchedSkills}
           />
         </QueryBoundary>
       );

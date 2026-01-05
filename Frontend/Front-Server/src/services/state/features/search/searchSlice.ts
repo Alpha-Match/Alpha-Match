@@ -1,10 +1,11 @@
 'use client';
 
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { ExperienceLevel, UserMode, MatchItem, DashboardCategory } from '../../../../types';
+import { ExperienceLevel, UserMode, MatchItem, DashboardCategory, SkillCategory } from '../../../../types';
 
 export interface ModeSpecificSearchState {
   selectedSkills: string[];
+  searchedSkills: string[]; // 검색에 실제 사용된 스킬
   selectedExperience: string | null;
   isInitial: boolean;
   matches: MatchItem[];
@@ -14,12 +15,13 @@ export interface ModeSpecificSearchState {
 export interface SearchState {
   [UserMode.CANDIDATE]: ModeSpecificSearchState;
   [UserMode.RECRUITER]: ModeSpecificSearchState;
-  skillCategories: string[];
+  skillCategories: SkillCategory[];
   skillsLoaded: boolean;
 }
 
 const initialModeSpecificState: ModeSpecificSearchState = {
   selectedSkills: [],
+  searchedSkills: [], // 검색에 실제 사용된 스킬
   selectedExperience: ExperienceLevel.MID,
   isInitial: true,
   matches: [],
@@ -58,16 +60,20 @@ export const searchSlice = createSlice({
       const { userMode, matches } = action.payload;
       state[userMode].matches = matches;
     },
+    setSearchedSkills: (state, action: PayloadAction<{ userMode: UserMode; skills: string[] }>) => {
+      const { userMode, skills } = action.payload;
+      state[userMode].searchedSkills = skills;
+    },
     setDashboardData: (state, action: PayloadAction<{ userMode: UserMode; data: DashboardCategory[] }>) => {
       const { userMode, data } = action.payload;
       state[userMode].dashboardData = data;
     },
     resetSearch: (state, action: PayloadAction<UserMode>) => {
-        state[action.payload] = { ...initialModeSpecificState, dashboardData: state[action.payload].dashboardData };
+        state[action.payload] = { ...initialModeSpecificState, searchedSkills: [], dashboardData: state[action.payload].dashboardData };
     },
-    setSkillCategories: (state, action: PayloadAction<string[]>) => {
+    setSkillCategories: (state, action: PayloadAction<SkillCategory[]>) => {
       state.skillCategories = action.payload;
-      state.skillsLoaded = true;
+      state.skillsLoaded = action.payload.length > 0;
     },
   },
 });
@@ -84,6 +90,7 @@ export const {
   setExperience,
   setSearchPerformed,
   setMatches,
+  setSearchedSkills,
   setDashboardData,
   resetSearch,
   setSkillCategories,

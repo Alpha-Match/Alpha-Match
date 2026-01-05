@@ -3,6 +3,7 @@ import React from 'react';
 import chroma from 'chroma-js';
 import { useAppSelector } from '../../services/state/hooks';
 import { UserMode } from '../../types';
+import { useHydrated } from '../../hooks/useHydrated'; // useHydrated 훅 임포트
 import { RECRUITER_THEME_COLORS, CANDIDATE_THEME_COLORS } from '../../constants';
 import CategoryPieChart from './CategoryPieChart';
 import GenericTreemap from './GenericTreemap';
@@ -11,6 +12,7 @@ import SkillIcon from '../common/SkillIcon';
 import { Skeleton } from '../common/Skeleton';
 
 export default function DefaultDashboard() {
+    const isHydrated = useHydrated(); // 하이드레이션 상태 추적
     const userMode = useAppSelector((state) => state.ui.userMode);
     const dashboardData = useAppSelector((state) => state.search[userMode].dashboardData);
 
@@ -18,8 +20,8 @@ export default function DefaultDashboard() {
         ? RECRUITER_THEME_COLORS
         : CANDIDATE_THEME_COLORS;
         
-    // 데이터가 아직 Redux에 의해 로드되지 않았을 수 있습니다.
-    if (!dashboardData) {
+    // 하이드레이션 전이거나 데이터가 아직 로드되지 않은 경우 스켈레톤을 표시합니다.
+    if (!isHydrated || !dashboardData) {
         return (
             <div className="p-6 h-full">
                 <Skeleton className="h-24 mb-8" />

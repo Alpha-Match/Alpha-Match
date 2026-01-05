@@ -24,37 +24,15 @@
 
 ## 📂 구현된 코드 위치 (AI가 읽어야 할 경로)
 
-### 🚀 엔트리포인트 (App Router)
-
-- `src/app/layout.tsx` - 루트 레이아웃 (Server Component)
-- `src/app/page.tsx` - 메인 페이지 (Server Component, async)
-- `src/app/_components/HomePage.client.tsx` - 홈페이지 클라이언트 컴포넌트
-
-### ⚙️ Configuration
-
-- `src/lib/server/api.ts` - 서버 사이드 API 함수 (Server Components용)
-- `src/services/api/apollo-client.ts` - Apollo Client 설정 (클라이언트 전용)
-- `src/services/state/` - Redux 스토어 및 슬라이스
-  - `src/services/state/store.ts` - Redux Store
-  - `src/services/state/hooks.ts` - Custom Redux Hooks
-  - `src/services/state/features/ui/uiSlice.ts` - UI 상태 슬라이스 (도메인별 분리: CANDIDATE/RECRUITER)
-  - `src/services/state/features/search/searchSlice.ts` - 검색 조건 슬라이스 (도메인별 분리)
-  - `src/services/state/features/notification/notificationSlice.ts` - 전역 알림 슬라이스
-
-### 🎨 Components (기능/화면 단위)
-
-- `src/components/common/` - 범용 컴포넌트
-- `src/components/dashboard/` - 대시보드
-- `src/components/input-panel/` - 검색 입력 패널
-- `src/components/layout/` - 전역 레이아웃
-- `src/components/search/` - 검색 결과
-
 ### 📡 GraphQL & Hooks
 
 - `src/services/api/queries/` - GraphQL 쿼리 정의
 - `src/hooks/` - 커스텀 React Hooks
   - `useSearchMatches` - 검색 실행 및 Redux ViewModel 연동
   - `useMatchDetail` - 상세 정보 조회 (도메인별 분리)
+  - `useAppNavigation` - 앱 네비게이션 로직 및 히스토리 관리
+  - `useIntersectionObserver` - 요소 가시성 감지 (무한 스크롤 등)
+  - `useHydrated` - 클라이언트 하이드레이션 상태 추적
 
 ---
 
@@ -88,12 +66,17 @@
 │  - searchSlice: {                   │
 │      CANDIDATE: {                   │
 │        selectedSkills,              │
-│        selectedExperience,          │
+│        searchedSkills, ← 검색된 스킬 │
 │        matches ← 영구 보존          │
 │      },                             │
 │      RECRUITER: { ... }             │
 │    }                                │
-│  - uiSlice: pageViewMode 등         │
+│  - uiSlice: {                       │
+│      CANDIDATE: {                   │
+│        history: [{...}, ...],       │
+│        currentIndex: number         │
+│      }                              │
+│    }                                │
 └───────────────┬─────────────────────┘
                 │
 ┌───────────────▼─────────────────────┐
@@ -106,13 +89,14 @@
 - **Apollo Client**: GraphQL API 통신 및 네트워크 레벨 캐시 (InMemoryCache)
 - **Redux Toolkit**: ViewModel - 도메인별 UI 상태 및 검색 결과 영구 저장
   - `searchSlice.matches`: 검색 결과를 Redux에 저장하여 모드 전환 시에도 보존
-  - `uiSlice`: 도메인별 pageViewMode, selectedMatchId 저장
-- **Multiple Back Stacks**: 각 UserMode(CANDIDATE/RECRUITER)가 독립적인 상태 스택 유지
+  - `searchSlice.searchedSkills`: 검색에 실제 사용된 스킬을 저장하여, 의도치 않은 UI 업데이트를 방지 (예: `CategoryPieChart`)
+  - `uiSlice.history`: 페이지 뷰(`pageViewMode`, `selectedMatchId`)의 배열을 저장하여, 모드별 탐색 기록(뒤로 가기)을 관리합니다.
+- **Multiple Back Stacks**: 각 UserMode(CANDIDATE/RECRUITER)가 독립적인 상태 스택(검색 조건, 검색 결과, 탐색 기록)을 유지합니다.
 
 **주의사항:**
 - Hook의 useState로 matches를 관리하지 말 것 (컴포넌트 재렌더링 시 손실)
 - 반드시 `dispatch(setMatches({ userMode, matches }))`로 Redux에 저장
-- 뒤로가기 시 Redux 캐시를 먼저 확인: `matches.length === 0` 체크 후 API 호출
+- `pushHistory`와 `navigateBack` 액션을 사용하여 탐색 상태를 변경해야 합니다.
 
 ### 4. 타입 안정성
 - 모든 컴포넌트에 Props 타입 정의
@@ -136,6 +120,8 @@
   - Redux useState 사용 시 주의사항
   - 모드 전환 시 상태 손실 문제 해결
   - useEffect 의존성 배열 최적화
+- **Hydration 오류**: `docs/troubleshooting/Hydration_Error_and_SSR.md`
+  - 서버-클라이언트 렌더링 불일치 문제 해결
 
 ---
 
@@ -144,12 +130,21 @@
 - **히스토리**: `docs/hist/` - 주요 변경 이력 (읽기 전용)
   - `2025-12-30_Server_Components_Migration.md` - Server Components 아키텍처 구축
   - `2025-12-30_ViewModel_Multiple_Back_Stacks.md` - ViewModel 패턴 및 Multiple Back Stacks 구현
+  - `2026-01-06_01_Improvement_Plan_Implementation.md` - 개선 계획 구현 (히스토리 스택, UI 개선 등)
+  - `2026-01-06_02_SkillSelector_BugFix.md` - `SkillSelector.tsx`의 `undefined` 오류 수정 및 문서 업데이트
+  - `2026-01-06_03_Refactor_CustomHooks.md` - 리팩토링: 커스텀 훅 분리를 통한 클린 아키텍처 강화
 - **개선 계획**: `docs/Frontend_Improvement_Plan.md` - 향후 개선 로드맵
 
 ---
 
-**최종 수정일:** 2026-01-05
+**최종 수정일:** 2026-01-06
 **주요 업데이트:**
+- **클린 아키텍처 리팩토링**: `useAppNavigation`과 `useIntersectionObserver` 커스텀 훅을 통해 컴포넌트 책임 분리 및 재사용성 강화
+- **`SkillSelector.tsx` 오류 수정**: `category.skills`가 `undefined`일 경우 `filter` 호출 시 발생하는 런타임 오류 해결
+- **히스토리 스택 구현**: `uiSlice`를 리팩토링하여 각 사용자 모드별 탐색 기록(뒤로 가기) 관리
+- **`CategoryPieChart` 업데이트 로직 수정**: 검색이 실행된 후에만 차트가 업데이트되도록 `searchedSkills` 상태 분리
+- **`SkillSelector` UI 개선**: 기술 스택을 카테고리별로 그룹화하여 표시
+- **Hydration 오류 수정**: `useHydrated` 훅을 도입하여 서버-클라이언트 렌더링 불일치 문제 해결 및 `DefaultDashboard.tsx` 안정성 강화
 - Dashboard 분석 컴포넌트 (CategoryPieChart, SkillCompetencyBadge)
 - 무한 스크롤 UX 개선 (NetworkStatus 기반 로딩 구분, Throttle)
 - 기술 스택 정렬 (캐시 일관성 향상)

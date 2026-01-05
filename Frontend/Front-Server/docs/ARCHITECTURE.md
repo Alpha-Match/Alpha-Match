@@ -18,7 +18,7 @@
 | **`src/services`** | **외부 서비스 및 클라이언트 상태 관리**: 외부 API 연동 및 전역 클라이언트 상태를 관리하는 핵심 로직입니다. |
 | `services/api` | **API 연동 로직 (클라이언트 전용)**: GraphQL 클라이언트 (`apollo-client.ts`), GraphQL 쿼리 정의 등 클라이언트 측 API 통신 및 설정을 담당합니다. |
 | `services/state` | **전역 클라이언트 상태 관리**: Redux Toolkit 설정을 관리합니다. `features` 디렉토리 안에 각 기능별 `slice` 파일(`uiSlice`, `searchSlice` 등)을 두어 상태를 분리합니다. **도메인별 state 분리** (CANDIDATE/RECRUITER). |
-| **`src/hooks`** | **커스텀 React Hooks**: `useSearchMatches`, `useMatchDetail`과 같이 여러 컴포넌트에서 재사용될 수 있는 비즈니스 로직 및 상태 관련 로직을 분리하여 관리합니다. |
+| **`src/hooks`** | **커스텀 React Hooks**: `useSearchMatches`, `useMatchDetail`과 같이 여러 컴포넌트에서 재사용될 수 있는 비즈니스 로직 및 상태 관련 로직을 분리하여 관리합니다. <br> - **`useAppNavigation`**: 앱 내 네비게이션 상태 및 액션을 캡슐화하여 `HomePage.client.tsx`와 같은 컴포넌트의 책임을 분리하고 컴포넌트를 간소화합니다. <br> - **`useIntersectionObserver`**: 요소의 가시성을 감지하는 로직(무한 스크롤 등)을 추상화하여 `SearchResultPanel.tsx`와 같은 컴포넌트의 코드를 간결하게 만듭니다. <br> - **`useHydrated`**: 서버-클라이언트 렌더링 불일치(Hydration 오류)를 방지하기 위해 컴포넌트가 클라이언트에서 완전히 하이드레이션되었는지 여부를 추적합니다. |
 | **`src/types`** | **글로벌 타입 정의**: 애플리케이션 전반에서 사용되는 TypeScript 인터페이스, Enum 등 공통 타입 정의를 관리합니다. |
 | **`src/constants`** | **전역 상수 관리**: API 엔드포인트, 설정 값, 테마 색상 등 애플리케이션 전반에서 사용되는 변경되지 않는 값들을 중앙에서 관리합니다. |
 
@@ -129,7 +129,7 @@ export function HomePageClient({ initialSkillCategories }: Props) {
 
 ---
 
-**최종 수정일:** 2025-12-30
+**최종 수정일:** 2026-01-06
 **주요 변경사항:**
 - Server Components 아키텍처 섹션 추가
 - 디렉토리 구조에 `lib/server/` 및 `app/_components/` 추가

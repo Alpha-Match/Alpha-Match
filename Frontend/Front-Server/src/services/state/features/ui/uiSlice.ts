@@ -3,9 +3,14 @@ import { UserMode } from '../../../../types';
 
 type PageViewMode = 'dashboard' | 'results' | 'detail';
 
-export interface ModeSpecificUiState {
+export interface HistoryEntry {
   pageViewMode: PageViewMode;
   selectedMatchId: string | null;
+}
+
+export interface ModeSpecificUiState {
+  history: HistoryEntry[];
+  currentIndex: number;
 }
 
 interface UiState {
@@ -19,8 +24,8 @@ interface UiState {
 }
 
 const initialModeSpecificUiState: ModeSpecificUiState = {
-  pageViewMode: 'dashboard',
-  selectedMatchId: null,
+  history: [{ pageViewMode: 'dashboard', selectedMatchId: null }],
+  currentIndex: 0,
 };
 
 const initialState: UiState = {
@@ -30,7 +35,11 @@ const initialState: UiState = {
   activeTooltipId: null,
   userMode: UserMode.CANDIDATE, // Default mode
   [UserMode.CANDIDATE]: { ...initialModeSpecificUiState },
-  [UserMode.RECRUITER]: { ...initialModeSpecificUiState },
+  [UserMode.RECRUITER]: { 
+    ...initialModeSpecificUiState,
+    history: [{ pageViewMode: 'dashboard', selectedMatchId: null }],
+    currentIndex: 0,
+  },
 };
 
 const uiSlice = createSlice({
@@ -45,9 +54,8 @@ const uiSlice = createSlice({
     },
     resetView(state, action: PayloadAction<UserMode>) {
       // Resets view state for a specific user mode
-      state.viewResetCounter += 1; // Global counter still increments for debugging/tracking
-      state[action.payload].pageViewMode = 'dashboard';
-      state[action.payload].selectedMatchId = null;
+      state.viewResetCounter += 1;
+      state[action.payload] = { ...initialModeSpecificUiState };
     },
     setActiveTooltip(state, action: PayloadAction<string | null>) {
       state.activeTooltipId = action.payload;
@@ -55,11 +63,23 @@ const uiSlice = createSlice({
     setUserMode(state, action: PayloadAction<UserMode>) {
       state.userMode = action.payload;
     },
-    setPageViewMode(state, action: PayloadAction<{ userMode: UserMode; pageViewMode: PageViewMode }>) {
-        state[action.payload.userMode].pageViewMode = action.payload.pageViewMode;
+    pushHistory(state, action: PayloadAction<{ userMode: UserMode; view: HistoryEntry }>) {
+      const { userMode, view } = action.payload;
+      const modeState = state[userMode];
+      
+      // If we navigate forward from a past state, trim the future history
+      const newHistory = modeState.history.slice(0, modeState.currentIndex + 1);
+      
+      newHistory.push(view);
+      modeState.history = newHistory;
+      modeState.currentIndex = newHistory.length - 1;
     },
-    setSelectedMatchId(state, action: PayloadAction<{ userMode: UserMode; selectedMatchId: string | null }>) {
-        state[action.payload.userMode].selectedMatchId = action.payload.selectedMatchId;
+    navigateBack(state, action: PayloadAction<{ userMode: UserMode }>) {
+        const { userMode } = action.payload;
+        const modeState = state[userMode];
+        if (modeState.currentIndex > 0) {
+            modeState.currentIndex -= 1;
+        }
     }
   },
 });
@@ -70,8 +90,8 @@ export const {
     resetView, 
     setActiveTooltip, 
     setUserMode,
-    setPageViewMode,
-    setSelectedMatchId
+    pushHistory,
+    navigateBack
 } = uiSlice.actions;
 export default uiSlice.reducer;
 
