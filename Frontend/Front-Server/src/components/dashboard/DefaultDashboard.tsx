@@ -1,36 +1,40 @@
 // Frontend/Front-Server/src/components/dashboard/DefaultDashboard.tsx
-/**
- * @file DefaultDashboard.tsx
- * @description 검색 실행 전 표시되는 기본 대시보드 컨테이너 컴포넌트.
- *              재사용 가능한 자식 컴포넌트(PieChart, Treemap)에 데이터와 스타일을 전달합니다.
- *              `useSuspenseQuery`를 사용하여 데이터 로딩을 선언적으로 처리합니다.
- *              운영체제: Windows
- */
 import React from 'react';
 import chroma from 'chroma-js';
 import { useAppSelector } from '../../services/state/hooks';
-import { UserMode, DashboardData, DashboardVars } from '../../types';
+import { UserMode } from '../../types';
 import { RECRUITER_THEME_COLORS, CANDIDATE_THEME_COLORS } from '../../constants';
 import CategoryPieChart from './CategoryPieChart';
 import GenericTreemap from './GenericTreemap';
 import BaseTooltip from '../common/BaseTooltip';
 import SkillIcon from '../common/SkillIcon';
-import { useSuspenseQuery } from '@apollo/client/react';
-import { GET_DASHBOARD_DATA } from '../../services/api/queries/dashboard';
+import { Skeleton } from '../common/Skeleton';
 
 export default function DefaultDashboard() {
     const userMode = useAppSelector((state) => state.ui.userMode);
-    
-    // useSuspenseQuery는 data를 직접 반환하거나, 로딩 중일 때 suspense, 에러 시 throw합니다.
-    const { data } = useSuspenseQuery<DashboardData, DashboardVars>(GET_DASHBOARD_DATA, {
-        variables: { userMode: userMode },
-    });
+    const dashboardData = useAppSelector((state) => state.search[userMode].dashboardData);
 
     const themeColors = userMode === UserMode.RECRUITER
         ? RECRUITER_THEME_COLORS
         : CANDIDATE_THEME_COLORS;
-
-    const dashboardData = data?.dashboardData || [];
+        
+    // 데이터가 아직 Redux에 의해 로드되지 않았을 수 있습니다.
+    if (!dashboardData) {
+        return (
+            <div className="p-6 h-full">
+                <Skeleton className="h-24 mb-8" />
+                <Skeleton className="h-12 w-1/2 my-4" />
+                <div className="space-y-8">
+                    <Skeleton className="h-64" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                        <Skeleton className="h-64" />
+                        <Skeleton className="h-64" />
+                        <Skeleton className="h-64" />
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     const sortedCategoryTotals = dashboardData
         .map(cat => ({
@@ -42,7 +46,7 @@ export default function DefaultDashboard() {
     const baseColor = themeColors[0];
     const categoryColorScale = chroma.scale([baseColor, chroma(baseColor).brighten(2)])
                                      .domain([0, sortedCategoryTotals.length - 1]);
-
+    
     return (
         <div className="p-6 h-full text-text-primary animate-fade-in">
             {/* 상단 안내 패널 */}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { InputPanelHeader } from './InputPanelHeader';
-import { ExperienceSelector } from './ExperienceSelector';
+// import { ExperienceSelector } from './ExperienceSelector'; // Commented out - not used in current version
 import { SkillSelector } from './SkillSelector';
 import { SearchButton } from './SearchButton';
 
@@ -20,7 +20,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
       {/* Scrollable Form Content - Contains individual selector panels */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar"> {/* Adjusted space-y */}
         <SkillSelector />
-        <ExperienceSelector />
+        {/* <ExperienceSelector /> */} {/* Commented out - experience filter not used */}
       </div>
 
       {/* Footer Action */}

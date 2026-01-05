@@ -1,6 +1,6 @@
-// Frontend/Front-Server/src/components/search/ResultCard.tsx
+// Frontend/Front-Server/src/components/search/ResultList.tsx
 /**
- * @file ResultCard.tsx
+ * @file ResultList.tsx
  * @description 단일 검색 결과(채용 공고 또는 지원자)를 표시하는 카드 컴포넌트
  *              범용적인 MatchItem 인터페이스를 기반으로 데이터를 받아 렌더링합니다.
  *              클릭 시 상세 보기로 이동합니다.
@@ -10,13 +10,13 @@ import React from 'react';
 import { MatchItem } from '../../types';
 import chroma from 'chroma-js';
 
-interface ResultCardProps {
+interface ResultListProps {
   match: MatchItem;
   onSelect: () => void;
   activeColor: string;
 }
 
-const ResultCard: React.FC<ResultCardProps> = ({ match, onSelect, activeColor }) => {
+const ResultList: React.FC<ResultListProps> = ({ match, onSelect, activeColor }) => {
   const scoreBgColor = chroma(activeColor).alpha(0.2).css();
   const scoreTextColor = chroma(activeColor).brighten(1).hex();
 
@@ -60,4 +60,4 @@ const ResultCard: React.FC<ResultCardProps> = ({ match, onSelect, activeColor })
   );
 };
 
-export default ResultCard;
+export default ResultList;

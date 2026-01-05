@@ -9,11 +9,11 @@ import { CheckCircle2 } from 'lucide-react';
 export const ExperienceSelector: React.FC = () => {
   const dispatch = useAppDispatch();
   const mode = useAppSelector((state) => state.ui.userMode);
-  const selectedExperience = useAppSelector((state) => state.search.selectedExperience);
+  const { selectedExperience } = useAppSelector((state) => state.search[mode]);
   const isCandidate = mode === UserMode.CANDIDATE;
 
   const handleExperienceChange = (exp: string) => {
-    dispatch(setExperience(exp));
+    dispatch(setExperience({ userMode: mode, experience: exp }));
   };
 
   return (

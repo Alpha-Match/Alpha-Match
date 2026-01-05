@@ -1,12 +1,14 @@
 'use client';
 
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { ExperienceLevel, UserMode } from '../../../../types'; // UserMode 임포트
+import { ExperienceLevel, UserMode, MatchItem, DashboardCategory } from '../../../../types';
 
 export interface ModeSpecificSearchState {
   selectedSkills: string[];
   selectedExperience: string | null;
-  isInitial: boolean; // 해당 모드에서 검색이 수행되었는지 여부
+  isInitial: boolean;
+  matches: MatchItem[];
+  dashboardData: DashboardCategory[] | null;
 }
 
 export interface SearchState {
@@ -18,8 +20,10 @@ export interface SearchState {
 
 const initialModeSpecificState: ModeSpecificSearchState = {
   selectedSkills: [],
-  selectedExperience: ExperienceLevel.MID, // 기본 경력 수준
+  selectedExperience: ExperienceLevel.MID,
   isInitial: true,
+  matches: [],
+  dashboardData: null,
 };
 
 const initialState: SearchState = {
@@ -50,8 +54,16 @@ export const searchSlice = createSlice({
     setSearchPerformed: (state, action: PayloadAction<UserMode>) => {
       state[action.payload].isInitial = false;
     },
+    setMatches: (state, action: PayloadAction<{ userMode: UserMode; matches: MatchItem[] }>) => {
+      const { userMode, matches } = action.payload;
+      state[userMode].matches = matches;
+    },
+    setDashboardData: (state, action: PayloadAction<{ userMode: UserMode; data: DashboardCategory[] }>) => {
+      const { userMode, data } = action.payload;
+      state[userMode].dashboardData = data;
+    },
     resetSearch: (state, action: PayloadAction<UserMode>) => {
-        state[action.payload] = { ...initialModeSpecificState }; // 현재 모드의 상태만 리셋
+        state[action.payload] = { ...initialModeSpecificState, dashboardData: state[action.payload].dashboardData };
     },
     setSkillCategories: (state, action: PayloadAction<string[]>) => {
       state.skillCategories = action.payload;
@@ -67,14 +79,15 @@ export const searchSlice = createSlice({
 // 이 슬라이스로 추상화하여 애플리케이션의 비즈니스 로직을 중앙에서 관리할 수 있습니다.
 // 이를 위해서는 `runSearch` 함수를 전달하거나 지연 쿼리가 호출되는 위치를 리팩토링해야 합니다.
 
-export const { 
-  toggleSkill, 
-  setExperience, 
-  setSearchPerformed, 
+export const {
+  toggleSkill,
+  setExperience,
+  setSearchPerformed,
+  setMatches,
+  setDashboardData,
   resetSearch,
   setSkillCategories,
 } = searchSlice.actions;
 
 export default searchSlice.reducer;
-
 

@@ -14,8 +14,8 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
   matches,
   vectorData,
 }) => {
-  const { isInitial } = useAppSelector((state) => state.search);
   const mode = useAppSelector((state) => state.ui.userMode);
+  const { isInitial } = useAppSelector((state) => state.search[mode]);
   const isCandidate = mode === UserMode.CANDIDATE;
   
   const themeColors = isCandidate ? CANDIDATE_THEME_COLORS : RECRUITER_THEME_COLORS;
@@ -129,10 +129,6 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
                 </div>
               </div>
 
-              <p className="text-text-secondary text-sm mt-3 leading-relaxed">
-                {item.description}
-              </p>
-
               {/* 태그 */}
               <div className="flex flex-wrap gap-2 mt-4">
                 {item.skills.map((tag: string, idx: number) => (
@@ -144,14 +140,9 @@ export const VisualizationPanel: React.FC<VisualizationPanelProps> = ({
 
               {/* 푸터 메타 */}
               <div className="flex items-center gap-4 mt-4 pt-3 border-t border-border text-xs text-text-tertiary">
-                {item.location && (
+                {item.experience !== null && item.experience !== undefined && (
                   <span className="flex items-center gap-1">
-                    <MapPin className="w-3 h-3" /> {item.location}
-                  </span>
-                )}
-                {item.salary && (
-                  <span className="flex items-center gap-1">
-                    <DollarSign className="w-3 h-3" /> {item.salary}
+                    <User className="w-3 h-3" /> {item.experience}년 이상
                   </span>
                 )}
                 <div className="ml-auto flex items-center gap-1 font-semibold text-text-secondary group-hover:text-primary">

@@ -2,11 +2,10 @@
 import React, { ReactNode, useEffect } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { LoadingSpinner } from './LoadingSpinner';
-import { ApolloError } from '@apollo/client';
 
 interface QueryBoundaryProps {
   loading?: boolean;
-  error?: ApolloError | Error | null;
+  error?: Error | null;
   children: React.ReactNode | (() => React.ReactNode);
   loadingComponent?: ReactNode;
   errorComponent?: ReactNode;
@@ -18,7 +17,7 @@ const DefaultLoadingComponent = () => (
   </div>
 );
 
-const DefaultErrorComponent = ({ error }: { error: ApolloError | Error }) => {
+const DefaultErrorComponent = ({ error }: { error: Error }) => {
   useEffect(() => {
     // AbortError는 일반적으로 다른 요청에 의해 취소된 경우이므로,
     // 사용자에게 심각한 오류로 보이지 않도록 콘솔에만 기록합니다.

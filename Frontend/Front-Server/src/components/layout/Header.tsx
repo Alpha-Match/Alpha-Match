@@ -17,7 +17,6 @@ export const Header: React.FC = () => {
 
   const handleTabChange = (mode: UserMode) => {
     dispatch(setUserMode(mode));
-    dispatch(resetSearch(mode));
   };
 
   const handleNavigateHome = () => {

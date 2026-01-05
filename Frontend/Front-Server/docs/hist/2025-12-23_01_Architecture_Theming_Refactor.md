@@ -15,7 +15,7 @@
         - `common/`: `BaseTooltip`, `SkillIcon` 등 앱 전반에서 사용되는 범용 컴포넌트.
         - `layout/`: `Header`, `ThemeManager` 등 페이지 레이아웃을 구성하는 컴포넌트.
         - `dashboard/`: `DefaultDashboard`, `GenericTreemap`, `CategoryPieChart` 등 대시보드 화면 관련 컴포넌트.
-        - `search/`: `SearchResultPanel`, `ResultCard`, `MatchDetailPanel` 등 검색 결과 관련 컴포넌트.
+        - `search/`: `SearchResultPanel`, `ResultList`, `MatchDetailPanel` 등 검색 결과 관련 컴포넌트.
 - **컴포넌트 일반화 (Generalization)**:
     - `SkillTooltip` -> `common/BaseTooltip`: `Skill`이라는 특정 도메인에서 분리하여, `icon`, `title`, `value`를 props로 받는 범용 툴팁으로 재작성했습니다.
     - `SkillTreemap` -> `dashboard/GenericTreemap`: `renderCellContent`와 `renderTooltipContent`라는 렌더 프롭(render props)을 사용하여, 데이터 시각화 로직과 콘텐츠 렌더링 로직을 완전히 분리했습니다. 이를 통해 어떤 데이터 구조든 유연하게 렌더링할 수 있는 재사용성 높은 컴포넌트가 되었습니다.
@@ -31,7 +31,7 @@
 ### 다. 동적 테마 시스템 적용
 
 - **하드코딩된 색상 제거**:
-    - `Header`, `InputPanel`, `ResultCard` 등 애플리케이션 전반에 걸쳐 하드코딩되어 있던 색상 관련 Tailwind 클래스들을 모두 제거했습니다.
+    - `Header`, `InputPanel`, `ResultList` 등 애플리케이션 전반에 걸쳐 하드코딩되어 있던 색상 관련 Tailwind 클래스들을 모두 제거했습니다.
 - **테마 상수 기반 동적 스타일링**:
     - `index.ts`에 정의된 `CANDIDATE_THEME_COLORS`와 `RECRUITER_THEME_COLORS`를 기반으로 동적으로 색상을 적용하도록 리팩토링했습니다.
     - Tailwind 클래스로 동적 색상 주입이 어려운 경우, 인라인 `style` 속성과 `chroma.js`를 활용하여 그라데이션, 투명도, 그림자 색상까지 테마에 맞게 동적으로 생성하도록 구현했습니다.
