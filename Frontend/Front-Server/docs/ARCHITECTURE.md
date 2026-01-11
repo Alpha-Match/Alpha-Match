@@ -67,6 +67,13 @@
 
 이러한 3-Layer 아키텍처(View - ViewModel - Data)는 각 계층의 책임을 명확히 분리하여 코드의 복잡성을 줄이고 상태의 영구성을 보장합니다.
 
+#### 데이터 페칭 책임 (Data Fetching Responsibilities)
+
+-   **페이지 컨테이너 컴포넌트 (`HomePage.client.tsx` 등):** 앱의 핵심적인 상태(e.g., `matches` 리스트)를 책임집니다. `useSearchMatches`와 같은 커스텀 훅을 통해 데이터를 가져오고, 그 결과를 Redux에 저장하며, 여러 하위 컴포넌트에 props로 전달하는 오케스트레이터(Orchestrator) 역할을 합니다.
+-   **분석/통계 위젯 컴포넌트 (`SearchResultPanel.tsx` 및 그 하위):** 페이지의 핵심 데이터와는 별개인, 부가적인 분석/통계 데이터를 표시하는 컴포넌트는 자체적으로 데이터를 가져오는 것이 권장됩니다.
+    -   **예시:** `SearchResultPanel`은 `GET_SEARCH_STATISTICS` 쿼리를 직접 호출하여 검색 결과의 전체 개수(`totalCount`)를 가져오고, 이를 자신과 자식 컴포넌트(`SearchResultStats`)에서 사용합니다.
+    -   **장점:** 이 패턴은 컴포넌트의 독립성과 재사용성을 높이고, 상위 컴포넌트가 모든 데이터를 가져와 전달해야 하는 부담(props drilling)을 줄여줍니다.
+
 ### 다. Next.js Server Components 아키텍처
 
 본 프로젝트는 **Next.js App Router의 Server Components**를 적극 활용하여 초기 로딩 성능을 최적화합니다.
@@ -129,8 +136,9 @@ export function HomePageClient({ initialSkillCategories }: Props) {
 
 ---
 
-**최종 수정일:** 2026-01-06
+**최종 수정일:** 2026-01-08
 **주요 변경사항:**
+- 데이터 페칭 책임 분리 패턴 명시 (컨테이너 컴포넌트 vs 위젯 컴포넌트)
 - Server Components 아키텍처 섹션 추가
 - 디렉토리 구조에 `lib/server/` 및 `app/_components/` 추가
 - 도메인별 state 분리 (CANDIDATE/RECRUITER) 명시

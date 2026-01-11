@@ -13,8 +13,6 @@
 ---
 
 ## 🗺️ 핵심 문서 경로
-
-## 🗺️ 핵심 문서 경로
 - **아키텍처 및 컨벤션**: `README.md` (이 디렉토리)
 - **아키텍처 가이드**: `docs/ARCHITECTURE.md`
 - **캐싱 전략**: `docs/CACHING_STRATEGY.md`
@@ -93,6 +91,10 @@
   - `uiSlice.history`: 페이지 뷰(`pageViewMode`, `selectedMatchId`)의 배열을 저장하여, 모드별 탐색 기록(뒤로 가기)을 관리합니다.
 - **Multiple Back Stacks**: 각 UserMode(CANDIDATE/RECRUITER)가 독립적인 상태 스택(검색 조건, 검색 결과, 탐색 기록)을 유지합니다.
 
+**데이터 페칭 책임 (Data Fetching Responsibilities):**
+- **페이지 레벨 데이터 (Page-level Data):** `HomePage.client.tsx`와 같은 최상위 컨테이너 컴포넌트가 Redux와 상호작용하며 페이지의 핵심 데이터(`matches`, `searchedSkills` 등)를 관리하고 하위 컴포넌트에 props로 전달합니다.
+- **컴포넌트 레벨 통계/분석 데이터 (Component-level Stats/Analysis Data):** `SearchResultPanel.tsx` 이나 그 하위의 `TopSkills`, `CategoryPieChart`와 같은 분석 컴포넌트는 **자체적으로 필요한 데이터를 GraphQL 쿼리(`useQuery`)를 통해 직접 가져올 수 있습니다.** 이는 컴포넌트의 독립성과 재사용성을 높이고, props drilling을 방지하는 유효한 패턴입니다. 예를 들어, 검색 결과의 전체 개수(`totalCount`)는 `SearchResultPanel`이 직접 `GET_SEARCH_STATISTICS` 쿼리로 가져옵니다.
+
 **주의사항:**
 - Hook의 useState로 matches를 관리하지 말 것 (컴포넌트 재렌더링 시 손실)
 - 반드시 `dispatch(setMatches({ userMode, matches }))`로 Redux에 저장
@@ -133,12 +135,20 @@
   - `2026-01-06_01_Improvement_Plan_Implementation.md` - 개선 계획 구현 (히스토리 스택, UI 개선 등)
   - `2026-01-06_02_SkillSelector_BugFix.md` - `SkillSelector.tsx`의 `undefined` 오류 수정 및 문서 업데이트
   - `2026-01-06_03_Refactor_CustomHooks.md` - 리팩토링: 커스텀 훅 분리를 통한 클린 아키텍처 강화
+  - `2026-01-06_04_SkillSelector_PieChart_Improvements.md` - 프론트엔드 UI 개선: SkillSelector 토글 및 CategoryPieChart 레이블 표시
+  - `2026-01-06_05_CategoryPieChart_Label_Visibility_Fix.md` - `CategoryPieChart` 레이블 가시성 개선
+  - `2026-01-06_06_SkillSelector_DynamicHeight_Sorting_Fix.md` - `SkillSelector.tsx` 동적 높이, 정렬 및 전체 스킬 가시성 개선
 - **개선 계획**: `docs/Frontend_Improvement_Plan.md` - 향후 개선 로드맵
 
 ---
 
-**최종 수정일:** 2026-01-06
+**최종 수정일:** 2026-01-08
 **주요 업데이트:**
+- **검색 결과 통계 UX 개선**: `SearchResultPanel`에서 전체 검색 결과 수를 표시하도록 수정. `GET_TOP_SKILLS_IN_SEARCH` 쿼리를 `GET_SEARCH_STATISTICS`로 리팩토링하고 `totalCount`를 포함하도록 백엔드 요구사항 정의.
+- **`SkillSelector.tsx` 동적 높이, 정렬 및 전체 스킬 가시성 개선**: 토글 시 스킬 목록 잘림 문제 해결, 카테고리별 정렬, 모든 스킬 선택 가능하도록 개선
+- **`CategoryPieChart` 레이블 가시성 개선**: 점유율과 관계없이 모든 카테고리의 레이블이 차트 내에 표시되도록 수정
+- **`SkillSelector` 카테고리 목록 토글 기능**: 각 기술 스택 카테고리 목록을 확장/축소할 수 있도록 UI 개선
+- **`CategoryPieChart` 그래프 내 레이블 표시**: 파이 차트의 각 조각에 카테고리 이름과 백분율을 직접 표시하여 직관성 향상
 - **클린 아키텍처 리팩토링**: `useAppNavigation`과 `useIntersectionObserver` 커스텀 훅을 통해 컴포넌트 책임 분리 및 재사용성 강화
 - **`SkillSelector.tsx` 오류 수정**: `category.skills`가 `undefined`일 경우 `filter` 호출 시 발생하는 런타임 오류 해결
 - **히스토리 스택 구현**: `uiSlice`를 리팩토링하여 각 사용자 모드별 탐색 기록(뒤로 가기) 관리
