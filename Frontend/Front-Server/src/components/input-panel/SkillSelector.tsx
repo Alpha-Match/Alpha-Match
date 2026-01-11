@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '../../services/state/hooks';
 import { toggleSkill, resetSearch } from '../../services/state/features/search/searchSlice';
 import { Code, Search, X } from 'lucide-react';
 import { ClearButton } from '../../components/common/ClearButton';
+import { SkillCategoryItem } from './SkillCategoryItem'; // Import the new component
 
 export const SkillSelector: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -10,20 +11,42 @@ export const SkillSelector: React.FC = () => {
   const { skillCategories, skillsLoaded } = useAppSelector((state) => state.search);
   const { selectedSkills } = useAppSelector((state) => state.search[mode]);
 
-  console.log('[Debug] SkillSelector rendering. skillsLoaded:', skillsLoaded, 'skillCategories count:', skillCategories.length);
-
   const [searchTerm, setSearchTerm] = useState('');
+  const [openCategories, setOpenCategories] = useState<Set<string>>(() => new Set(
+    skillCategories.map(cat => cat.category)
+  ));
+
+  useEffect(() => {
+    if (skillCategories.length > 0) {
+      setOpenCategories(prev => {
+        const newSet = new Set(prev);
+        skillCategories.forEach(cat => newSet.add(cat.category));
+        return newSet;
+      });
+    }
+  }, [skillCategories]);
 
   const handleSkillToggle = (skill: string) => {
     dispatch(toggleSkill({ userMode: mode, skill }));
   };
   
   const handleClearSkills = () => {
-    dispatch(resetSearch(mode)); // 현재 모드의 스킬만 리셋
-    setSearchTerm(''); // 로컬 검색어도 지움
+    dispatch(resetSearch(mode));
+    setSearchTerm('');
   };
 
-  // 검색어로 스킬 필터링
+  const handleCategoryToggle = (categoryName: string) => {
+    setOpenCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryName)) {
+        newSet.delete(categoryName);
+      } else {
+        newSet.add(categoryName);
+      }
+      return newSet;
+    });
+  };
+
   const filteredCategories = skillCategories
     .map(category => ({
       ...category,
@@ -31,7 +54,8 @@ export const SkillSelector: React.FC = () => {
         skill.toLowerCase().includes(searchTerm.toLowerCase())
       ),
     }))
-    .filter(category => category.skills.length > 0);
+    .filter(category => category.skills.length > 0 || category.category.toLowerCase().includes(searchTerm.toLowerCase()))
+    .sort((a, b) => a.category.localeCompare(b.category));
 
   return (
     <section className="bg-panel-main p-4 rounded-lg shadow-sm border border-border space-y-3">
@@ -43,7 +67,6 @@ export const SkillSelector: React.FC = () => {
         <ClearButton onClear={handleClearSkills} label="초기화" />
       </div>
       
-      {/* 검색 입력 필드 */}
       <div className="relative pb-3 border-b border-border/30">
         <Search className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
         <input
@@ -55,7 +78,6 @@ export const SkillSelector: React.FC = () => {
         />
       </div>
 
-      {/* 선택된 기술 스택 표시 */}
       <div className={`flex flex-wrap gap-2 overflow-hidden transition-all duration-300 ease-in-out py-3 border-b border-border/30 ${
         selectedSkills.length > 0 ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 p-0 border-transparent'
       }`}>
@@ -76,7 +98,7 @@ export const SkillSelector: React.FC = () => {
           ))}
         </div>
 
-      <div className="bg-transparent h-96 overflow-y-auto custom-scrollbar py-3">
+      <div className="bg-transparent py-3">
         <div className="grid grid-cols-1 gap-1">
           {!skillsLoaded && (
             <div className="text-center text-text-tertiary text-sm py-4">기술 스택 로딩 중...</div>
@@ -85,36 +107,14 @@ export const SkillSelector: React.FC = () => {
             <div className="text-center text-text-tertiary text-sm py-4">일치하는 기술 스택이 없습니다.</div>
           )}
           {skillsLoaded && filteredCategories.map((category) => (
-            <div key={category.category}>
-              <h3 className="text-xs font-bold text-text-tertiary uppercase tracking-wider px-2 py-3">
-                {category.category}
-              </h3>
-              <div className="grid grid-cols-1 gap-1">
-                {category.skills.map((skill, idx) => {
-                  const isSelected = selectedSkills.includes(skill);
-                  return (
-                    <button
-                      key={`${skill}-${idx}`}
-                      onClick={() => handleSkillToggle(skill)}
-                      className={`group flex items-center w-full p-2 rounded-md transition-colors duration-150 ${
-                        isSelected ? 'bg-primary/10 border border-primary' : 'border border-transparent hover:bg-panel-main'
-                      }`}
-                    >
-                      <div 
-                        className={`w-5 h-5 rounded border-2 flex items-center justify-center mr-3 transition-colors ${
-                          isSelected ? 'bg-primary border-primary' : 'border-text-tertiary group-hover:border-primary'
-                        }`}
-                      >
-                        {isSelected && <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
-                      </div>
-                      <span className={`text-sm ${isSelected ? 'font-semibold text-primary' : 'text-text-secondary group-hover:text-text-primary'}`}>
-                        {skill}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            <SkillCategoryItem
+              key={category.category}
+              category={category}
+              isOpen={openCategories.has(category.category)}
+              onToggle={handleCategoryToggle}
+              selectedSkills={selectedSkills}
+              searchTerm={searchTerm} // Pass searchTerm down
+            />
           ))}
         </div>
       </div>

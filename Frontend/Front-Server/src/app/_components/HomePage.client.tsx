@@ -108,6 +108,7 @@ export function HomePageClient({ initialSkillCategories, initialDashboardData }:
             loadMore={loadMore}
             hasMore={hasMore}
             searchedSkills={searchedSkills}
+            skillCategories={initialSkillCategories}
           />
         </div>
       </main>
