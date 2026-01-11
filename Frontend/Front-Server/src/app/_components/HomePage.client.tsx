@@ -87,7 +87,7 @@ export function HomePageClient({ initialSkillCategories, initialDashboardData }:
   const renderDesktopLayout = () => {
     if (pageViewMode === 'dashboard') {
       return (
-        <main className="flex-1 flex flex-col overflow-hidden p-6">
+        <main className="flex-1 flex flex-col overflow-y-auto custom-scrollbar p-6">
             <DefaultDashboard userMode={userMode} activeColor={activeColor} />
             <div className="absolute bottom-10 right-10">
                 <button
