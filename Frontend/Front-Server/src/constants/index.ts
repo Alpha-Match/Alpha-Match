@@ -1,6 +1,5 @@
-import { MOCK_TECH_STACKS, MOCK_EXPERIENCE_LEVELS } from "./mockData";
+import { MOCK_EXPERIENCE_LEVELS } from "./mockData";
 
-export const TECH_STACKS_DEMO = MOCK_TECH_STACKS;
 export const EXPERIENCE_LEVELS = MOCK_EXPERIENCE_LEVELS;
 
 export const CANDIDATE_THEME_COLORS = [

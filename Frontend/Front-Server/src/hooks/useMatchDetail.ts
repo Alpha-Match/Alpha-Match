@@ -41,9 +41,16 @@ export const useMatchDetail = () => {
         // RECRUITER 모드: 후보자 상세 조회
         await getCandidateDetail({ variables: { id } });
       }
-    } catch (error) {
-      console.error('Failed to fetch detail:', error);
-      // Error는 Apollo Error Link에서 처리됨
+    } catch (error: any) { // Type 'any' for error to access 'name' property
+      if (error.name === 'AbortError') {
+        // This is an expected error when a request is cancelled (e.g., component unmounts).
+        // Log it as info or debug, or just return silently.
+        console.info('Fetch detail aborted:', error.message);
+      } else {
+        // For other unexpected errors, log as an error.
+        console.error('Failed to fetch detail:', error);
+      }
+      // Error is also exposed via recruitError or candidateError from useLazyQuery
     }
   };
 

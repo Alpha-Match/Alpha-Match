@@ -23,6 +23,7 @@ interface SearchMatchesVars {
   experience: string;
   limit: number;
   offset: number;
+  sortBy?: string;
 }
 
 export const useSearchMatches = () => {
@@ -34,48 +35,55 @@ export const useSearchMatches = () => {
     mode: UserMode;
     skills: string[];
     experience: string;
+    sortBy?: string;
   } | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [isSearching, setIsSearching] = useState(false); // 즉각적인 로딩 상태를 위한 로컬 상태
 
-  // Throttle ref for loadMore to prevent rapid consecutive requests
   const lastLoadMoreTime = useRef<number>(0);
 
-  // useQuery: 검색 파라미터가 있을 때만 실행
-  const { data, loading, fetchMore, error: queryError, networkStatus } = useQuery<SearchMatchesData, SearchMatchesVars>(
+  const getSortByString = useCallback((mode: UserMode): string => {
+    let sortString = 'score DESC';
+    if (mode === UserMode.CANDIDATE) {
+      sortString += ', publishedAt DESC';
+    } else if (mode === UserMode.RECRUITER) {
+      sortString += ', createdAt DESC';
+    }
+    return sortString;
+  }, []);
+
+  const { data, loading: apolloLoading, fetchMore, error: queryError, networkStatus } = useQuery<SearchMatchesData, SearchMatchesVars>(
     SEARCH_MATCHES_QUERY,
     {
-      skip: !searchParams, // 검색 파라미터 없으면 실행 안 함
+      skip: !searchParams,
       variables: {
         mode: searchParams?.mode || UserMode.CANDIDATE,
         skills: searchParams?.skills || [],
         experience: searchParams?.experience || '',
         limit: PAGE_SIZE,
         offset: 0,
+        sortBy: searchParams?.sortBy || getSortByString(currentUiMode),
       },
-      notifyOnNetworkStatusChange: true, // fetchMore 시 loading 상태 업데이트
+      notifyOnNetworkStatusChange: true,
     }
   );
 
-  // 초기 로딩과 fetchMore 로딩 구분
-  const isInitialLoading = networkStatus === NetworkStatus.loading && matches.length === 0;
+  const isInitialLoading = (isSearching || (apolloLoading && networkStatus === NetworkStatus.loading)) && matches.length === 0;
   const isFetchingMore = networkStatus === NetworkStatus.fetchMore;
 
-  // Handle query completion
   useEffect(() => {
     if (data && data.searchMatches && searchParams) {
+      setIsSearching(false); // 데이터 도착 시 로딩 상태 해제
       console.log('[Search] Query completed:', data);
       console.log('[Search] Matches count:', data.searchMatches.matches.length);
 
-      // Redux ViewModel에 저장 (첫 검색)
-      console.log('[Search] Dispatching setMatches for mode:', searchParams.mode, 'with', data.searchMatches.matches.length, 'matches');
       dispatch(
         setMatches({
           userMode: searchParams.mode,
           matches: data.searchMatches.matches,
         })
       );
-      // 검색에 사용된 스킬을 Redux에 저장
       dispatch(
         setSearchedSkills({
           userMode: searchParams.mode,
@@ -83,7 +91,6 @@ export const useSearchMatches = () => {
         })
       );
 
-      // 더 이상 데이터가 없으면 hasMore = false
       if (data.searchMatches.matches.length < PAGE_SIZE) {
         setHasMore(false);
       } else {
@@ -92,9 +99,9 @@ export const useSearchMatches = () => {
     }
   }, [data, searchParams, dispatch]);
 
-  // Handle query error
   useEffect(() => {
     if (queryError) {
+      setIsSearching(false); // 에러 발생 시 로딩 상태 해제
       setError(queryError);
       console.error('[Search] Query error:', queryError);
 
@@ -113,7 +120,6 @@ export const useSearchMatches = () => {
         })
       );
 
-      // 에러 시 빈 배열로 초기화
       if (searchParams) {
         dispatch(
           setMatches({
@@ -131,13 +137,11 @@ export const useSearchMatches = () => {
     }
   }, [queryError, searchParams, dispatch]);
 
-  // 첫 검색 실행
   const runSearch = useCallback(
-    async (mode: UserMode, skills?: (string | null)[], experience?: string | null) => {
+    async (mode: UserMode, skills?: (string | null)[], experience?: string | null, sortBy?: string) => {
       const sanitizedSkills = skills ? skills.filter((s): s is string => !!s) : [];
       const sanitizedExperience = experience || '';
 
-      // 유효성 검사
       if (sanitizedSkills.length === 0) {
         console.warn('[Search] No skills selected');
         document.dispatchEvent(
@@ -148,33 +152,33 @@ export const useSearchMatches = () => {
         return;
       }
 
-      // Sort skills for consistent backend caching
       const sortedSkills = [...sanitizedSkills].sort();
+      const effectiveSortBy = sortBy || getSortByString(mode);
 
       setError(null);
       setHasMore(true);
+      setIsSearching(true); // 검색 시작 시 즉시 로딩 상태로 설정
 
       console.log('[Search] Starting new search:', {
         mode,
         skills: sortedSkills,
         experience: sanitizedExperience,
+        sortBy: effectiveSortBy,
       });
 
-      // 검색 파라미터 설정 → useQuery 자동 실행
       setSearchParams({
         mode,
         skills: sortedSkills,
         experience: sanitizedExperience,
+        sortBy: effectiveSortBy,
       });
     },
-    [dispatch]
+    [dispatch, getSortByString]
   );
 
-  // 무한 스크롤: 다음 페이지 로드
   const loadMore = useCallback(async () => {
     if (!hasMore || isFetchingMore || !searchParams) return;
 
-    // Throttle: 이전 요청으로부터 최소 간격 유지
     const now = Date.now();
     const timeSinceLastLoad = now - lastLoadMoreTime.current;
     if (timeSinceLastLoad < LOAD_MORE_THROTTLE_MS) {
@@ -190,13 +194,13 @@ export const useSearchMatches = () => {
     try {
       const result = await fetchMore({
         variables: {
-          offset: currentLength, // 현재까지 로드된 개수
+          offset: currentLength,
+          sortBy: searchParams.sortBy || getSortByString(searchParams.mode),
         },
       });
 
       console.log('[Search] FetchMore result:', result);
 
-      // 더 이상 데이터가 없으면 hasMore = false
       const newMatches = result.data?.searchMatches?.matches || [];
       if (newMatches.length < PAGE_SIZE) {
         setHasMore(false);
@@ -205,15 +209,15 @@ export const useSearchMatches = () => {
       console.error('[Search] FetchMore error:', err);
       setError(err as Error);
     }
-  }, [hasMore, isFetchingMore, searchParams, matches.length, fetchMore]);
+  }, [hasMore, isFetchingMore, searchParams, matches.length, fetchMore, getSortByString]);
 
   return {
     runSearch,
     loadMore,
-    loading: isInitialLoading, // 초기 로딩만 전체 화면 로딩으로 처리
-    fetchingMore: isFetchingMore, // fetchMore 로딩은 하단 스피너로 처리
+    loading: isInitialLoading,
+    fetchingMore: isFetchingMore,
     error,
-    matches, // Redux에서 읽어온 현재 모드의 matches
+    matches,
     hasMore,
   };
 };

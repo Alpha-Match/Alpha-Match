@@ -17,7 +17,6 @@ interface UiState {
   isSidebarOpen: boolean;
   theme: 'light' | 'dark';
   viewResetCounter: number;
-  activeTooltipId: string | null;
   userMode: UserMode;
   [UserMode.CANDIDATE]: ModeSpecificUiState;
   [UserMode.RECRUITER]: ModeSpecificUiState;
@@ -32,7 +31,6 @@ const initialState: UiState = {
   isSidebarOpen: true,
   theme: 'dark',
   viewResetCounter: 0,
-  activeTooltipId: null,
   userMode: UserMode.CANDIDATE, // Default mode
   [UserMode.CANDIDATE]: { ...initialModeSpecificUiState },
   [UserMode.RECRUITER]: { 
@@ -56,9 +54,6 @@ const uiSlice = createSlice({
       // Resets view state for a specific user mode
       state.viewResetCounter += 1;
       state[action.payload] = { ...initialModeSpecificUiState };
-    },
-    setActiveTooltip(state, action: PayloadAction<string | null>) {
-      state.activeTooltipId = action.payload;
     },
     setUserMode(state, action: PayloadAction<UserMode>) {
       state.userMode = action.payload;
@@ -88,7 +83,6 @@ export const {
     toggleSidebar, 
     setTheme, 
     resetView, 
-    setActiveTooltip, 
     setUserMode,
     pushHistory,
     navigateBack
