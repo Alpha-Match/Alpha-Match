@@ -14,7 +14,7 @@ interface SkillIconProps {
   className?: string;
 }
 
-const SkillIcon: React.FC<SkillIconProps> = ({ skill, className = 'w-5 h-5' }) => {
+export const SkillIcon: React.FC<SkillIconProps> = ({ skill, className = 'w-5 h-5' }) => {
   // 스킬 이름을 소문자로 변환하여 아이콘 맵의 키와 일치시킵니다.
   const formattedSkillName = skill.toLowerCase();
   const iconData = SKILL_ICONS[formattedSkillName];
@@ -27,5 +27,3 @@ const SkillIcon: React.FC<SkillIconProps> = ({ skill, className = 'w-5 h-5' }) =
   // <IconComponent /> 대신 <img> 태그를 사용하여 아이콘의 src 경로를 참조합니다.
   return <img src={iconData.src} alt={`${skill} icon`} className={className} />;
 };
-
-export default SkillIcon;

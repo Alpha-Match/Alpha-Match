@@ -11,7 +11,7 @@ export interface BaseTooltipProps {
 /**
  * @description 재사용 가능한 스타일이 적용된 제네릭 툴팁 컨텐츠 컴포넌트
  */
-const BaseTooltip: React.FC<BaseTooltipProps> = ({ title, value, icon, color }) => (
+export const BaseTooltip: React.FC<BaseTooltipProps> = ({ title, value, icon, color }) => (
     <div
         className="text-white p-2 px-3 rounded-lg flex items-center gap-2.5 border shadow-lg"
         style={color ? { backgroundColor: color, borderColor: color } : {}}
@@ -25,5 +25,3 @@ const BaseTooltip: React.FC<BaseTooltipProps> = ({ title, value, icon, color }) 
         </div>
     </div>
 );
-
-export default BaseTooltip;

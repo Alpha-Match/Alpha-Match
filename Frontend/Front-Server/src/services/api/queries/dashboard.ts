@@ -11,3 +11,12 @@ export const GET_DASHBOARD_DATA = gql`
     }
   }
 `;
+
+export const GET_TOP_COMPANIES = gql`
+  query GetTopCompanies($limit: Int) {
+    topCompanies(limit: $limit) {
+      companyName
+      jobCount
+    }
+  }
+`;

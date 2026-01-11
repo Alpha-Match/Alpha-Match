@@ -54,7 +54,7 @@ const CategoryPieChart: React.FC<CategoryPieChartProps> = ({ skills, activeColor
   if (loading) {
     return (
       <div className="bg-panel-main p-4 rounded-lg border border-border/30 mb-6">
-        <h3 className="text-sm font-semibold mb-3 text-text-secondary">카테고리 분포</h3>
+        <h3 className="text-sm font-semibold mb-3 text-text-secondary">검색 스킬 카테고리 분포</h3>
         <div className="flex justify-center py-4">
           <LoadingSpinner size={24} color={activeColor} />
         </div>
@@ -78,7 +78,7 @@ const CategoryPieChart: React.FC<CategoryPieChartProps> = ({ skills, activeColor
 
   return (
     <div className="bg-panel-main p-4 rounded-lg border border-border/30 mb-6">
-      <h3 className="text-sm font-semibold mb-3 text-text-secondary">카테고리 분포</h3>
+      <h3 className="text-sm font-semibold mb-3 text-text-secondary">검색 스킬 카테고리 분포</h3>
 
       <div className="flex items-center gap-6">
         {/* SVG 원 그래프 */}

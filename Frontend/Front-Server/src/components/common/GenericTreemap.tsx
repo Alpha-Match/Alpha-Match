@@ -1,9 +1,7 @@
 // Frontend/Front-Server/src/components/dashboard/GenericTreemap.tsx
 import React, { useRef } from 'react';
 import { ResponsiveContainer, Treemap } from 'recharts';
-import Tippy from '@tippyjs/react';
-import { useAppDispatch, useAppSelector } from '../../services/state/hooks';
-import { setActiveTooltip } from '../../services/state/features/ui/uiSlice';
+import Tippy, { useSingleton } from '@tippyjs/react'; // Import useSingleton
 import chroma from 'chroma-js'; // chroma-js is still needed for the scale, which is fine.
 
 /* ------------------------------------------------------------------
@@ -16,11 +14,11 @@ interface CustomizedTreemapContentProps {
     /** 색상 계산용 */
     baseCategoryColor: string;
     maxSkillValue: number;
-    /** Redux tooltip 식별자 */
-    id: string;
     /** Render Props */
     renderCellContent: (props: { name: string; value: number; width: number; height: number; textColor: string; }) => React.ReactNode;
     renderTooltipContent: (props: { name: string; value: number; }) => React.ReactNode;
+    // For Tippy singleton
+    singleton: ReturnType<typeof useSingleton>[1];
 }
 
 /* ------------------------------------------------------------------
@@ -28,16 +26,13 @@ interface CustomizedTreemapContentProps {
  * ------------------------------------------------------------------ */
 const CustomizedTreemapContent: React.FC<CustomizedTreemapContentProps> = (props) => {
     const {
-        id, x, y, width, height, name, value,
+        x, y, width, height, name, value,
         baseCategoryColor, maxSkillValue,
-        renderCellContent, renderTooltipContent
+        renderCellContent, renderTooltipContent,
+        singleton // Receive singleton target
     } = props;
 
-    const dispatch = useAppDispatch();
-    const { activeTooltipId } = useAppSelector((state) => state.ui);
-
-    const divRef = useRef<HTMLDivElement | null>(null);
-    const isVisible = activeTooltipId === id;
+    const gRef = useRef<SVGGElement>(null); // Use ref directly on the <g> element
 
     const treemapColorScale = chroma.scale([
         baseCategoryColor,
@@ -50,26 +45,27 @@ const CustomizedTreemapContent: React.FC<CustomizedTreemapContentProps> = (props
     const textColor = 'rgb(var(--color-text-primary))';
     const hoverStrokeColor = 'rgb(var(--color-primary-light))';
 
-
     return (
         <>
-            <foreignObject x={x} y={y} width={width} height={height}>
-                <div ref={divRef} />
-            </foreignObject>
-
             <Tippy
                 content={renderTooltipContent({ name, value })}
-                visible={isVisible}
                 placement="top"
                 inertia
                 appendTo={document.body}
-                reference={divRef.current}
+                reference={gRef.current} // Reference the <g> element
+                singleton={singleton} // Pass singleton target
+                // delay is managed by the singleton source
             />
 
             <g
-                onMouseEnter={() => dispatch(setActiveTooltip(id))}
-                onMouseLeave={() => dispatch(setActiveTooltip(null))}
+                ref={gRef} // Attach ref to the <g> element
                 style={{ cursor: 'pointer' }}
+                onMouseEnter={(e) => {
+                    if (gRef.current) gRef.current.style.stroke = hoverStrokeColor;
+                }}
+                onMouseLeave={(e) => {
+                    if (gRef.current) gRef.current.style.stroke = 'rgb(var(--color-background))';
+                }}
             >
                 <rect
                     x={x}
@@ -78,8 +74,8 @@ const CustomizedTreemapContent: React.FC<CustomizedTreemapContentProps> = (props
                     height={height}
                     style={{
                         fill: calculatedFill,
-                        stroke: isVisible ? hoverStrokeColor : 'rgb(var(--color-background))',
-                        strokeWidth: isVisible ? 3 : 1,
+                        stroke: 'rgb(var(--color-background))', // Default stroke
+                        strokeWidth: 1,
                         transition: 'all 0.2s ease-out',
                     }}
                 />
@@ -119,11 +115,13 @@ interface GenericTreemapProps {
 /* ------------------------------------------------------------------
  * GenericTreemap 컴포넌트
  * ------------------------------------------------------------------ */
-const GenericTreemap: React.FC<GenericTreemapProps> = ({ title, data, baseCategoryColor, renderCellContent, renderTooltipContent }) => {
+export const GenericTreemap: React.FC<GenericTreemapProps> = ({ title, data, baseCategoryColor, renderCellContent, renderTooltipContent }) => {
     if (!data) return null;
 
     const maxSkillValue = Math.max(...data.map(s => s.value), 0);
     const sortedData = [...data].sort((a, b) => b.value - a.value);
+
+    const [source, target] = useSingleton(); // Create singleton instance
 
     return (
         <div className="bg-panel-main p-4 rounded-lg shadow-lg flex flex-col">
@@ -139,18 +137,18 @@ const GenericTreemap: React.FC<GenericTreemapProps> = ({ title, data, baseCatego
                         content={(props) => (
                             <CustomizedTreemapContent
                                 {...props}
-                                id={`${title}-${props.name}`} // 툴팁을 위한 고유 ID
                                 baseCategoryColor={baseCategoryColor}
                                 maxSkillValue={maxSkillValue}
                                 renderCellContent={renderCellContent}
                                 renderTooltipContent={renderTooltipContent}
+                                singleton={target} // Pass singleton target to each Tippy
                             />
                         )}
                     />
                 </ResponsiveContainer>
             </div>
+            {/* The Tippy singleton instance that controls all tooltips */}
+            <Tippy singleton={source} delay={[100, 0]} />
         </div>
     );
 };
-
-export default GenericTreemap;

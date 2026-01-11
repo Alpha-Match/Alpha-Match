@@ -7,6 +7,7 @@ export const SEARCH_MATCHES_QUERY = gql`
     $experience: String!
     $limit: Int!
     $offset: Int!
+    $sortBy: String # Add sortBy argument
   ) {
     searchMatches(
       mode: $mode
@@ -14,6 +15,7 @@ export const SEARCH_MATCHES_QUERY = gql`
       experience: $experience
       limit: $limit
       offset: $offset
+      sortBy: $sortBy # Pass sortBy to the field
     ) {
       matches {
         id
@@ -56,8 +58,12 @@ export const GET_CANDIDATE_DETAIL = gql`
       positionCategory
       experienceYears
       originalResume
+      resumeLang
+      moreinfo
+      lookingFor
       skills
-      description
+      createdAt
+      updatedAt
     }
   }
 `;

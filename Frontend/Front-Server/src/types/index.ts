@@ -77,8 +77,12 @@ export interface CandidateDetail {
   positionCategory: string;
   experienceYears?: number | null;
   originalResume?: string | null;
+  resumeLang?: string | null; // New field
+  moreinfo?: string | null;   // New field
+  lookingFor?: string | null; // New field
   skills: string[];
-  description: string;
+  createdAt?: string | null;  // New field
+  updatedAt?: string | null;  // New field
 }
 
 export interface SimulationResponse {
@@ -138,4 +142,35 @@ export interface SkillCompetencyMatch {
   competencyLevel: string;      // "High", "Medium", "Low"
   totalTargetSkills: number;    // 대상 전체 스킬 수
   totalSearchedSkills: number;  // 검색 전체 스킬 수
+}
+
+/**
+ * CompanyJobCount - 회사별 채용 공고 수
+ * API-Server의 CompanyJobCount 타입과 일치
+ * dashboard_request.txt #1: "Company_name 기준 공고 많은 기업 Top 10"
+ */
+export interface CompanyJobCount {
+  companyName: string;
+  jobCount: number;
+}
+
+/**
+ * SkillFrequency - 스킬 빈도수
+ * API-Server의 SkillFrequency 타입과 일치
+ * dashboard_request.txt #2: "검색된 전체 채용 공고/이력서에 관한 주요 요구 기술 Top 15"
+ */
+export interface SkillFrequency {
+  skill: string;
+  count: number;
+  percentage: number;  // 0-100
+}
+
+/**
+ * PieData - Recharts 파이 차트 데이터 구조
+ * innerData와 outerData에서 사용
+ */
+export interface PieData {
+  name: string;
+  value: number;
+  [key: string]: any; // Allow other properties
 }
