@@ -112,8 +112,8 @@ export const TwoLevelPieChart: React.FC<TwoLevelPieChartProps> = ({ innerData, o
                 >
                     {outerData.map((entry) => {
                         const categoryColor = categoryColorMap.get(entry.category) || '#CCCCCC';
-                        // Create a slightly brighter shade for the skill
-                        const skillColor = chroma(categoryColor).brighten(0.8).hex();
+                        // Use the same color for the skill as its category for consistency
+                        const skillColor = categoryColor;
                         return <Cell key={`cell-outer-${entry.name}`} fill={skillColor} />;
                     })}
                 </Pie>

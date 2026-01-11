@@ -15,7 +15,8 @@ import SearchResultPanel from '@/components/search/SearchResultPanel';
 import MatchDetailPanel from '@/components/search/MatchDetailPanel';
 import DefaultDashboard from '@/components/dashboard/DefaultDashboard';
 import QueryBoundary from '@/components/common/QueryBoundary';
-import { Pickaxe, Search } from 'lucide-react';
+import { Pickaxe, Search, Home } from 'lucide-react';
+import { SearchResultAnalysisPanel } from '@/components/search/SearchResultAnalysisPanel'; // Import the new analysis panel
 
 /**
  * @file HomePage.client.tsx
@@ -89,10 +90,11 @@ export function HomePageClient({ initialSkillCategories, initialDashboardData }:
       return (
         <main className="flex-1 flex flex-col overflow-y-auto custom-scrollbar p-6">
             <DefaultDashboard userMode={userMode} activeColor={activeColor} />
-            <div className="absolute bottom-10 right-10">
+            <div className="absolute bottom-10 right-10 z-30">
                 <button
                     onClick={navigateToInput}
                     className="px-6 py-4 bg-primary text-white rounded-full shadow-lg flex items-center gap-2 transform hover:-translate-y-1 transition-transform"
+                    aria-label="검색 시작하기"
                 >
                     <Search size={20} />
                     검색 시작하기
@@ -102,33 +104,30 @@ export function HomePageClient({ initialSkillCategories, initialDashboardData }:
       );
     }
 
-    // 3-column layout for input, results, and detail views
+    // 3-column layout for input, analysis, and list/detail
     return (
       <main className="flex-1 flex overflow-hidden">
-        <div className="w-[380px] flex-shrink-0 h-full overflow-y-auto custom-scrollbar p-6 bg-panel-sidebar border-r border-border/30">
+        {/* Column 1: Input Panel */}
+        <div className="w-[380px] flex-shrink-0 h-full bg-panel-sidebar border-r border-border/30">
           <InputPanel
             onSearch={handleSearch}
             isLoading={isPending && pageViewMode === 'results'}
           />
         </div>
+
+        {/* Column 2: Search Result Analysis Panel */}
         <div className="w-[450px] flex-shrink-0 h-full overflow-y-auto custom-scrollbar p-6 border-r border-border/30">
-          <QueryBoundary loading={loading && matches.length === 0} error={error}>
-            <SearchResultPanel
-              matches={matches}
-              onMatchSelect={navigateToDetail}
-              activeColor={activeColor}
-              userMode={userMode}
-              loadMore={loadMore}
-              hasMore={hasMore}
-              loading={fetchingMore}
-              searchedSkills={searchedSkills}
-              skillCategories={initialSkillCategories}
-              selectedMatchId={selectedMatchId}
-            />
-          </QueryBoundary>
+          <SearchResultAnalysisPanel
+            activeColor={activeColor}
+            userMode={userMode}
+            searchedSkills={searchedSkills}
+            skillCategories={initialSkillCategories}
+          />
         </div>
+
+        {/* Column 3: Search Result List or Detail Panel */}
         <div className="flex-1 h-full overflow-y-auto custom-scrollbar p-6">
-          {selectedMatchId ? (
+          {pageViewMode === 'detail' && selectedMatchId ? (
             <MatchDetailPanel
               matchId={selectedMatchId}
               userMode={userMode}
@@ -137,11 +136,21 @@ export function HomePageClient({ initialSkillCategories, initialDashboardData }:
               searchedSkills={searchedSkills}
             />
           ) : (
-            <div className="h-full flex flex-col items-center justify-center text-center text-text-tertiary">
-              <Pickaxe size={48} className="mb-4" />
-              <h3 className="text-xl font-semibold">정보를 확인하세요</h3>
-              <p>좌측 목록에서 항목을 선택하여 상세 정보를 볼 수 있습니다.</p>
-            </div>
+            <QueryBoundary loading={loading && matches.length === 0} error={error}>
+              <SearchResultPanel
+                matches={matches}
+                onMatchSelect={navigateToDetail}
+                activeColor={activeColor}
+                userMode={userMode}
+                loadMore={loadMore}
+                hasMore={hasMore}
+                loading={fetchingMore}
+                searchedSkills={searchedSkills} // Not used internally now
+                skillCategories={initialSkillCategories} // Not used internally now
+                selectedMatchId={selectedMatchId}
+
+              />
+            </QueryBoundary>
           )}
         </div>
       </main>

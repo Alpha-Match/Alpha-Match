@@ -6,11 +6,16 @@ import { useAppSelector, useAppDispatch } from '../../services/state/hooks';
 import { resetSearch } from '../../services/state/features/search/searchSlice';
 import { setUserMode, resetView } from '../../services/state/features/ui/uiSlice';
 import { UserMode } from '../../types';
-import { Briefcase, UserSearch } from 'lucide-react';
+import { Briefcase, UserSearch, Home } from 'lucide-react';
 import { ThemeToggle } from '../common/ThemeToggle';
 import { CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS } from '../../constants';
 
-export const Header: React.FC = () => {
+interface HeaderProps {
+  showDashboardButton?: boolean;
+  onNavigateToDashboard?: () => void;
+}
+
+export const Header: React.FC<HeaderProps> = ({ showDashboardButton, onNavigateToDashboard }) => {
   const dispatch = useAppDispatch();
   const userMode = useAppSelector((state) => state.ui.userMode);
   const theme = useAppSelector((state) => state.ui.theme);
@@ -42,31 +47,42 @@ export const Header: React.FC = () => {
         </h1>
       </button>
 
-      <div className="flex bg-background p-1 rounded-xl">
-        <button
-          onClick={() => handleTabChange(UserMode.CANDIDATE)}
-          className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-bold transition-all ${
-            userMode === UserMode.CANDIDATE 
-              ? 'bg-panel-1 shadow-md' 
-              : 'text-text-secondary hover:bg-panel-2 hover:text-text-primary'
-          }`}
-          style={userMode === UserMode.CANDIDATE ? { color: logoColor } : {}}
-        >
-          <Briefcase className="w-4 h-4" />
-          Job Seeker View
-        </button>
-        <button
-          onClick={() => handleTabChange(UserMode.RECRUITER)}
-          className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-bold transition-all ${
-            userMode === UserMode.RECRUITER 
-              ? 'bg-panel-1 shadow-md' 
-              : 'text-text-secondary hover:bg-panel-2 hover:text-text-primary'
-          }`}
-          style={userMode === UserMode.RECRUITER ? { color: RECRUITER_THEME_COLORS[0] } : {}}
-        >
-          <UserSearch className="w-4 h-4" />
-          Recruiter View
-        </button>
+      <div className="flex items-center gap-4">
+        {showDashboardButton && (
+          <button
+            onClick={onNavigateToDashboard}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all bg-panel-2 text-text-secondary hover:bg-panel-main hover:text-primary"
+          >
+            <Home className="w-4 h-4" />
+            대시보드
+          </button>
+        )}
+        <div className="flex bg-background p-1 rounded-xl">
+          <button
+            onClick={() => handleTabChange(UserMode.CANDIDATE)}
+            className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-bold transition-all ${
+              userMode === UserMode.CANDIDATE 
+                ? 'bg-panel-1 shadow-md' 
+                : 'text-text-secondary hover:bg-panel-2 hover:text-text-primary'
+            }`}
+            style={userMode === UserMode.CANDIDATE ? { color: logoColor } : {}}
+          >
+            <Briefcase className="w-4 h-4" />
+            구직자 모드
+          </button>
+          <button
+            onClick={() => handleTabChange(UserMode.RECRUITER)}
+            className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-bold transition-all ${
+              userMode === UserMode.RECRUITER 
+                ? 'bg-panel-1 shadow-md' 
+                : 'text-text-secondary hover:bg-panel-2 hover:text-text-primary'
+            }`}
+            style={userMode === UserMode.RECRUITER ? { color: RECRUITER_THEME_COLORS[0] } : {}}
+          >
+            <UserSearch className="w-4 h-4" />
+            리크루터 모드
+          </button>
+        </div>
       </div>
       <div className="w-32 flex justify-end">
         <ThemeToggle />
