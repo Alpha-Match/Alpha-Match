@@ -1,4 +1,5 @@
 import React from 'react';
+import { LoadingSpinner } from '../common/LoadingSpinner';
 import { Skeleton } from '../common/Skeleton';
 
 const StatCard = ({ title, value, unit }: { title: string; value: string | number; unit: string }) => (
@@ -20,7 +21,11 @@ interface SearchResultStatsProps {
 export const SearchResultStats: React.FC<SearchResultStatsProps> = ({ searchedSkills, totalCount, loading }) => {
 
     if (loading) {
-        return <Skeleton className="h-28" />;
+        return (
+            <div className="h-28 flex items-center justify-center">
+                <LoadingSpinner size={24} />
+            </div>
+        );
     }
 
     return (

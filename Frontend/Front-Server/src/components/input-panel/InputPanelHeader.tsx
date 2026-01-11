@@ -15,12 +15,12 @@ export const InputPanelHeader: React.FC = () => {
         className="text-xl font-bold flex items-center gap-2 text-primary"
       >
         {isCandidate ? <Briefcase className="w-6 h-6" /> : <Search className="w-6 h-6" />}
-        {isCandidate ? "Configure Job Seeker Profile" : "Define Ideal Candidate Profile"}
+        {isCandidate ? "구직자 프로필 설정" : "이상적인 후보자 프로필 정의"}
       </h2>
       <p className="text-text-secondary text-sm mt-1">
         {isCandidate 
-          ? "Select skills to find matching job positions." 
-          : "Select required skills to find best-fit candidate profiles."}
+          ? "매칭되는 공고를 찾기 위해 기술 스택을 선택하세요." 
+          : "최적의 후보자 프로필을 찾기 위해 필요한 기술을 선택하세요."}
       </p>
     </div>
   );

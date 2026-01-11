@@ -156,12 +156,12 @@ const MatchDetailPanel: React.FC<MatchDetailPanelProps> = ({
             <h3 className="text-lg font-semibold mb-6 text-text-primary text-center">기술 스택 일치도</h3>
             <div className="flex justify-around">
               <RatioPieChart
-                title="Overlap Ratio"
+                title="겹침 비율"
                 percentage={overlapPercentage}
                 color={activeColor}
               />
               <RatioPieChart
-                title="Coverage Ratio"
+                title="포함 비율"
                 percentage={coveragePercentage}
                 color={activeColor}
               />
@@ -290,12 +290,12 @@ const MatchDetailPanel: React.FC<MatchDetailPanelProps> = ({
             <h3 className="text-lg font-semibold mb-6 text-text-primary text-center">기술 스택 일치도</h3>
             <div className="flex justify-around">
               <RatioPieChart
-                title="Overlap Ratio"
+                title="겹침 비율"
                 percentage={overlapPercentage}
                 color={activeColor}
               />
               <RatioPieChart
-                title="Coverage Ratio"
+                title="포함 비율"
                 percentage={coveragePercentage}
                 color={activeColor}
               />

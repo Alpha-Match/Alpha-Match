@@ -4,7 +4,7 @@ import { useQuery } from '@apollo/client/react';
 import { GET_CATEGORY_DISTRIBUTION } from '../../services/api/queries/search';
 import { CategoryMatchDistribution } from '../../types';
 import { LoadingSpinner } from '../common/LoadingSpinner';
-import { Skeleton } from '../common/Skeleton';
+import { Skeleton } from '../common/Skeleton'; // Keep Skeleton for other uses if any
 
 // --- Sub-components ---
 
@@ -53,7 +53,13 @@ export const SearchResultAnalysis: React.FC<SearchResultAnalysisProps> = ({ sear
     const distributions = catData?.getCategoryDistribution;
 
     const renderStats = () => {
-        if (statsLoading) return <Skeleton className="h-24" />;
+        if (statsLoading) {
+            return (
+                <div className="flex items-center justify-center h-24">
+                    <LoadingSpinner size={24} />
+                </div>
+            );
+        }
         return (
             <div>
                 <h3 className="text-sm font-semibold mb-3 text-text-secondary">검색 요약</h3>

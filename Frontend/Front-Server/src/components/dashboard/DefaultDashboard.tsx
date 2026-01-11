@@ -23,9 +23,13 @@ interface TopCompaniesData {
     topCompanies: CompanyJobCount[];
 }
 
-export default function DefaultDashboard() {
+interface DefaultDashboardProps {
+    userMode: UserMode;
+    activeColor: string;
+}
+
+export default function DefaultDashboard({ userMode, activeColor }: DefaultDashboardProps) {
     const isHydrated = useHydrated();
-    const userMode = useAppSelector((state) => state.ui.userMode);
     const dashboardData = useAppSelector((state) => state.search[userMode].dashboardData);
 
     const { data: companiesData, loading: companiesLoading, error: companiesError } = useQuery<TopCompaniesData>(
@@ -36,9 +40,7 @@ export default function DefaultDashboard() {
         }
     );
 
-    const themeColors = userMode === UserMode.RECRUITER
-        ? RECRUITER_THEME_COLORS
-        : CANDIDATE_THEME_COLORS;
+    const baseColor = activeColor;
         
     if (!isHydrated || !dashboardData) {
         return (
@@ -52,8 +54,6 @@ export default function DefaultDashboard() {
             </div>
         );
     }
-
-    const baseColor = themeColors[0];
 
     // --- Dynamic Content ---
     const isCandidateMode = userMode === UserMode.CANDIDATE;
