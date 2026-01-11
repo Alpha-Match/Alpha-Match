@@ -1,9 +1,8 @@
 import { useAppDispatch, useAppSelector } from '../services/state/hooks';
-import { pushHistory, navigateBack, HistoryEntry } from '../services/state/features/ui/uiSlice';
+import { pushHistory, navigateBack } from '../services/state/features/ui/uiSlice';
 import { MatchItem, UserMode } from '../types';
 
-type PageViewMode = 'dashboard' | 'results' | 'detail';
-
+type PageViewMode = 'dashboard' | 'input' | 'results' | 'detail';
 
 /**
  * 앱 내 페이지 네비게이션 로직을 관리하는 커스텀 훅입니다.
@@ -19,6 +18,14 @@ export const useAppNavigation = () => {
   const currentView = history[currentIndex] || { pageViewMode: 'dashboard', selectedMatchId: null };
   const { pageViewMode, selectedMatchId } = currentView;
 
+  const navigateToDashboard = () => {
+    dispatch(pushHistory({ userMode, view: { pageViewMode: 'dashboard', selectedMatchId: null } }));
+  };
+
+  const navigateToInput = () => {
+    dispatch(pushHistory({ userMode, view: { pageViewMode: 'input', selectedMatchId: null } }));
+  };
+
   const navigateToResults = () => {
     dispatch(pushHistory({ userMode, view: { pageViewMode: 'results', selectedMatchId: null } }));
   };
@@ -30,23 +37,22 @@ export const useAppNavigation = () => {
   const goBack = () => {
     dispatch(navigateBack({ userMode }));
   };
-
-  const navigateToDashboard = () => {
-    dispatch(pushHistory({ userMode, view: { pageViewMode: 'dashboard', selectedMatchId: null } }));
-  };
-
+  
   const navigateToView = (view: PageViewMode) => {
-    dispatch(pushHistory({ userMode, view: { pageViewMode: view, selectedMatchId } }));
+    // When switching tabs on mobile, we generally don't want to keep the old matchId unless we are going to the detail view itself
+    const newSelectedMatchId = view === 'detail' ? selectedMatchId : null;
+    dispatch(pushHistory({ userMode, view: { pageViewMode: view, selectedMatchId: newSelectedMatchId } }));
   };
 
   return {
     userMode,
     pageViewMode,
     selectedMatchId,
+    navigateToDashboard,
+    navigateToInput,
     navigateToResults,
     navigateToDetail,
     goBack,
-    navigateToDashboard,
     navigateToView,
   };
 };

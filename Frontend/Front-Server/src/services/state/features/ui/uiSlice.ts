@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { UserMode } from '../../../../types';
 
-type PageViewMode = 'dashboard' | 'results' | 'detail';
+type PageViewMode = 'dashboard' | 'input' | 'results' | 'detail';
 
 export interface HistoryEntry {
   pageViewMode: PageViewMode;
@@ -65,6 +65,12 @@ const uiSlice = createSlice({
       // If we navigate forward from a past state, trim the future history
       const newHistory = modeState.history.slice(0, modeState.currentIndex + 1);
       
+      // Prevent pushing the same state consecutively
+      const currentView = newHistory[newHistory.length - 1];
+      if (currentView.pageViewMode === view.pageViewMode && currentView.selectedMatchId === view.selectedMatchId) {
+        return;
+      }
+
       newHistory.push(view);
       modeState.history = newHistory;
       modeState.currentIndex = newHistory.length - 1;
@@ -88,4 +94,3 @@ export const {
     navigateBack
 } = uiSlice.actions;
 export default uiSlice.reducer;
-

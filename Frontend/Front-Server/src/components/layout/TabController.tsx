@@ -2,10 +2,10 @@
 'use client';
 
 import React from 'react';
-import { Settings, BarChart3, FileText } from 'lucide-react';
+import { LayoutDashboard, Settings, BarChart3, FileText } from 'lucide-react';
 import { UserMode } from '../../types';
 
-type PageViewMode = 'dashboard' | 'results' | 'detail';
+type PageViewMode = 'dashboard' | 'input' | 'results' | 'detail';
 
 interface TabControllerProps {
   activeView: PageViewMode;
@@ -15,8 +15,9 @@ interface TabControllerProps {
 }
 
 const TABS: { id: PageViewMode; label: string; icon: React.ElementType }[] = [
-  { id: 'dashboard', label: '검색 조건', icon: Settings },
-  { id: 'results', label: '검색 분석', icon: BarChart3 },
+  { id: 'dashboard', label: '대시보드', icon: LayoutDashboard },
+  { id: 'input', label: '검색 조건', icon: Settings },
+  { id: 'results', label: '검색 결과', icon: BarChart3 },
   { id: 'detail', label: '상세 정보', icon: FileText },
 ];
 
