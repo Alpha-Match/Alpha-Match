@@ -11,7 +11,9 @@ import { ChevronLeft, Briefcase, User, Calendar, Globe, Award } from 'lucide-rea
 import { useMatchDetail } from '../../hooks/useMatchDetail';
 import { UserMode } from '../../types';
 import { LoadingSpinner } from '../common/LoadingSpinner';
+import { RatioPieChart } from './RatioPieChart';
 import SkillCompetencyBadge from './SkillCompetencyBadge';
+import { SkillRadarChart } from './SkillRadarChart';
 
 interface MatchDetailPanelProps {
   matchId: string;
@@ -33,6 +35,18 @@ const MatchDetailPanel: React.FC<MatchDetailPanelProps> = ({
   useEffect(() => {
     fetchDetail(userMode, matchId);
   }, [matchId, userMode, fetchDetail]);
+
+  const targetSkills = userMode === UserMode.CANDIDATE ? recruitDetail?.skills : candidateDetail?.skills;
+
+  const matchedSkills = targetSkills?.filter(skill => searchedSkills.includes(skill)) || [];
+
+  const overlapPercentage = searchedSkills.length > 0
+    ? (matchedSkills.length / searchedSkills.length) * 100
+    : 0;
+
+  const coveragePercentage = targetSkills && targetSkills.length > 0
+    ? (matchedSkills.length / targetSkills.length) * 100
+    : 0;
 
   if (loading) {
     return (
@@ -57,7 +71,7 @@ const MatchDetailPanel: React.FC<MatchDetailPanelProps> = ({
   }
 
   // Recruit Detail (CANDIDATE 모드: 채용 공고 상세)
-  if (userMode === UserMode.CANDIDATE && recruitDetail) {
+  if (recruitDetail && userMode === UserMode.CANDIDATE) {
     return (
       <div className="p-6 h-full overflow-y-auto custom-scrollbar animate-fade-in">
         <button
@@ -135,6 +149,41 @@ const MatchDetailPanel: React.FC<MatchDetailPanelProps> = ({
             activeColor={activeColor}
           />
         )}
+        
+        {/* Ratio Charts */}
+        {searchedSkills && searchedSkills.length > 0 && (
+          <div className="bg-panel-main p-6 rounded-lg shadow-lg border border-border/30 my-6">
+            <h3 className="text-lg font-semibold mb-6 text-text-primary text-center">기술 스택 일치도</h3>
+            <div className="flex justify-around">
+              <RatioPieChart
+                title="Overlap Ratio"
+                percentage={overlapPercentage}
+                color={activeColor}
+              />
+              <RatioPieChart
+                title="Coverage Ratio"
+                percentage={coveragePercentage}
+                color={activeColor}
+              />
+            </div>
+            <div className="text-center text-xs text-text-tertiary mt-4">
+              <p>Overlap: 매칭된 기술 / 내가 선택한 기술</p>
+              <p>Coverage: 매칭된 기술 / 공고의 전체 기술</p>
+            </div>
+          </div>
+        )}
+
+        {/* Skill Radar Chart - Tech Stack Comparison */}
+        {searchedSkills && searchedSkills.length > 0 && (
+          <div className="bg-panel-main p-6 rounded-lg shadow-lg border border-border/30 mb-6">
+            <h3 className="text-lg font-semibold mb-4 text-text-primary">기술 스택 비교 분석</h3>
+            <SkillRadarChart
+              mode={userMode}
+              targetId={matchId}
+              searchedSkills={searchedSkills}
+            />
+          </div>
+        )}
 
         <div className="bg-panel-main p-8 rounded-lg border border-border/30">
           {/* 상세 설명 */}
@@ -183,6 +232,28 @@ const MatchDetailPanel: React.FC<MatchDetailPanelProps> = ({
                 경력: {candidateDetail.experienceYears ? `${candidateDetail.experienceYears}년` : '신입'}
               </span>
             </div>
+            {candidateDetail.resumeLang && (
+              <div className="flex items-center gap-2">
+                <Globe className="text-text-tertiary" size={18} />
+                <span className="text-text-secondary">언어: {candidateDetail.resumeLang}</span>
+              </div>
+            )}
+            {candidateDetail.createdAt && (
+              <div className="flex items-center gap-2">
+                <Calendar className="text-text-tertiary" size={18} />
+                <span className="text-text-secondary">
+                  생성일: {new Date(candidateDetail.createdAt).toLocaleDateString('ko-KR')}
+                </span>
+              </div>
+            )}
+            {candidateDetail.updatedAt && (
+              <div className="flex items-center gap-2">
+                <Calendar className="text-text-tertiary" size={18} />
+                <span className="text-text-secondary">
+                  수정일: {new Date(candidateDetail.updatedAt).toLocaleDateString('ko-KR')}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* 기술 스택 */}
@@ -203,26 +274,76 @@ const MatchDetailPanel: React.FC<MatchDetailPanelProps> = ({
 
         {/* 역량 매칭도 분석 */}
         {searchedSkills && searchedSkills.length > 0 && (
-          <SkillCompetencyBadge
-            mode={userMode}
-            targetId={matchId}
-            searchedSkills={searchedSkills}
-            activeColor={activeColor}
-          />
-        )}
+            <div className="mb-8">
+            <SkillCompetencyBadge
+                mode={userMode}
+                targetId={matchId}
+                searchedSkills={searchedSkills}
+                activeColor={activeColor}
+            />
+            </div>
+            )}
 
-        <div className="bg-panel-main p-8 rounded-lg border border-border/30">
-          {/* 상세 설명 */}
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold mb-3 text-text-primary">상세 정보</h3>
-            <div className="prose prose-invert max-w-none">
-              <p className="text-text-secondary whitespace-pre-wrap leading-relaxed">
-                {candidateDetail.description}
-              </p>
+        {/* Ratio Charts */}
+        {searchedSkills && searchedSkills.length > 0 && (
+          <div className="bg-panel-main p-6 rounded-lg shadow-lg border border-border/30 my-6">
+            <h3 className="text-lg font-semibold mb-6 text-text-primary text-center">기술 스택 일치도</h3>
+            <div className="flex justify-around">
+              <RatioPieChart
+                title="Overlap Ratio"
+                percentage={overlapPercentage}
+                color={activeColor}
+              />
+              <RatioPieChart
+                title="Coverage Ratio"
+                percentage={coveragePercentage}
+                color={activeColor}
+              />
+            </div>
+            <div className="text-center text-xs text-text-tertiary mt-4">
+              <p>Overlap: 매칭된 기술 / 내가 선택한 기술</p>
+              <p>Coverage: 매칭된 기술 / 후보자의 전체 기술</p>
             </div>
           </div>
+        )}
 
-          {/* 원본 이력서 (있는 경우) */}
+        {/* Skill Radar Chart - Tech Stack Comparison */}
+        {searchedSkills && searchedSkills.length > 0 && (
+          <div className="bg-panel-main p-6 rounded-lg shadow-lg border border-border/30 mb-6">
+            <h3 className="text-lg font-semibold mb-4 text-text-primary">기술 스택 비교 분석</h3>
+            <SkillRadarChart
+              mode={userMode}
+              targetId={matchId}
+              searchedSkills={searchedSkills}
+            />
+          </div>
+        )}
+
+        <div className="bg-panel-main p-8 rounded-lg border border-border/30 mt-6">
+          {/* 상세 정보 (구직 희망사항, 추가 정보) */}
+          {candidateDetail.lookingFor && (
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold mb-3 text-text-primary">구직 희망사항</h3>
+              <div className="prose prose-invert max-w-none">
+                <p className="text-text-secondary whitespace-pre-wrap leading-relaxed">
+                  {candidateDetail.lookingFor}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {candidateDetail.moreinfo && (
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold mb-3 text-text-primary">추가 정보 (프로젝트, 성과)</h3>
+              <div className="prose prose-invert max-w-none">
+                <p className="text-text-secondary whitespace-pre-wrap leading-relaxed">
+                  {candidateDetail.moreinfo}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* 원본 이력서 */}
           {candidateDetail.originalResume && (
             <div>
               <h3 className="text-lg font-semibold mb-3 text-text-primary">원본 이력서</h3>

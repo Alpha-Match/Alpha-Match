@@ -2,8 +2,8 @@
 /**
  * @file ResultListItem.tsx
  * @description 단일 검색 결과를 리스트 아이템 형태로 표시하는 컴포넌트
- * @version 1.1.0
- * @date 2025-12-29
+ * @version 1.2.1
+ * @date 2026-01-11
  */
 import React from 'react';
 import { MatchItem } from '../../types';
@@ -13,16 +13,21 @@ interface ResultListItemProps {
   match: MatchItem;
   onSelect: () => void;
   activeColor: string;
+  isSelected: boolean;
 }
 
-const ResultListItem: React.FC<ResultListItemProps> = ({ match, onSelect, activeColor }) => {
+const ResultListItem: React.FC<ResultListItemProps> = ({ match, onSelect, activeColor, isSelected }) => {
   const scoreBgColor = chroma(activeColor).alpha(0.2).css();
   const scoreTextColor = chroma(activeColor).brighten(1).hex();
+
+  const baseClasses = "w-full text-left p-4 shadow-sm rounded-md border transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary";
+  const selectedClasses = 'bg-primary/10 border-primary';
+  const unselectedClasses = 'bg-panel-main border-border/30 hover:bg-panel-2 hover:border-primary';
 
   return (
     <li
       onClick={onSelect}
-      className="w-full text-left p-4 bg-panel-main shadow-sm rounded-md border border-border/30 hover:bg-panel-2 hover:border-primary transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary"
+      className={`${baseClasses} ${isSelected ? selectedClasses : unselectedClasses}`}
       style={{ '--active-color': activeColor } as React.CSSProperties}
     >
       <div className="flex justify-between items-center gap-4">
