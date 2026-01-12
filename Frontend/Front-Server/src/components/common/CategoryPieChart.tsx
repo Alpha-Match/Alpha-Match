@@ -84,7 +84,7 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({ title, data,
         }
 
         return (
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={350}>
                 <PieChart>
                     <Pie
                         data={data}
@@ -101,7 +101,7 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({ title, data,
                             <Cell key={`cell-${entry.name}`} fill={colorScale(index).hex()} />
                         ))}
                     </Pie>
-                    <Legend formatter={legendFormatter} />
+                    <Legend formatter={legendFormatter} verticalAlign="bottom" align="center" />
                 </PieChart>
             </ResponsiveContainer>
         );
