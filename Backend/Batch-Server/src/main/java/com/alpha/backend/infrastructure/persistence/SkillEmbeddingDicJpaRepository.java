@@ -23,7 +23,7 @@ import java.util.UUID;
  * - PK: skill_id (UUID, auto-generated)
  * - UK: skill (TEXT, UNIQUE)
  * - FK: category_id → skill_category_dic
- * - Vector: skill_vector (384d)
+ * - Vector: skill_vector (1536d)
  */
 @Repository
 public interface SkillEmbeddingDicJpaRepository
@@ -45,7 +45,7 @@ public interface SkillEmbeddingDicJpaRepository
             COALESCE(:#{#entity.skillId}, gen_random_uuid()),
             :#{#entity.categoryId},
             :#{#entity.skill},
-            CAST(:#{#entity.skillVector.toString()} AS vector(384)),
+            CAST(:#{#entity.skillVector.toString()} AS vector(1536)),
             COALESCE(:#{#entity.createdAt}, NOW()),
             NOW()
         )

@@ -42,7 +42,7 @@
 
 **Database:**
 - `src/main/java/com/alpha/backend/config/database/JpaConfig.java` - JPA 설정
-- `src/main/resources/db/migration/V1__init_database_schema.sql` - Flyway V1 (초기 스키마)
+- `src/main/resources/db/migration/V1__init_schema.sql` - Flyway V1 (초기 스키마)
 - `src/main/resources/db/migration/V2__restructure_schema_to_v2.sql` - Flyway V2 (스키마 재구조화, 2025-12-21)
 
 **gRPC:**

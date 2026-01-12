@@ -45,12 +45,12 @@ class BatchPropertiesTest {
         Map<String, BatchProperties.DomainConfig> domains = new HashMap<>();
 
         BatchProperties.DomainConfig recruitConfig = new BatchProperties.DomainConfig();
-        recruitConfig.setVectorDimension(384);
+        recruitConfig.setVectorDimension(1536);
         recruitConfig.setTablePrefix("recruit");
         domains.put("recruit", recruitConfig);
 
         BatchProperties.DomainConfig candidateConfig = new BatchProperties.DomainConfig();
-        candidateConfig.setVectorDimension(768);
+        candidateConfig.setVectorDimension(1536);
         candidateConfig.setTablePrefix("candidate");
         domains.put("candidate", candidateConfig);
 
@@ -62,11 +62,11 @@ class BatchPropertiesTest {
 
         // Then
         assertThat(result1).isNotNull();
-        assertThat(result1.getVectorDimension()).isEqualTo(384);
+        assertThat(result1.getVectorDimension()).isEqualTo(1536);
         assertThat(result1.getTablePrefix()).isEqualTo("recruit");
 
         assertThat(result2).isNotNull();
-        assertThat(result2.getVectorDimension()).isEqualTo(768);
+        assertThat(result2.getVectorDimension()).isEqualTo(1536);
         assertThat(result2.getTablePrefix()).isEqualTo("candidate");
     }
 
@@ -77,7 +77,7 @@ class BatchPropertiesTest {
         Map<String, BatchProperties.DomainConfig> domains = new HashMap<>();
 
         BatchProperties.DomainConfig recruitConfig = new BatchProperties.DomainConfig();
-        recruitConfig.setVectorDimension(384);
+        recruitConfig.setVectorDimension(1536);
         recruitConfig.setTablePrefix("recruit");
         domains.put("recruit", recruitConfig);
 
@@ -86,9 +86,9 @@ class BatchPropertiesTest {
         // When - 존재하지 않는 도메인 조회
         BatchProperties.DomainConfig unknownConfig = batchProperties.getDomainConfig("unknown");
 
-        // Then - 기본값 반환 (recruit 기본값: 384차원)
+        // Then - 기본값 반환 (recruit 기본값: 1536차원)
         assertThat(unknownConfig).isNotNull();
-        assertThat(unknownConfig.getVectorDimension()).isEqualTo(384);
+        assertThat(unknownConfig.getVectorDimension()).isEqualTo(1536);
         assertThat(unknownConfig.getTablePrefix()).isEqualTo("recruit");
     }
 
@@ -100,7 +100,7 @@ class BatchPropertiesTest {
 
         // Then - 기본값 반환
         assertThat(nullConfig).isNotNull();
-        assertThat(nullConfig.getVectorDimension()).isEqualTo(384);
+        assertThat(nullConfig.getVectorDimension()).isEqualTo(1536);
         assertThat(nullConfig.getTablePrefix()).isEqualTo("recruit");
     }
 
@@ -115,7 +115,7 @@ class BatchPropertiesTest {
 
         // Then - 기본값 반환
         assertThat(config).isNotNull();
-        assertThat(config.getVectorDimension()).isEqualTo(384);
+        assertThat(config.getVectorDimension()).isEqualTo(1536);
         assertThat(config.getTablePrefix()).isEqualTo("recruit");
     }
 
@@ -154,7 +154,7 @@ class BatchPropertiesTest {
 
         // 3개 도메인 설정
         BatchProperties.DomainConfig recruitConfig = new BatchProperties.DomainConfig();
-        recruitConfig.setVectorDimension(384);
+        recruitConfig.setVectorDimension(1536);
         recruitConfig.setTablePrefix("recruit");
 
         BatchProperties.DomainConfig candidateConfig = new BatchProperties.DomainConfig();
@@ -172,8 +172,8 @@ class BatchPropertiesTest {
         batchProperties.setDomains(domains);
 
         // When & Then
-        assertThat(batchProperties.getDomainConfig("recruit").getVectorDimension()).isEqualTo(384);
-        assertThat(batchProperties.getDomainConfig("candidate").getVectorDimension()).isEqualTo(768);
+        assertThat(batchProperties.getDomainConfig("recruit").getVectorDimension()).isEqualTo(1536);
+        assertThat(batchProperties.getDomainConfig("candidate").getVectorDimension()).isEqualTo(1536);
         assertThat(batchProperties.getDomainConfig("company").getVectorDimension()).isEqualTo(512);
     }
 
@@ -255,7 +255,7 @@ class BatchPropertiesTest {
         BatchProperties.DomainConfig defaultConfig = batchProperties.getDomainConfig("any");
 
         // Then
-        assertThat(defaultConfig.getVectorDimension()).isEqualTo(384);
+        assertThat(defaultConfig.getVectorDimension()).isEqualTo(1536);
         assertThat(defaultConfig.getTablePrefix()).isEqualTo("recruit");
     }
 
@@ -266,7 +266,7 @@ class BatchPropertiesTest {
         // 실제 Spring Boot 환경에서는 다음과 같이 로드됨:
         // batch.embedding.chunk-size=300
         // batch.embedding.max-retry=3
-        // batch.embedding.domains.recruit.vector-dimension=384
+        // batch.embedding.domains.recruit.vector-dimension=1536
 
         // When & Then
         // 이 테스트는 단위 테스트이므로 어노테이션 검증은 통합 테스트에서 수행

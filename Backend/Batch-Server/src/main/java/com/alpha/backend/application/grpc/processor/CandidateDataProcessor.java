@@ -185,7 +185,9 @@ public class CandidateDataProcessor implements DataProcessor {
         CandidateDescriptionEntity entity = new CandidateDescriptionEntity();
         entity.setCandidateId(candidateId);
         entity.setOriginalResume(dto.getOriginalResume());
-        entity.setResumeLang(null);  // TODO: Proto v2에서 추가 예정
+        entity.setResumeLang(dto.getResumeLang());
+        entity.setMoreinfo(dto.getMoreinfo());
+        entity.setLookingFor(dto.getLookingFor());
         return entity;
     }
 

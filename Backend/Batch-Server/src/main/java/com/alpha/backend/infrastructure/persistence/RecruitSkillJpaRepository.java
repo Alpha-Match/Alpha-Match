@@ -23,7 +23,7 @@ import java.util.UUID;
  */
 @Repository
 public interface RecruitSkillJpaRepository
-        extends JpaRepository<RecruitSkillEntity, RecruitSkillId>, RecruitSkillRepository {
+        extends JpaRepository<RecruitSkillEntity, RecruitSkillId>, RecruitSkillRepository, RecruitSkillJpaRepositoryCustom {
 
     /**
      * 특정 Recruit의 모든 Skill 조회
@@ -70,7 +70,7 @@ public interface RecruitSkillJpaRepository
     void upsert(@Param("entity") RecruitSkillEntity entity);
 
     /**
-     * RecruitSkill 배치 Upsert (Iterative)
+     * RecruitSkill 배치 Upsert (Delegates to optimized implementation)
      *
      * Spring Batch에서 Chunk 단위로 호출
      *
@@ -79,6 +79,6 @@ public interface RecruitSkillJpaRepository
     @Override
     @Transactional
     default void upsertAll(List<RecruitSkillEntity> entities) {
-        entities.forEach(this::upsert);
+        upsertAllOptimized(entities);
     }
 }

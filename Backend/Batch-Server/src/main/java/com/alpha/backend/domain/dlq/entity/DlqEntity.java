@@ -11,7 +11,7 @@ import java.util.UUID;
  * Dead Letter Queue Entity (Domain-agnostic)
  * 처리 실패한 레코드를 저장하는 엔티티 (도메인별 구분)
  *
- * 실제 DB 구조 (V1__init_database_schema.sql 기준):
+ * 실제 DB 구조 (V1__init_schema.sql 기준):
  * - id: BIGSERIAL (PK, 자동 증가)
  * - domain: VARCHAR(50) (도메인 구분)
  * - failed_id: UUID (실패한 레코드 ID)

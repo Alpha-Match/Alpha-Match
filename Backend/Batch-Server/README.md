@@ -158,7 +158,7 @@ Backend/Batch-Server/
 │
 ├── src/main/resources/
 │   ├── db/migration/
-│   │   └── V1__init_database_schema.sql            # Flyway 마이그레이션
+│   │   └── V1__init_schema.sql            # Flyway 마이그레이션
 │   ├── application.yml                             # 메인 설정
 │   └── application-batch.yml                       # Batch 도메인별 설정
 │

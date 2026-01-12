@@ -22,7 +22,7 @@ import java.util.UUID;
  */
 @Repository
 public interface RecruitSkillsEmbeddingJpaRepository
-        extends JpaRepository<RecruitSkillsEmbeddingEntity, UUID>, RecruitSkillsEmbeddingRepository {
+        extends JpaRepository<RecruitSkillsEmbeddingEntity, UUID>, RecruitSkillsEmbeddingRepository, RecruitSkillsEmbeddingJpaRepositoryCustom {
 
     /**
      * RecruitSkillsEmbedding 단건 Upsert (Native Query)
@@ -39,7 +39,7 @@ public interface RecruitSkillsEmbeddingJpaRepository
         VALUES (
             :#{#entity.recruitId},
             :#{#entity.skills},
-            CAST(:#{#entity.skillsVector.toString()} AS vector(384)),
+            CAST(:#{#entity.skillsVector.toString()} AS vector(1536)),
             COALESCE(:#{#entity.createdAt}, NOW()),
             COALESCE(:#{#entity.updatedAt}, NOW())
         )
@@ -52,7 +52,7 @@ public interface RecruitSkillsEmbeddingJpaRepository
     void upsert(@Param("entity") RecruitSkillsEmbeddingEntity entity);
 
     /**
-     * RecruitSkillsEmbedding 배치 Upsert (Iterative)
+     * RecruitSkillsEmbedding 배치 Upsert (Delegates to optimized implementation)
      *
      * Spring Batch에서 Chunk 단위로 호출
      *
@@ -61,7 +61,7 @@ public interface RecruitSkillsEmbeddingJpaRepository
     @Override
     @Transactional
     default void upsertAll(List<RecruitSkillsEmbeddingEntity> entities) {
-        entities.forEach(this::upsert);
+        upsertAllOptimized(entities);
     }
 
     /**
@@ -70,14 +70,14 @@ public interface RecruitSkillsEmbeddingJpaRepository
      * IVFFlat 인덱스 사용: idx_recruit_skills_vector
      * Distance Operator: <=> (Cosine Distance)
      *
-     * @param queryVector 쿼리 벡터 (384차원, float 배열을 String으로 변환하여 전달)
+     * @param queryVector 쿼리 벡터 (1536차원, float 배열을 String으로 변환하여 전달)
      * @param limit 결과 개수
      * @return 유사한 Recruit ID 리스트 (거리 순)
      */
     @Query(value = """
         SELECT recruit_id
         FROM recruit_skills_embedding
-        ORDER BY skills_vector <=> CAST(:queryVector AS vector(384))
+        ORDER BY skills_vector <=> CAST(:queryVector AS vector(1536))
         LIMIT :limit
         """, nativeQuery = true)
     List<UUID> findSimilarRecruitsInternal(
@@ -88,7 +88,7 @@ public interface RecruitSkillsEmbeddingJpaRepository
     /**
      * 벡터 유사도 검색 (float[] 배열 오버로드) - Domain Interface 구현
      *
-     * @param queryVector 쿼리 벡터 (384차원)
+     * @param queryVector 쿼리 벡터 (1536차원)
      * @param limit 결과 개수
      * @return 유사한 Recruit ID 리스트 (거리 순)
      */

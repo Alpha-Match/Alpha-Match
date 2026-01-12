@@ -1,8 +1,22 @@
+// 반드시 최상단
+buildscript {
+	repositories {
+		mavenCentral()
+	}
+	dependencies {
+		// Flyway Gradle Plugin 실행 엔진
+		classpath "org.flywaydb:flyway-core:11.14.1"
+		classpath "org.flywaydb:flyway-database-postgresql:11.14.1"
+		classpath "org.postgresql:postgresql:42.7.8"
+	}
+}
+
 plugins {
 	id 'java'
 	id 'org.springframework.boot' version '4.0.0'
 	id 'io.spring.dependency-management' version '1.1.7'
 	id 'com.google.protobuf' version '0.9.5'
+	id 'org.flywaydb.flyway' version '11.14.1'
 }
 
 group = 'com.alpha'
@@ -14,6 +28,7 @@ java {
 		languageVersion = JavaLanguageVersion.of(21)
 	}
 }
+
 
 configurations {
 	compileOnly {
@@ -99,6 +114,17 @@ protobuf {
 			}
 		}
 	}
+}
+
+flyway {
+	url = project.findProperty("db.url")
+	user = project.findProperty("db.user")
+	password = project.findProperty("db.password")
+	locations = ['classpath:db/migration']
+	cleanDisabled = true
+
+	// ⭐ 핵심
+	skipExecutingMigrations = true
 }
 
 tasks.named('test') {

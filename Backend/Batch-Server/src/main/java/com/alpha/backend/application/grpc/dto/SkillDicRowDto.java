@@ -35,7 +35,7 @@ public class SkillDicRowDto {
     private String positionCategory;
 
     /**
-     * 스킬 벡터 임베딩 (384차원)
+     * 스킬 벡터 임베딩 (1536차원)
      */
     @JsonProperty("skill_vector")
     private List<Double> skillVector;

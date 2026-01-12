@@ -31,7 +31,7 @@ public interface CandidateSkillsEmbeddingJpaRepository
      *
      * PostgreSQL 배열 타입 처리:
      * - skills: TEXT[]
-     * - skills_vector: VECTOR(384)
+     * - skills_vector: VECTOR(1536)
      */
     @Override
     @Transactional
@@ -43,7 +43,7 @@ public interface CandidateSkillsEmbeddingJpaRepository
         VALUES (
             :#{#entity.candidateId},
             :#{#entity.skills},
-            CAST(:#{#entity.skillsVector.toString()} AS vector(384)),
+            CAST(:#{#entity.skillsVector.toString()} AS vector(1536)),
             COALESCE(:#{#entity.createdAt}, NOW()),
             NOW()
         )

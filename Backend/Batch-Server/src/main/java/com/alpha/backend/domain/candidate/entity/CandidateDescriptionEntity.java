@@ -16,6 +16,8 @@ import java.util.UUID;
  * - candidate_id (UUID, PK, FK → candidate)
  * - original_resume (TEXT)
  * - resume_lang (TEXT, Nullable)
+ * - moreinfo (TEXT, Nullable, v3 추가)
+ * - looking_for (TEXT, Nullable, v3 추가)
  * - created_at, updated_at (자동 관리)
  */
 @Entity
@@ -36,6 +38,12 @@ public class CandidateDescriptionEntity {
 
     @Column(name = "resume_lang", columnDefinition = "TEXT")
     private String resumeLang;
+
+    @Column(name = "moreinfo", columnDefinition = "TEXT")
+    private String moreinfo;
+
+    @Column(name = "looking_for", columnDefinition = "TEXT")
+    private String lookingFor;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, nullable = false)
