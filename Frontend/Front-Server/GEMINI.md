@@ -171,6 +171,7 @@
 
 **최종 수정일:** 2026-01-12
 **주요 업데이트:**
+- **`RatioPieChart` 테마 색상 일관성 확보**: `CategoryPieChart`의 색상 처리 방식을 참조하여, `RatioPieChart`의 레이블 및 슬라이스 색상이 테마에 맞춰 동적으로 변경되도록 명시적으로 수정.
 - **`TwoLevelPieChart` TypeScript 오류 수정 및 레이블 테마 색상 적용**: Legend Payload 타입 오류 수정 및 파이 차트 레이블이 테마에 따라 색상이 변경되도록 개선.
 - **데스크탑 UI 재구성 (3단 Master-Detail View)**: 검색 결과 화면을 `InputPanel`, `SearchResultAnalysisPanel`, `SearchResultPanel`/`MatchDetailPanel`로 구성된 3단 레이아웃으로 변경하여 정보 밀도를 분배하고 UX 흐름을 개선.
 - **Header에 전역 '대시보드로 돌아가기' 버튼 추가**: 사용자가 어떤 화면에 있든 초기 대시보드로 쉽게 돌아갈 수 있도록 `Header` 컴포넌트에 버튼 추가.

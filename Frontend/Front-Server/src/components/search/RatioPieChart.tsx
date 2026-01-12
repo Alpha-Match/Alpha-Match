@@ -4,8 +4,9 @@
  */
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Label } from 'recharts';
+import { useAppSelector } from '../../services/state/hooks';
 
 interface RatioPieChartProps {
   title: string;
@@ -20,12 +21,34 @@ export const RatioPieChart: React.FC<RatioPieChartProps> = ({
   color,
   size = 160,
 }) => {
+  const [resolvedLabelColor, setResolvedLabelColor] = useState('currentColor');
+  const [resolvedPanel2Color, setResolvedPanel2Color] = useState('currentColor');
+  const theme = useAppSelector((state) => state.ui.theme); // Get theme for useEffect dependency
+
+  useEffect(() => {
+    const getCssVariableColor = (variableName: string) => {
+      if (typeof window !== 'undefined') {
+        const htmlElement = document.documentElement;
+        const style = window.getComputedStyle(htmlElement);
+        return style.getPropertyValue(variableName).trim();
+      }
+      return 'currentColor';
+    };
+
+    const primaryColor = getCssVariableColor('--color-text-primary');
+    setResolvedLabelColor(primaryColor ? `rgb(${primaryColor})` : 'currentColor');
+
+    const panel2Color = getCssVariableColor('--color-panel-2');
+    setResolvedPanel2Color(panel2Color ? `rgb(${panel2Color})` : 'currentColor');
+
+  }, [theme]); // Rerun when theme changes
+
   const data = [
     { name: 'filled', value: percentage },
     { name: 'empty', value: 100 - percentage },
   ];
 
-  const COLORS = [color, 'var(--color-panel-2)'];
+  const COLORS = [color, resolvedPanel2Color];
 
   return (
     <div className="flex flex-col items-center">
@@ -39,7 +62,6 @@ export const RatioPieChart: React.FC<RatioPieChartProps> = ({
               cy="50%"
               innerRadius={'70%'}
               outerRadius={'100%'}
-              fill="#8884d8"
               paddingAngle={0}
               dataKey="value"
               stroke="none"
@@ -50,7 +72,7 @@ export const RatioPieChart: React.FC<RatioPieChartProps> = ({
                <Label
                 value={`${percentage.toFixed(1)}%`}
                 position="center"
-                fill="var(--color-text-primary)"
+                fill={resolvedLabelColor}
                 className="text-2xl font-bold"
               />
             </Pie>
