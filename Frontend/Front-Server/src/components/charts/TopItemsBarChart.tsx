@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import chroma from 'chroma-js';
 import { useAppSelector } from '@/services/state/hooks';
-import { Skeleton } from '../ui/Skeleton';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 interface TopItemsBarChartProps {
   title: string;

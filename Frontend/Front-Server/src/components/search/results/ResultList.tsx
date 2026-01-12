@@ -1,4 +1,3 @@
-// Frontend/Front-Server/src/components/search/ResultList.tsx
 /**
  * @file ResultList.tsx
  * @description 단일 검색 결과(채용 공고 또는 지원자)를 표시하는 카드 컴포넌트
@@ -7,7 +6,7 @@
  *              운영체제: Windows
  */
 import React from 'react';
-import { MatchItem } from '@/../types';
+import {MatchItem} from '@/types';
 import chroma from 'chroma-js';
 
 interface ResultListProps {

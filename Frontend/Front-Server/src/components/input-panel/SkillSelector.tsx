@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { useAppSelector, useAppDispatch } from '@/services/state/hooks';
-import { toggleSkill, resetSearch } from '@/services/state/features/search/searchSlice';
-import { Code, Search, X } from 'lucide-react';
-import { ClearButton } from '../ui/ClearButton';
-import { SkillCategoryItem } from './SkillCategoryItem'; // Import the new component
+import React, {useEffect, useState} from 'react';
+import {useAppDispatch, useAppSelector} from '@/services/state/hooks';
+import {resetSearch, toggleSkill} from '@/services/state/features/search/searchSlice';
+import {Code, Search, X} from 'lucide-react';
+import {ClearButton} from '@/components/ui/ClearButton';
+import {SkillCategoryItem} from '@/components/input-panel'; // Import the new component
 
 export const SkillSelector: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -13,14 +13,14 @@ export const SkillSelector: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [openCategories, setOpenCategories] = useState<Set<string>>(() => new Set(
-    skillCategories.map(cat => cat.category)
+    skillCategories.map((cat: {category : string}) => cat.category)
   ));
 
   useEffect(() => {
     if (skillCategories.length > 0) {
       setOpenCategories(prev => {
         const newSet = new Set(prev);
-        skillCategories.forEach(cat => newSet.add(cat.category));
+        skillCategories.forEach((cat: {category : string}) => newSet.add(cat.category));
         return newSet;
       });
     }
@@ -48,14 +48,14 @@ export const SkillSelector: React.FC = () => {
   };
 
   const filteredCategories = skillCategories
-    .map(category => ({
+    .map((category: {skills:string[]}) => ({
       ...category,
       skills: (category.skills ?? []).filter(skill =>
         skill.toLowerCase().includes(searchTerm.toLowerCase())
       ),
     }))
-    .filter(category => category.skills.length > 0 || category.category.toLowerCase().includes(searchTerm.toLowerCase()))
-    .sort((a, b) => a.category.localeCompare(b.category));
+    .filter((category: {skills:string[], category:string}) => category.skills.length > 0 || category.category.toLowerCase().includes(searchTerm.toLowerCase()))
+    .sort((a:{category:string}, b:{category:string}) => a.category.localeCompare(b.category));
 
   return (
     <section className="bg-panel-main p-4 rounded-lg shadow-sm border border-border space-y-3">
@@ -81,7 +81,7 @@ export const SkillSelector: React.FC = () => {
       <div className={`flex flex-wrap gap-2 overflow-hidden transition-all duration-300 ease-in-out py-3 border-b border-border/30 ${
         selectedSkills.length > 0 ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 p-0 border-transparent'
       }`}>
-        {selectedSkills.map(skill => (
+        {selectedSkills.map((skill:string) => (
           <span
             key={skill}
             className="inline-flex items-center bg-primary/10 text-primary text-xs font-medium px-2.5 py-1 rounded-full border border-primary-light"
@@ -106,7 +106,7 @@ export const SkillSelector: React.FC = () => {
           {skillsLoaded && filteredCategories.length === 0 && searchTerm !== '' && (
             <div className="text-center text-text-tertiary text-sm py-4">일치하는 기술 스택이 없습니다.</div>
           )}
-          {skillsLoaded && filteredCategories.map((category) => (
+          {skillsLoaded && filteredCategories.map((category:{category:string, skills:string[]}) => (
             <SkillCategoryItem
               key={category.category}
               category={category}

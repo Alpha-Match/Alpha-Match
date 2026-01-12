@@ -1,4 +1,3 @@
-// Frontend/Front-Server/src/components/search/ResultListItem.tsx
 /**
  * @file ResultListItem.tsx
  * @description 단일 검색 결과를 리스트 아이템 형태로 표시하는 컴포넌트
@@ -6,7 +5,7 @@
  * @date 2026-01-11
  */
 import React from 'react';
-import { MatchItem } from '@/../types';
+import {MatchItem} from '@/types';
 import chroma from 'chroma-js';
 
 interface ResultListItemProps {
@@ -16,7 +15,7 @@ interface ResultListItemProps {
   isSelected: boolean;
 }
 
-const ResultListItem: React.FC<ResultListItemProps> = ({ match, onSelect, activeColor, isSelected }) => {
+export const ResultListItem: React.FC<ResultListItemProps> = ({ match, onSelect, activeColor, isSelected }) => {
   const scoreBgColor = chroma(activeColor).alpha(0.2).css();
   const scoreTextColor = chroma(activeColor).brighten(1).hex();
 
@@ -48,7 +47,7 @@ const ResultListItem: React.FC<ResultListItemProps> = ({ match, onSelect, active
         
         <div className="flex-shrink-0 flex items-center gap-4">
           <div className="flex flex-wrap gap-2 justify-end max-w-xs">
-            {match.skills.slice(0, 3).map((skill, index) => (
+            {match.skills.slice(0, 3).map((skill:string, index:number) => (
               <span
                 key={index}
                 className="px-2 py-0.5 bg-panel-2 text-text-secondary rounded-full text-xs font-medium"
@@ -76,5 +75,3 @@ const ResultListItem: React.FC<ResultListItemProps> = ({ match, onSelect, active
     </li>
   );
 };
-
-export default ResultListItem;

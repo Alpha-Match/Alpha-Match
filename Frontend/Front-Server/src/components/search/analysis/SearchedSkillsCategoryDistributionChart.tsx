@@ -6,10 +6,10 @@
  * @date 2026-01-04
  */
 import React from 'react';
-import { useQuery } from '@apollo/client/react';
-import { GET_CATEGORY_DISTRIBUTION } from '@/services/api/queries/search';
-import { CategoryMatchDistribution } from '@/types';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import {useQuery} from '@apollo/client/react';
+import {GET_CATEGORY_DISTRIBUTION} from '@/services/api/queries/search';
+import {CategoryMatchDistribution} from '@/types';
+import {LoadingSpinner} from '@/components/ui/LoadingSpinner';
 
 interface CategoryPieChartProps {
   skills: string[];
@@ -38,7 +38,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   'Others': '#6B7280',         // gray-500
 };
 
-const SearchedSkillsCategoryDistributionChart: React.FC<CategoryPieChartProps> = ({ skills, activeColor }) => {
+export const SearchedSkillsCategoryDistributionChart: React.FC<CategoryPieChartProps> = ({ skills, activeColor }) => {
   const { data, loading, error } = useQuery<CategoryDistributionData, CategoryDistributionVars>(
     GET_CATEGORY_DISTRIBUTION,
     {
@@ -164,5 +164,3 @@ const SearchedSkillsCategoryDistributionChart: React.FC<CategoryPieChartProps> =
     </div>
   );
 };
-
-export default SearchedSkillsCategoryDistributionChart;

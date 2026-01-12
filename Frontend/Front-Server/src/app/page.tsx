@@ -1,6 +1,6 @@
 import { getSkillCategories, getDashboardData } from '../lib/server/api';
-import { HomePageClient } from './_components/HomePage.client';
-import { UserMode } from '../types';
+import { HomePageClient } from '@/app/_components/HomePage.client';
+import { UserMode } from '@/types';
 
 /**
  * @file page.tsx

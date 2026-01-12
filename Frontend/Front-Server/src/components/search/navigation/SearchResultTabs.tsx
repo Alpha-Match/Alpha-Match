@@ -1,8 +1,7 @@
-// src/components/search/SearchResultTabs.tsx
 'use client';
 
 import React from 'react';
-import { BarChart3, List } from 'lucide-react';
+import {BarChart3, List} from 'lucide-react';
 
 export type SearchResultTab = 'analysis' | 'list';
 

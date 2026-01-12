@@ -1,5 +1,5 @@
 import React from 'react';
-import { LoadingSpinner } from '@/components/ui';
+import {LoadingSpinner} from '@/components/ui';
 
 const StatCard = ({ title, value, unit }: { title: string; value: string | number; unit: string }) => (
     <div className="bg-background p-3 rounded-lg text-center">

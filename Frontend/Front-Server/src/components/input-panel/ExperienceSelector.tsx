@@ -1,4 +1,3 @@
-// src/components/input-panel/ExperienceSelector.tsx
 import React from 'react';
 import { useAppSelector, useAppDispatch } from '@/services/state/hooks';
 import { setExperience } from '@/services/state/features/search/searchSlice';

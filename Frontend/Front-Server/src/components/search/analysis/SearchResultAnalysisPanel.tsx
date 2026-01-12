@@ -1,12 +1,10 @@
-// src/components/search/SearchResultAnalysisPanel.tsx
 'use client';
 
 import React from 'react';
-import { useQuery } from '@apollo/client/react';
-import { UserMode, SkillFrequency, SkillCategory } from '@/types';
-import { TopSkills } from './TopSkills';
-import { SearchResultAnalysis } from './SearchResultAnalysis';
-import { GET_SEARCH_STATISTICS } from '@/services/api/queries/stats';
+import {useQuery} from '@apollo/client/react';
+import {SkillCategory, SkillFrequency, UserMode} from '@/types';
+import {TopSkills, SearchResultAnalysis} from '@/components/search/analysis';
+import {GET_SEARCH_STATISTICS} from '@/services/api/queries/stats';
 
 interface SearchResultAnalysisPanelProps {
   activeColor: string;

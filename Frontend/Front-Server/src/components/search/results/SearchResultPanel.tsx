@@ -7,10 +7,10 @@
  * @date 2026-01-11
  */
 import React from 'react';
-import { MatchItem, UserMode } from '@/types';
-import { useIntersectionObserver } from '@/hooks/ui';
-import ResultListItem from './ResultListItem';
-import { LoadingSpinner } from '@/components/ui';
+import {MatchItem, UserMode} from '@/types';
+import {useIntersectionObserver} from '@/hooks/ui';
+import {ResultListItem} from '@/components/search/results';
+import {LoadingSpinner} from '@/components/ui';
 
 interface SearchResultPanelProps {
   matches: MatchItem[];
@@ -27,9 +27,7 @@ interface SearchResultPanelProps {
 export const SearchResultPanel: React.FC<SearchResultPanelProps> = ({
   matches,
   onMatchSelect,
-  onBackToDashboard, 
   activeColor,
-  userMode,
   loadMore,
   hasMore = false,
   loading = false,
@@ -91,5 +89,3 @@ export const SearchResultPanel: React.FC<SearchResultPanelProps> = ({
     </div>
   );
 };
-
-

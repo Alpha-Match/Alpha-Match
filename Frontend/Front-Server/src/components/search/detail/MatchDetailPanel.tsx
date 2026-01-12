@@ -8,12 +8,12 @@
  */
 import React, {useEffect} from 'react';
 import {Award, Briefcase, Calendar, ChevronLeft, Globe, User} from 'lucide-react';
-import {useMatchDetail} from '../../../hooks/data/useMatchDetail';
-import {UserMode} from '../../../types';
-import { LoadingSpinner } from '@/components/ui';
-import { RatioPieChart } from '@/components/charts';
-import { SkillCompetencyBadge, SkillComparisonRadarChart } from '@/components/search/analysis';
-import { MarkdownContentBlock } from '@/components/utils';
+import {useMatchDetail} from '@/hooks/data/useMatchDetail';
+import {UserMode} from '@/types';
+import {LoadingSpinner} from '@/components/ui';
+import {RatioPieChart} from '@/components/charts';
+import {SkillComparisonRadarChart, SkillCompetencyBadge} from '@/components/search/analysis';
+import {MarkdownContentBlock} from '@/components/utils';
 
 interface MatchDetailPanelProps {
   matchId: string;

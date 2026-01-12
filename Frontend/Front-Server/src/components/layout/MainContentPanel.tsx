@@ -6,13 +6,13 @@
  * @version 2.1.0
  * @date 2026-01-11
  */
-import React, { Suspense } from 'react';
+import React, {Suspense} from 'react';
 import {MatchItem, SkillCategory, UserMode} from '@/types';
 import QueryBoundary from '@/components/utils/QueryBoundary';
-import { SearchResultPanel } from '@/components/search/results';
+import {SearchResultPanel} from '@/components/search/results';
 import MainDashboard from '@/app/_components/MainDashboard';
-import { MatchDetailPanel } from '@/components/search/detail';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import {MatchDetailPanel} from '@/components/search/detail';
+import {LoadingSpinner} from '@/components/ui/LoadingSpinner';
 
 type PageViewMode = 'dashboard' | 'results' | 'detail';
 

@@ -6,11 +6,11 @@
  * @date 2026-01-04
  */
 import React from 'react';
-import { useQuery } from '@apollo/client/react';
-import { GET_SKILL_COMPETENCY_MATCH } from '../../../services/api/queries/search';
-import { SkillCompetencyMatch, UserMode } from '../../../types';
-import { LoadingSpinner } from '@/components/ui';
-import { CheckCircle2, AlertCircle, XCircle, TrendingUp } from 'lucide-react';
+import {useQuery} from '@apollo/client/react';
+import {GET_SKILL_COMPETENCY_MATCH} from '@/services/api/queries/search';
+import {SkillCompetencyMatch, UserMode} from '@/types';
+import {LoadingSpinner} from '@/components/ui';
+import {AlertCircle, CheckCircle2, TrendingUp, XCircle} from 'lucide-react';
 
 interface SkillCompetencyBadgeProps {
   mode: UserMode;

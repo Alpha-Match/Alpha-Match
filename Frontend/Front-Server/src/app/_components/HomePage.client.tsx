@@ -1,26 +1,23 @@
 'use client';
 
 import React, {useEffect, useTransition} from 'react';
-import {useAppDispatch, useAppSelector} from '../../services/state/hooks';
-import {
-    setDashboardData,
-    setSearchPerformed,
-    setSkillCategories
-} from '../../services/state/features/search/searchSlice';
-import {useAppNavigation} from '../../hooks/navigation/useAppNavigation';
-import {useMediaQuery} from '../../hooks/ui/useMediaQuery';
-import {InputPanel} from '@/components/input-panel';
-import {Header} from '../../components/layout/Header';
-import {useSearchMatches} from '../../hooks/data/useSearchMatches';
-import {DashboardCategory, SkillCategory, UserMode} from '../../types';
-import {CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS} from '../../constants';
-import {TabController} from '@/components/layout/TabController';
-import {SearchResultPanel} from '@/components/search/results';
-import {MatchDetailPanel} from '@/components/search/detail';
-import MainDashboard from '@/app/_components/MainDashboard';
-import QueryBoundary from '@/components/utils/QueryBoundary';
-import {Search} from 'lucide-react';
-import {SearchResultAnalysisPanel} from '@/components/search/analysis'; // Import the new analysis panel
+import {useAppDispatch, useAppSelector} from '@/services/state/hooks';
+import {setDashboardData, setSearchPerformed, setSkillCategories} from '@/services/state/features/search/searchSlice';
+import {useAppNavigation} from '@/hooks/navigation';
+import {useMediaQuery} from '@/hooks/ui';
+
+import {Header} from '@/components/layout/Header';
+import {useSearchMatches} from '@/hooks/data/useSearchMatches';
+import {DashboardCategory, SkillCategory, UserMode} from '@/types';
+import {CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS} from '@/constants';
+
+import {MainContentPanel} from '@/components/layout/MainContentPanel'; // Added this line
+
+
+
+
+
+
 
 /**
  * @file HomePage.client.tsx
@@ -89,155 +86,28 @@ export function HomePageClient({ initialSkillCategories, initialDashboardData }:
   const themeColors = userMode === UserMode.CANDIDATE ? CANDIDATE_THEME_COLORS : RECRUITER_THEME_COLORS;
   const activeColor = themeColors[0];
 
-  const renderDesktopLayout = () => {
-    if (pageViewMode === 'dashboard') {
-      return (
-        <main className="flex-1 flex flex-col overflow-y-auto custom-scrollbar p-6">
-            <MainDashboard userMode={userMode} activeColor={activeColor} />
-            <div className="absolute bottom-10 right-10 z-30">
-                <button
-                    onClick={navigateToInput}
-                    className="px-6 py-4 bg-primary text-white rounded-full shadow-lg flex items-center gap-2 transform hover:-translate-y-1 transition-transform"
-                    aria-label="검색 시작하기"
-                >
-                    <Search size={20} />
-                    검색 시작하기
-                </button>
-            </div>
-        </main>
-      );
-    }
 
-    // 3-column layout for input, analysis, and list/detail
-    return (
-      <main className="flex-1 flex overflow-hidden">
-        {/* Column 1: Input Panel */}
-        <div className="w-[380px] flex-shrink-0 h-full bg-panel-sidebar border-r border-border/30">
-          <InputPanel
-            onSearch={handleSearch}
-            isLoading={isPending && pageViewMode === 'results'}
-          />
-        </div>
-
-        {/* Column 2: Search Result Analysis Panel */}
-        <div className="w-[450px] flex-shrink-0 h-full overflow-y-auto custom-scrollbar p-6 border-r border-border/30">
-          <SearchResultAnalysisPanel
-            activeColor={activeColor}
-            userMode={userMode}
-            searchedSkills={searchedSkills}
-            skillCategories={initialSkillCategories}
-          />
-        </div>
-
-        {/* Column 3: Search Result List or Detail Panel */}
-        <div className="flex-1 h-full overflow-y-auto custom-scrollbar p-6">
-          {pageViewMode === 'detail' && selectedMatchId ? (
-            <MatchDetailPanel
-              matchId={selectedMatchId}
-              userMode={userMode}
-              onBack={goBack}
-              activeColor={activeColor}
-              searchedSkills={searchedSkills}
-            />
-          ) : (
-            <QueryBoundary loading={loading && matches.length === 0} error={error}>
-              <SearchResultPanel
-                matches={matches}
-                onMatchSelect={navigateToDetail}
-                activeColor={activeColor}
-                userMode={userMode}
-                loadMore={loadMore}
-                hasMore={hasMore}
-                loading={fetchingMore}
-                selectedMatchId={selectedMatchId}
-              />
-            </QueryBoundary>
-          )}
-        </div>
-      </main>
-    );
-  };
-
-  const renderMobileLayout = () => {
-    const renderContent = () => {
-      switch (pageViewMode) {
-        case 'dashboard':
-          return (
-            <>
-              <MainDashboard userMode={userMode} activeColor={activeColor} />
-              <div className="absolute bottom-10 right-6 z-30"> {/* Adjusted right for mobile padding */}
-                  <button
-                      onClick={navigateToInput}
-                      className="px-6 py-4 bg-primary text-white rounded-full shadow-lg flex items-center gap-2 transform hover:-translate-y-1 transition-transform"
-                      aria-label="검색 시작하기"
-                  >
-                      <Search size={20} />
-                      검색 시작하기
-                  </button>
-              </div>
-            </>
-          );
-        case 'input':
-          return <InputPanel onSearch={handleSearch} isLoading={isPending} />;
-        case 'results':
-          return (
-            <QueryBoundary loading={loading && matches.length === 0} error={error}>
-              <SearchResultPanel
-                matches={matches}
-                onMatchSelect={navigateToDetail}
-                activeColor={activeColor}
-                userMode={userMode}
-                loadMore={loadMore}
-                hasMore={hasMore}
-                loading={fetchingMore}
-                selectedMatchId={selectedMatchId}
-              />
-            </QueryBoundary>
-          );
-        case 'detail':
-          if (!selectedMatchId) return null;
-          return (
-            <MatchDetailPanel
-              matchId={selectedMatchId}
-              userMode={userMode}
-              onBack={goBack}
-              activeColor={activeColor}
-              searchedSkills={searchedSkills}
-            />
-          );
-        case 'analysis':
-          return (
-            <SearchResultAnalysisPanel
-              activeColor={activeColor}
-              userMode={userMode}
-              searchedSkills={searchedSkills}
-              skillCategories={initialSkillCategories}
-            />
-          );
-        default:
-          return null;
-      }
-    };
-
-    return (
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <TabController
-          activeView={pageViewMode}
-          onTabChange={navigateToView}
-          userMode={userMode}
-          detailAvailable={!!selectedMatchId}
-        />
-        <div className="flex-1 p-6 overflow-y-auto custom-scrollbar">
-          {renderContent()}
-        </div>
-      </main>
-    );
-  };
 
   return (
     <div className="h-screen w-screen flex flex-col bg-background text-text-primary overflow-hidden font-sans">
       <Header />
-      {isDesktop ? renderDesktopLayout() : renderMobileLayout()}
+      <MainContentPanel
+        userMode={userMode}
+        pageViewMode={pageViewMode}
+        matches={matches}
+        selectedMatchId={selectedMatchId}
+        loading={loading}
+        fetchingMore={fetchingMore}
+        error={error}
+        activeColor={activeColor}
+        onMatchSelect={navigateToDetail}
+        onBackToList={goBack}
+        onBackToDashboard={navigateToDashboard}
+        loadMore={loadMore}
+        hasMore={hasMore}
+        searchedSkills={searchedSkills}
+        skillCategories={initialSkillCategories}
+      />
     </div>
   );
 }

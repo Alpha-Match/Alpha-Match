@@ -1,9 +1,8 @@
 // Frontend/Front-Server/src/components/dashboard/SearchedSkillsCategoryDistributionChart.tsx
-import React, { useState, useEffect } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
-import { Scale } from 'chroma-js';
-import { useAppSelector } from '@/services/state/hooks';
-import { Skeleton } from '../ui';
+import React, {useEffect, useState} from 'react';
+import {Cell, Legend, Pie, PieChart, ResponsiveContainer} from 'recharts';
+import {useAppSelector} from '@/services/state/hooks';
+import {Skeleton} from '@/components/ui';
 
 // --- Sub-components ---
 const CustomPieLabel = ({ cx, cy, midAngle, outerRadius, innerRadius, percent, payload, labelColor }: any) => {

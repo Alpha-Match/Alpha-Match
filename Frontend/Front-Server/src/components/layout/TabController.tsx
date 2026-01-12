@@ -2,10 +2,10 @@
 'use client';
 
 import React from 'react';
-import { LayoutDashboard, Settings, BarChart3, FileText } from 'lucide-react';
-import { UserMode } from '@/types';
-import { useAppSelector } from '@/services/state/hooks'; // useAppSelector 임포트
-import { CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS } from '@/constants'; // 테마 색상 임포트
+import {BarChart3, FileText, LayoutDashboard, Settings} from 'lucide-react';
+import {UserMode} from '@/types';
+import {useAppSelector} from '@/services/state/hooks'; // useAppSelector 임포트
+import {CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS} from '@/constants'; // 테마 색상 임포트
 
 type PageViewMode = 'dashboard' | 'input' | 'results' | 'detail' | 'analysis';
 

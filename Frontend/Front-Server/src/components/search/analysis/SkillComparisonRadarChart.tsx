@@ -1,12 +1,21 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useQuery } from '@apollo/client/react';
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { GET_SKILL_COMPETENCY_MATCH } from '@/services/api/queries/search';
-import { SkillCompetencyMatch, UserMode } from '@/types';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { useAppSelector } from '@/services/state/hooks';
+import React, {useEffect, useState} from 'react';
+import {useQuery} from '@apollo/client/react';
+import {
+    Legend,
+    PolarAngleAxis,
+    PolarGrid,
+    PolarRadiusAxis,
+    Radar,
+    RadarChart,
+    ResponsiveContainer,
+    Tooltip
+} from 'recharts';
+import {GET_SKILL_COMPETENCY_MATCH} from '@/services/api/queries/search';
+import {SkillCompetencyMatch, UserMode} from '@/types';
+import {LoadingSpinner} from '@/components/ui';
+import {useAppSelector} from '@/services/state/hooks';
 
 interface SkillRadarChartProps {
   mode: UserMode;
@@ -59,8 +68,8 @@ export const SkillComparisonRadarChart: React.FC<SkillRadarChartProps> = ({ mode
 
     // Create a map of skill -> category
     const skillToCategoryMap = new Map<string, string>();
-    skillCategories.forEach((cat) => {
-      cat.skills.forEach((skill) => {
+    skillCategories.forEach((cat:{category:string, skills:string[]}) => {
+      cat.skills.forEach((skill:string) => {
         skillToCategoryMap.set(skill.toLowerCase(), cat.category);
       });
     });

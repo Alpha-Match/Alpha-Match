@@ -1,6 +1,6 @@
 import React from 'react';
 import {Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, LegendPayload} from 'recharts';
-import {SkillIcon} from '../ui/SkillIcon'; // Import SkillIcon
+import {SkillIcon} from '@/components/ui/SkillIcon'; // Import SkillIcon
 import {PieData} from '@/types'; // Import PieData
 
 // Props for the component

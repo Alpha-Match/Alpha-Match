@@ -1,8 +1,5 @@
 import React from 'react';
-import { InputPanelHeader } from './InputPanelHeader';
-// import { ExperienceSelector } from './ExperienceSelector'; // Commented out - not used in current version
-import { SkillSelector } from './SkillSelector';
-import { SearchButton } from './SearchButton';
+import {InputPanelHeader, SkillSelector, SearchButton} from '@/components/input-panel';
 
 interface InputPanelProps {
   onSearch: () => void;
