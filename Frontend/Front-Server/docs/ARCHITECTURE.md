@@ -12,13 +12,14 @@
 | **`src/lib/server`** | **Server Components 전용 API 함수**: 서버에서만 실행되는 데이터 fetching 로직을 관리합니다. 클라이언트 번들에 포함되지 않아 번들 크기 감소 효과가 있습니다. Next.js의 `fetch` API를 활용하여 자동 캐싱 및 revalidate 옵션을 지원합니다. |
 | **`src/components`** | **기능/화면 단위 컴포넌트 루트**: 모든 UI 컴포넌트는 이곳에 기능별로 분류되어 저장됩니다. 대부분 Client Components입니다. |
 | `components/common` | **범용 컴포넌트**: `Button`, `Tooltip`, `Icon` 등 특정 도메인에 종속되지 않고 앱 전반에서 재사용되는 가장 작은 단위의 UI 컴포넌트를 관리합니다. |
-| `components/layout` | **레이아웃 컴포넌트**: `Header`, `ThemeManager` 등 앱의 전체적인 구조와 레이아웃을 담당하는 컴포넌트를 관리합니다. |
-| `components/dashboard` | **대시보드 컴포넌트**: `DefaultDashboard`와 그를 구성하는 `GenericTreemap`, `CategoryPieChart` 등 대시보드 화면과 관련된 컴포넌트들을 관리합니다. |
+| `components/layout` | **레이아웃 컴포넌트**: `Header`, `ThemeManager`, `TabController` 등 앱의 전체적인 구조와 레이아웃을 담당하는 컴포넌트를 관리합니다. `Header`는 전역 대시보드 버튼을 포함하여 사용자가 초기 대시보드 화면으로 쉽게 이동할 수 있도록 지원합니다. |
+| `components/dashboard` | **대시보드 컴포넌트**: `DefaultDashboard`는 초기 화면에서 전체 화면으로 렌더링될 수 있으며, 이를 구성하는 `GenericTreemap`, `CategoryPieChart` 등 대시보드 화면과 관련된 컴포넌트들을 관리합니다. |
 | `components/input-panel`| **입력 패널 컴포넌트**: `InputPanel`, `SkillSelector` 등 사용자의 입력을 받는 좌측 패널과 관련된 컴포넌트들을 관리합니다. |
+| `components/search` | **검색 결과 화면 관련 컴포넌트**: `SearchResultPanel` (검색 결과 목록), `MatchDetailPanel` (상세 정보), `SearchResultAnalysisPanel` (검색 결과 분석) 등 검색 결과 표시 및 관련 분석 기능을 제공하는 컴포넌트들을 관리합니다. 이들은 새로운 3단 레이아웃의 중앙 및 우측 영역을 구성하며, `SearchResultPanel`에서 항목 클릭 시 `MatchDetailPanel`로 전환되는 등의 상호작용을 포함합니다. |
 | **`src/services`** | **외부 서비스 및 클라이언트 상태 관리**: 외부 API 연동 및 전역 클라이언트 상태를 관리하는 핵심 로직입니다. |
 | `services/api` | **API 연동 로직 (클라이언트 전용)**: GraphQL 클라이언트 (`apollo-client.ts`), GraphQL 쿼리 정의 등 클라이언트 측 API 통신 및 설정을 담당합니다. |
 | `services/state` | **전역 클라이언트 상태 관리**: Redux Toolkit 설정을 관리합니다. `features` 디렉토리 안에 각 기능별 `slice` 파일(`uiSlice`, `searchSlice` 등)을 두어 상태를 분리합니다. **도메인별 state 분리** (CANDIDATE/RECRUITER). |
-| **`src/hooks`** | **커스텀 React Hooks**: `useSearchMatches`, `useMatchDetail`과 같이 여러 컴포넌트에서 재사용될 수 있는 비즈니스 로직 및 상태 관련 로직을 분리하여 관리합니다. <br> - **`useAppNavigation`**: 앱 내 네비게이션 상태 및 액션을 캡슐화하여 `HomePage.client.tsx`와 같은 컴포넌트의 책임을 분리하고 컴포넌트를 간소화합니다. <br> - **`useIntersectionObserver`**: 요소의 가시성을 감지하는 로직(무한 스크롤 등)을 추상화하여 `SearchResultPanel.tsx`와 같은 컴포넌트의 코드를 간결하게 만듭니다. <br> - **`useHydrated`**: 서버-클라이언트 렌더링 불일치(Hydration 오류)를 방지하기 위해 컴포넌트가 클라이언트에서 완전히 하이드레이션되었는지 여부를 추적합니다. |
+| **`src/hooks`** | **커스텀 React Hooks**: `useSearchMatches`, `useMatchDetail`과 같이 여러 컴포넌트에서 재사용될 수 있는 비즈니스 로직 및 상태 관련 로직을 분리하여 관리합니다. <br> - **`useAppNavigation`**: 앱 내 네비게이션 상태 및 액션을 캡슐화하여 `HomePage.client.tsx`와 같은 컴포넌트의 책임을 분리하고 컴포넌트를 간소화합니다. <br> - **`useIntersectionObserver`**: 요소의 가시성을 감지하는 로직(무한 스크롤 등)을 추상화하여 `SearchResultPanel.tsx`와 같은 컴포넌트의 코드를 간결하게 만듭니다. <br> - **`useHydrated`**: 서버-클라이언트 렌더링 불일치(Hydration 오류)를 방지하기 위해 컴포넌트가 클라이언트에서 완전히 하이드레이션되었는지 여부를 추적합니다. <br> - **`useMediaQuery`**: 브라우저의 미디어 쿼리(`(min-width: 1024px)`)를 구독하여 화면 크기에 따라 데스크탑/모바일 레이아웃을 동적으로 전환하는 데 사용됩니다. |
 | **`src/types`** | **글로벌 타입 정의**: 애플리케이션 전반에서 사용되는 TypeScript 인터페이스, Enum 등 공통 타입 정의를 관리합니다. |
 | **`src/constants`** | **전역 상수 관리**: API 엔드포인트, 설정 값, 테마 색상 등 애플리케이션 전반에서 사용되는 변경되지 않는 값들을 중앙에서 관리합니다. |
 
@@ -136,7 +137,7 @@ export function HomePageClient({ initialSkillCategories }: Props) {
 
 ---
 
-**최종 수정일:** 2026-01-08
+**최종 수정일:** 2026-01-12
 **주요 변경사항:**
 - 데이터 페칭 책임 분리 패턴 명시 (컨테이너 컴포넌트 vs 위젯 컴포넌트)
 - Server Components 아키텍처 섹션 추가
