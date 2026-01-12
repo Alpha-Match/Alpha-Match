@@ -9,6 +9,7 @@ interface TopItemsBarChartProps {
   data: { name: string; value: number }[];
   color: string;
   loading?: boolean;
+  error?: boolean; // error prop 추가
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -22,7 +23,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     return null;
 };
 
-export const TopItemsBarChart: React.FC<TopItemsBarChartProps> = ({ title, data, color, loading }) => {
+export const TopItemsBarChart: React.FC<TopItemsBarChartProps> = ({ title, data, color, loading, error }) => {
   const theme = useAppSelector((state) => state.ui.theme);
   const [resolvedTickColor, setResolvedTickColor] = useState('currentColor');
 
@@ -41,8 +42,16 @@ export const TopItemsBarChart: React.FC<TopItemsBarChartProps> = ({ title, data,
   if (loading) {
     return <Skeleton className="h-[450px]" />;
   }
+
+  if (error) { // 에러 상태 처리
+    return (
+      <div className="bg-panel-main p-6 rounded-lg shadow-lg border border-border/30 h-full flex items-center justify-center">
+        <p className="text-text-tertiary">데이터를 불러오는 데 실패했습니다.</p>
+      </div>
+    );
+  }
   
-  const colorScale = chroma.scale([chroma(color).brighten(1), chroma(color).darken(1)]).domain([0, data.length]);
+  const colorScale = chroma.scale([chroma(color).darken(1), chroma(color).brighten(1)]).domain([0, data.length]);
 
   return (
     <div className="bg-panel-main p-6 rounded-lg shadow-lg border border-border/30 h-full">

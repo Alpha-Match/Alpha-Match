@@ -5,6 +5,7 @@ import { GET_CATEGORY_DISTRIBUTION } from '../../services/api/queries/search';
 import { CategoryMatchDistribution } from '../../types';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { Skeleton } from '../common/Skeleton'; // Keep Skeleton for other uses if any
+import chroma from 'chroma-js';
 
 // --- Sub-components ---
 
@@ -18,12 +19,7 @@ const StatCard = ({ title, value, unit }: { title: string; value: string | numbe
     </div>
 );
 
-const CATEGORY_COLORS: Record<string, string> = {
-  'Backend': '#3B82F6', 'Frontend': '#10B981', 'Database': '#8B5CF6',
-  'DevOps / Cloud': '#F59E0B', 'Machine Learning': '#EF4444', 'Mobile': '#06B6D4',
-  'Game': '#EC4899', 'Blockchain': '#6366F1', 'Collaboration / Project Management': '#84CC16',
-  'Others': '#6B7280',
-};
+
 
 // --- Combined Props ---
 interface SearchResultAnalysisProps {
@@ -92,6 +88,8 @@ export const SearchResultAnalysis: React.FC<SearchResultAnalysisProps> = ({ sear
         const circumference = 2 * Math.PI * radius;
         let currentOffset = 0;
 
+        const categoryColorScale = chroma.scale([activeColor, chroma(activeColor).brighten(2)]).domain([0, distributions.length - 1]);
+
         return (
             <div className="mt-6">
                 <h3 className="text-sm font-semibold mb-3 text-text-secondary">검색 스킬 카테고리 분포</h3>
@@ -103,7 +101,7 @@ export const SearchResultAnalysis: React.FC<SearchResultAnalysisProps> = ({ sear
                                 const strokeDasharray = circumference * percentage;
                                 const strokeDashoffset = -currentOffset;
                                 currentOffset += strokeDasharray;
-                                const color = CATEGORY_COLORS[dist.category] || CATEGORY_COLORS['Others'];
+                                const color = categoryColorScale(index).hex();
                                 return (
                                     <circle key={index} cx={size/2} cy={size/2} r={radius} fill="transparent" stroke={color} strokeWidth={strokeWidth} strokeDasharray={`${strokeDasharray} ${circumference - strokeDasharray}`} strokeDashoffset={strokeDashoffset} />
                                 );
@@ -118,7 +116,7 @@ export const SearchResultAnalysis: React.FC<SearchResultAnalysisProps> = ({ sear
                     </div>
                     <div className="flex-1 space-y-1.5">
                         {distributions.map((dist, index) => {
-                            const color = CATEGORY_COLORS[dist.category] || CATEGORY_COLORS['Others'];
+                            const color = categoryColorScale(index).hex();
                             return (
                                 <div key={index} className="flex items-center justify-between text-sm">
                                     <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -138,7 +136,7 @@ export const SearchResultAnalysis: React.FC<SearchResultAnalysisProps> = ({ sear
                     <div className="text-xs text-text-tertiary">
                         {distributions.map((dist, index) => (
                             <span key={index}>
-                                <span className="font-medium" style={{ color: CATEGORY_COLORS[dist.category] || CATEGORY_COLORS['Others'] }}>{dist.category}</span>
+                                <span className="font-medium" style={{ color: categoryColorScale(index).hex() }}>{dist.category}</span>
                                 : {dist.matchedSkills.join(', ')}
                                 {index < distributions.length - 1 && ' | '}
                             </span>

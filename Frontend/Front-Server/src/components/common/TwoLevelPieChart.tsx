@@ -145,7 +145,30 @@ export const TwoLevelPieChart: React.FC<TwoLevelPieChartProps> = ({ innerData, o
                     innerRadius={100} // Increased inner radius, creating a gap
                     outerRadius={140} // Increased outer radius
                     labelLine={false} // Keep label lines disabled
-                    label={false} // Disable labels for outer pie
+                    label={({ name, percent = 0, x, y, cx, cy, midAngle = 0, innerRadius, outerRadius }) => {
+                        // Recharts' label function receives props like { cx, cy, midAngle, outerRadius, percent, name, value }
+                        const RADIAN = Math.PI / 180;
+                        if (percent < 0.02) return null; // Only show for slices > 2% to avoid clutter
+
+                        const iconSize = 20; // Size of the skill icon
+                        const labelRadius = innerRadius + (outerRadius - innerRadius) * 0.5; // Midpoint of the outer ring
+                        const iconX = cx + labelRadius * Math.cos(-midAngle * RADIAN);
+                        const iconY = cy + labelRadius * Math.sin(-midAngle * RADIAN);
+
+                        return (
+                            <foreignObject
+                                x={iconX - iconSize / 2}
+                                y={iconY - iconSize / 2}
+                                width={iconSize}
+                                height={iconSize}
+                                className="pointer-events-none" // Ensure events pass through
+                            >
+                                <div className="flex items-center justify-center h-full w-full">
+                                    <SkillIcon skill={name!} className="w-full h-full" />
+                                </div>
+                            </foreignObject>
+                        );
+                    }}
                 >
                     {outerData.map((entry) => {
                         const categoryColor = categoryColorMap.get(entry.category) || '#CCCCCC';

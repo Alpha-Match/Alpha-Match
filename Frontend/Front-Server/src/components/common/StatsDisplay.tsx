@@ -32,7 +32,7 @@ export const StatsDisplay: React.FC<StatsDisplayProps> = ({ title, stats, loadin
     return (
         <div className="bg-panel-main p-4 rounded-lg shadow-lg">
              <h3 className="text-lg font-semibold text-text-secondary mb-4 px-2">{title}</h3>
-            <div className={`grid grid-cols-${stats.length} gap-4`}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {stats.map(stat => (
                     <StatCard key={stat.title} {...stat} />
                 ))}

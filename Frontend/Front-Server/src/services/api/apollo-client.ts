@@ -4,7 +4,7 @@ import { CombinedGraphQLErrors, ServerError } from '@apollo/client/errors';
 import type { Store } from '@reduxjs/toolkit';
 import type { showNotification } from '../state/features/notification/notificationSlice';
 
-const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || "http://localhost:8080/graphql";
+const GRAPHQL_ENDPOINT = process.env.INTERNAL_GRAPHQL_ENDPOINT!;
 const API_TIMEOUT_MS = 20 * 1000; // 20 seconds
 
 // Redux store will be injected

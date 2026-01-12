@@ -99,15 +99,6 @@ export interface DashboardCategory {
   category: string;
   skills: DashboardSkill[];
 }
-
-export interface DashboardData {
-  dashboardData: DashboardCategory[];
-}
-
-export interface DashboardVars {
-  userMode: UserMode;
-}
-
 /**
  * SkillCategory - 스킬 카테고리 정보
  * API-Server의 SkillCategory 타입과 일치
