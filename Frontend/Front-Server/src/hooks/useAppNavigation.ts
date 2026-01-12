@@ -1,8 +1,8 @@
 import { useAppDispatch, useAppSelector } from '../services/state/hooks';
 import { pushHistory, navigateBack } from '../services/state/features/ui/uiSlice';
-import { MatchItem, UserMode } from '../types';
+import { MatchItem } from '../types';
 
-type PageViewMode = 'dashboard' | 'input' | 'results' | 'detail';
+type PageViewMode = 'dashboard' | 'input' | 'results' | 'detail' | 'analysis';
 
 /**
  * 앱 내 페이지 네비게이션 로직을 관리하는 커스텀 훅입니다.
@@ -34,7 +34,12 @@ export const useAppNavigation = () => {
     dispatch(pushHistory({ userMode, view: { pageViewMode: 'detail', selectedMatchId: match.id } }));
   };
 
-  const goBack = () => {
+  const navigateToAnalysis = (match: MatchItem) => {
+    dispatch(pushHistory({ userMode, view: { pageViewMode: 'analysis', selectedMatchId: match.id } }));
+  };
+
+
+    const goBack = () => {
     dispatch(navigateBack({ userMode }));
   };
   
@@ -52,6 +57,7 @@ export const useAppNavigation = () => {
     navigateToInput,
     navigateToResults,
     navigateToDetail,
+    navigateToAnalysis,
     goBack,
     navigateToView,
   };

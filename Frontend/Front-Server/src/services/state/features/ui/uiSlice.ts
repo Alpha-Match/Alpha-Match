@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { UserMode } from '../../../../types';
 
-type PageViewMode = 'dashboard' | 'input' | 'results' | 'detail';
+type PageViewMode = 'dashboard' | 'input' | 'results' | 'detail' | 'analysis';
 
 export interface HistoryEntry {
   pageViewMode: PageViewMode;
