@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useAppSelector } from '../../services/state/hooks';
-import { UserMode } from '../../types';
+import { useAppSelector } from '@/services/state/hooks';
+import { UserMode } from '@/types';
 
 /**
  * @file ThemeManager.tsx

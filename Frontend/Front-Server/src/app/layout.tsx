@@ -1,7 +1,7 @@
 import type {Metadata} from "next";
 import "./globals.css";
 import Providers from "./providers";
-import {Notification} from "../components/common/Notification";
+import {Notification} from "../components/utils/Notification";
 import {ThemeManager} from "../components/layout/ThemeManager";
 
 export const metadata: Metadata = {

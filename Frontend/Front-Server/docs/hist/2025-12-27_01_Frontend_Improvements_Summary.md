@@ -46,8 +46,8 @@
 - `page.tsx`의 검색(`handleSearch`) 기능에 `useTransition` 훅을 적용하여, 검색 실행 중 `isPending` 상태를 활용한 UI 피드백을 제공하도록 했습니다. 이로써 `isLoading` 상태를 수동으로 관리할 필요가 줄어들었습니다.
 
 ### 3.5. React 19 `useSuspenseQuery` 패턴 적용
-- `DefaultDashboard.tsx`를 `useQuery`에서 Apollo Client의 `useSuspenseQuery`로 리팩토링하여 React Suspense 기반 데이터 페칭을 활용하도록 했습니다.
-- `page.tsx`에서는 `DefaultDashboard`를 `<Suspense>`와 `QueryBoundary`로 감싸 로딩 및 에러 상태를 선언적으로 처리하도록 했습니다.
+- `MainDashboard.tsx`를 `useQuery`에서 Apollo Client의 `useSuspenseQuery`로 리팩토링하여 React Suspense 기반 데이터 페칭을 활용하도록 했습니다.
+- `page.tsx`에서는 `MainDashboard`를 `<Suspense>`와 `QueryBoundary`로 감싸 로딩 및 에러 상태를 선언적으로 처리하도록 했습니다.
 
 ### 3.7. `useSearchMatches.ts` 무한 재시도 버그 수정
 - `useSearchMatches` 훅에서 `runSearch` 함수가 렌더링마다 새로운 참조를 생성하여 `page.tsx`의 `useEffect`를 불필요하게 재실행시키는 문제를 해결했습니다. `runSearch` 함수를 `useCallback`으로 메모이제이션하여 참조 안정성을 확보했습니다.

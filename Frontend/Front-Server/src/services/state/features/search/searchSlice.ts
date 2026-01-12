@@ -1,7 +1,7 @@
 'use client';
 
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { ExperienceLevel, UserMode, MatchItem, DashboardCategory, SkillCategory } from '../../../../types';
+import { ExperienceLevel, UserMode, MatchItem, DashboardCategory, SkillCategory } from '@/types';
 
 export interface ModeSpecificSearchState {
   selectedSkills: string[];

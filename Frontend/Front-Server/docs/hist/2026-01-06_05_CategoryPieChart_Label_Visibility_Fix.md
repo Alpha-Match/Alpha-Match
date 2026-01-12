@@ -1,20 +1,20 @@
-# `CategoryPieChart` 레이블 가시성 개선
+# `SearchedSkillsCategoryDistributionChart` 레이블 가시성 개선
 
 **날짜**: 2026-01-06
 **작성자**: Gemini Pro
-**목적**: `CategoryPieChart`에서 점유율이 낮은 파이 조각의 레이블이 표시되지 않던 문제를 해결하여 모든 카테고리 정보가 차트 내에 명확하게 나타나도록 합니다.
+**목적**: `SearchedSkillsCategoryDistributionChart`에서 점유율이 낮은 파이 조각의 레이블이 표시되지 않던 문제를 해결하여 모든 카테고리 정보가 차트 내에 명확하게 나타나도록 합니다.
 
 ---
 
 ## 📋 작업 요약
 
-이전에 `CategoryPieChart.tsx`에 구현된 `CustomPieLabel` 컴포넌트에는 점유율이 5% 미만인 파이 조각의 레이블을 생략하는 로직이 있었습니다. 이로 인해 'Collaboration / Project Management'와 같이 점유율이 낮은 카테고리가 차트 내에서 전혀 표시되지 않아 사용자가 모든 정보를 파악하기 어렵다는 피드백이 있었습니다. 본 작업을 통해 이 문제를 해결하여 모든 카테고리의 레이블이 차트 내에 표시되도록 개선했습니다.
+이전에 `SearchedSkillsCategoryDistributionChart.tsx`에 구현된 `CustomPieLabel` 컴포넌트에는 점유율이 5% 미만인 파이 조각의 레이블을 생략하는 로직이 있었습니다. 이로 인해 'Collaboration / Project Management'와 같이 점유율이 낮은 카테고리가 차트 내에서 전혀 표시되지 않아 사용자가 모든 정보를 파악하기 어렵다는 피드백이 있었습니다. 본 작업을 통해 이 문제를 해결하여 모든 카테고리의 레이블이 차트 내에 표시되도록 개선했습니다.
 
 ---
 
 ## ✅ 완료된 작업 상세 내역
 
-### 1. `CategoryPieChart.tsx` 레이블 가시성 로직 수정
+### 1. `SearchedSkillsCategoryDistributionChart.tsx` 레이블 가시성 로직 수정
 
 #### 문제점
 -   `CustomPieLabel` 컴포넌트 내 `if (percent < 0.05)` 조건으로 인해 점유율이 5% 미만인 파이 조각의 레이블이 렌더링되지 않았습니다.
@@ -35,4 +35,4 @@
 
 ## 📝 수정된 파일 목록
 
--   `src/components/dashboard/CategoryPieChart.tsx`
+-   `src/components/dashboard/SearchedSkillsCategoryDistributionChart.tsx`

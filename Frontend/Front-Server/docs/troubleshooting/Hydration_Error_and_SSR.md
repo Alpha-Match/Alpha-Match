@@ -2,7 +2,7 @@
 
 **작성일**: 2026-01-06
 **에러**: `Hydration failed because the server rendered HTML didn't match the client.`
-**발생 위치**: `DefaultDashboard.tsx`
+**발생 위치**: `MainDashboard.tsx`
 
 ---
 
@@ -18,11 +18,11 @@ Next.js와 같은 서버 사이드 렌더링(SSR) 프레임워크에서 **Hydrat
 
 ## 2. 에러 발생 원인
 
-Hydration 에러는 서버와 클라이언트의 첫 렌더링 결과물이 다를 때 발생합니다. `DefaultDashboard.tsx`에서 발생한 문제의 원인은 다음과 같습니다.
+Hydration 에러는 서버와 클라이언트의 첫 렌더링 결과물이 다를 때 발생합니다. `MainDashboard.tsx`에서 발생한 문제의 원인은 다음과 같습니다.
 
 ### 상황 분석
 
--   `DefaultDashboard` 컴포넌트는 Redux 스토어의 `dashboardData` 상태에 따라 다른 UI를 보여줍니다.
+-   `MainDashboard` 컴포넌트는 Redux 스토어의 `dashboardData` 상태에 따라 다른 UI를 보여줍니다.
     -   `dashboardData`가 `null`이면: **스켈레톤 UI**를 렌더링
     -   `dashboardData`가 존재하면: **실제 대시보드(파이 차트 등)**를 렌더링
 
@@ -34,20 +34,20 @@ Hydration 에러는 서버와 클라이언트의 첫 렌더링 결과물이 다�
 3. 이 데이터는 `HomePage.client.tsx`에 props로 전달됩니다.
 4. 서버 렌더링 과정에서, Client Component인 `HomePage.client.tsx`의 **`useEffect`는 실행되지 않습니다.**
 5. 따라서 Redux 스토어는 `dashboardData`로 채워지지 않고, 초기 상태인 `null`을 유지합니다.
-6. `DefaultDashboard`가 렌더링될 때 `useAppSelector`는 `null`을 반환합니다.
+6. `MainDashboard`가 렌더링될 때 `useAppSelector`는 `null`을 반환합니다.
 7. **결과**: 서버는 항상 **스켈레톤 UI**가 포함된 HTML을 생성하여 브라우저에 보냅니다.
 
 #### 🛤️ 경로 2: 클라이언트 (Hydration)
 1. 브라우저는 서버로부터 스켈레톤 UI가 담긴 HTML을 받습니다.
 2. React는 Hydration을 시작하며, 서버가 했던 것과 똑같은 UI를 만들어보려고 시도합니다.
 3. 이 때, 사용자가 이전에 다른 페이지를 방문했다가 다시 돌아온 경우, **클라이언트의 Redux 스토어에는 `dashboardData`가 이미 존재할 수 있습니다.**
-4. `DefaultDashboard`가 렌더링될 때 `useAppSelector`는 Redux에서 `dashboardData`를 즉시 가져옵니다.
+4. `MainDashboard`가 렌더링될 때 `useAppSelector`는 Redux에서 `dashboardData`를 즉시 가져옵니다.
 5. **결과**: 클라이언트는 첫 렌더링부터 **실제 대시보드 UI**를 생성하려고 시도합니다.
 
 ### 💥 불일치 발생!
 
 -   **서버가 보낸 것**: `<Skeleton />`
--   **클라이언트가 그리려는 것**: `<CategoryPieChart />`
+-   **클라이언트가 그리려는 것**: `<SearchedSkillsCategoryDistributionChart />`
 
 React는 이 둘의 구조가 달라 어디에 이벤트 핸들러를 붙여야 할지 알 수 없게 되고, 결국 "Hydration failed" 에러를 발생시킵니다.
 
@@ -73,11 +73,11 @@ export const useHydrated = () => {
 ```
 
 ### 훅 적용
-**파일**: `src/components/dashboard/DefaultDashboard.tsx`
+**파일**: `src/components/dashboard/MainDashboard.tsx`
 ```typescript
-import { useHydrated } from '../../hooks/useHydrated'; // 훅 임포트
+import { useHydrated } from '@/hooks/useHydrated'; // 훅 임포트
 
-export default function DefaultDashboard() {
+export default function MainDashboard() {
     const isHydrated = useHydrated(); // 하이드레이션 상태 추적
     const userMode = useAppSelector((state) => state.ui.userMode);
     const dashboardData = useAppSelector((state) => state.search[userMode].dashboardData);

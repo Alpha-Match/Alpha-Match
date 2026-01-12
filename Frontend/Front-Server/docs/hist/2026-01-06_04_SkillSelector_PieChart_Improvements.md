@@ -1,17 +1,17 @@
-# 프론트엔드 UI 개선: SkillSelector 토글 및 CategoryPieChart 레이블 표시
+# 프론트엔드 UI 개선: SkillSelector 토글 및 SearchedSkillsCategoryDistributionChart 레이블 표시
 
 **날짜**: 2026-01-06
 **작성자**: Gemini Pro
-**목적**: 사용자 경험 향상을 위해 `SkillSelector`의 카테고리 목록 토글 기능과 `CategoryPieChart`의 그래프 내 레이블 표시 기능을 구현합니다.
+**목적**: 사용자 경험 향상을 위해 `SkillSelector`의 카테고리 목록 토글 기능과 `SearchedSkillsCategoryDistributionChart`의 그래프 내 레이블 표시 기능을 구현합니다.
 
 ---
 
 ## 📋 작업 요약
 
-사용자 피드백과 UI/UX 개선 목표에 따라 `SkillSelector`와 `CategoryPieChart` 컴포넌트에 새로운 기능을 추가했습니다.
+사용자 피드백과 UI/UX 개선 목표에 따라 `SkillSelector`와 `SearchedSkillsCategoryDistributionChart` 컴포넌트에 새로운 기능을 추가했습니다.
 
 1.  **`SkillSelector.tsx`**: 기술 스택 카테고리를 토글하여 확장/축소할 수 있는 기능을 추가했습니다.
-2.  **`CategoryPieChart.tsx`**: 파이 차트의 각 조각에 해당 카테고리 이름과 백분율을 직접 표시하도록 개선했습니다.
+2.  **`SearchedSkillsCategoryDistributionChart.tsx`**: 파이 차트의 각 조각에 해당 카테고리 이름과 백분율을 직접 표시하도록 개선했습니다.
 
 ---
 
@@ -32,10 +32,10 @@
     -   `isOpen` 상태에 따라 `max-h-96 opacity-100` 또는 `max-h-0 opacity-0` 클래스를 동적으로 적용하여 부드러운 확장/축소 애니메이션을 구현했습니다.
 4.  **검색 필터 개선**: `filteredCategories` 계산 시 카테고리 이름 자체도 검색되도록 `category.category.toLowerCase().includes(searchTerm.toLowerCase())` 조건을 추가했습니다.
 
-### 2. `CategoryPieChart.tsx` 그래프 내 레이블 표시 기능 구현
+### 2. `SearchedSkillsCategoryDistributionChart.tsx` 그래프 내 레이블 표시 기능 구현
 
 #### 문제점
--   `CategoryPieChart`는 각 파이 조각의 백분율만 외부에 표시하고 있어, 사용자가 각 조각이 어떤 카테고리인지 파악하려면 범례(Legend)를 참조해야 했습니다. 이는 직관성이 떨어집니다.
+-   `SearchedSkillsCategoryDistributionChart`는 각 파이 조각의 백분율만 외부에 표시하고 있어, 사용자가 각 조각이 어떤 카테고리인지 파악하려면 범례(Legend)를 참조해야 했습니다. 이는 직관성이 떨어집니다.
 
 #### 해결 방안
 1.  **`CustomPieLabel` 컴포넌트 수정**:
@@ -52,11 +52,11 @@
 ## 📊 UI/UX 개선 효과
 
 -   **`SkillSelector`**: 길어진 기술 스택 목록을 효율적으로 관리하고, 원하는 카테고리에 쉽게 집중할 수 있게 되어 사용성이 크게 향상되었습니다.
--   **`CategoryPieChart`**: 그래프 자체에서 모든 정보(카테고리 이름 및 백분율)를 직관적으로 파악할 수 있게 되어 데이터 해석의 용이성과 시각적 효율성이 높아졌습니다.
+-   **`SearchedSkillsCategoryDistributionChart`**: 그래프 자체에서 모든 정보(카테고리 이름 및 백분율)를 직관적으로 파악할 수 있게 되어 데이터 해석의 용이성과 시각적 효율성이 높아졌습니다.
 
 ---
 
 ## 📝 수정된 파일 목록
 
 -   `src/components/input-panel/SkillSelector.tsx`
--   `src/components/dashboard/CategoryPieChart.tsx`
+-   `src/components/dashboard/SearchedSkillsCategoryDistributionChart.tsx`

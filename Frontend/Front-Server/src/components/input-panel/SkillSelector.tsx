@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useAppSelector, useAppDispatch } from '../../services/state/hooks';
-import { toggleSkill, resetSearch } from '../../services/state/features/search/searchSlice';
+import { useAppSelector, useAppDispatch } from '@/services/state/hooks';
+import { toggleSkill, resetSearch } from '@/services/state/features/search/searchSlice';
 import { Code, Search, X } from 'lucide-react';
-import { ClearButton } from '../../components/common/ClearButton';
+import { ClearButton } from '../ui/ClearButton';
 import { SkillCategoryItem } from './SkillCategoryItem'; // Import the new component
 
 export const SkillSelector: React.FC = () => {

@@ -10,7 +10,7 @@
 
 `Frontend_Improvement_Plan.md`의 내용과 사용자 요청에 따라, 프론트엔드 애플리케이션의 사용자 경험과 상태 관리 로직을 대폭 개선했습니다.
 
-1.  **`CategoryPieChart` 업데이트 버그 수정**: 검색 실행 시에만 차트가 업데이트되도록 수정
+1.  **`SearchedSkillsCategoryDistributionChart` 업데이트 버그 수정**: 검색 실행 시에만 차트가 업데이트되도록 수정
 2.  **`SkillSelector` UI 개선**: 기술 스택을 카테고리별로 그룹화하여 표시
 3.  **Multiple Back Stacks (History) 구현**: 각 사용자 모드(Candidate/Recruiter)별로 탐색 기록을 관리하는 히스토리 스택 기능 구현
 
@@ -18,10 +18,10 @@
 
 ## ✅ 완료된 작업 상세 내역
 
-### 1. `CategoryPieChart` 업데이트 로직 수정
+### 1. `SearchedSkillsCategoryDistributionChart` 업데이트 로직 수정
 
 #### 문제점
-- `SearchResultPanel`의 `CategoryPieChart`가 `selectedSkills`(현재 선택 중인 스킬)를 직접 참조하여, 스킬을 선택/해제할 때마다 실시간으로 차트가 변경되는 원치 않는 동작이 발생했습니다.
+- `SearchResultPanel`의 `SearchedSkillsCategoryDistributionChart`가 `selectedSkills`(현재 선택 중인 스킬)를 직접 참조하여, 스킬을 선택/해제할 때마다 실시간으로 차트가 변경되는 원치 않는 동작이 발생했습니다.
 
 #### 해결 방안
 1.  **`searchSlice`에 `searchedSkills` 상태 추가**:
@@ -32,7 +32,7 @@
 
 3.  **컴포넌트 Prop 전달 구조 변경**:
     -   `HomePage.client.tsx` → `MainContentPanel.tsx` → `SearchResultPanel.tsx`로 이어지는 props 전달 과정에서, `selectedSkills` 대신 `searchedSkills`를 전달하도록 수정했습니다.
-    -   `CategoryPieChart`는 이제 `searchedSkills`를 기반으로 렌더링되므로, 검색이 실행된 후에만 차트 내용이 변경됩니다.
+    -   `SearchedSkillsCategoryDistributionChart`는 이제 `searchedSkills`를 기반으로 렌더링되므로, 검색이 실행된 후에만 차트 내용이 변경됩니다.
 
 ### 2. `SkillSelector` 카테고리별 그룹화
 

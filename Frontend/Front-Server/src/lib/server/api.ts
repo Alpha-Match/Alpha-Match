@@ -6,9 +6,9 @@
  * @date 2025-12-30
  */
 
-import { SkillCategory } from '../../types';
-import { GET_SKILL_CATEGORIES } from '../../services/api/queries/skills';
-import { GET_DASHBOARD_DATA } from '../../services/api/queries/dashboard';
+import { SkillCategory } from '@/types';
+import { GET_SKILL_CATEGORIES } from '@/services/api/queries/skills';
+import { GET_DASHBOARD_DATA } from '@/services/api/queries/dashboard';
 
 const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT!;
 

@@ -2,13 +2,12 @@
 'use client';
 
 import React from 'react';
-import { useAppSelector, useAppDispatch } from '../../services/state/hooks';
-import { resetSearch } from '../../services/state/features/search/searchSlice';
-import { setUserMode, resetView } from '../../services/state/features/ui/uiSlice';
-import { UserMode } from '../../types';
-import { Briefcase, UserSearch, Home } from 'lucide-react';
-import { ThemeToggle } from '../common/ThemeToggle';
-import { CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS } from '../../constants';
+import {useAppDispatch, useAppSelector} from '@/services/state/hooks';
+import {resetView, setUserMode} from '@/services/state/features/ui/uiSlice';
+import {UserMode} from '@/types';
+import {Briefcase, Home, UserSearch} from 'lucide-react';
+import {ThemeToggle} from '@/components/ui/ThemeToggle';
+import {CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS} from '@/constants';
 
 interface HeaderProps {
   showDashboardButton?: boolean;

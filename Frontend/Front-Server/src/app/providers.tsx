@@ -2,9 +2,9 @@
 
 import { ApolloProvider } from '@apollo/client/react';
 import { Provider as ReduxProvider } from 'react-redux';
-import { makeStore } from '../services/state/store';
-import { makeClient, setApolloStore } from '../services/api/apollo-client';
-import { showNotification } from '../services/state/features/notification/notificationSlice';
+import { makeStore } from '@/services/state/store';
+import { makeClient, setApolloStore } from '@/services/api/apollo-client';
+import { showNotification } from '@/services/state/features/notification/notificationSlice';
 import { useState, useEffect, useRef } from 'react';
 import { PersistGate } from 'redux-persist/integration/react';
 import { Persistor, persistStore } from 'redux-persist';

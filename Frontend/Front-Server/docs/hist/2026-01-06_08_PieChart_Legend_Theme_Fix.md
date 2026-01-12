@@ -1,20 +1,20 @@
-# `CategoryPieChart` 범례 테마 색상 수정
+# `SearchedSkillsCategoryDistributionChart` 범례 테마 색상 수정
 
 **날짜**: 2026-01-06
 **작성자**: Gemini Pro
-**목적**: `CategoryPieChart`의 범례(Legend) 텍스트 색상이 다크/라이트 모드에 따라 올바르게 변경되도록 수정합니다.
+**목적**: `SearchedSkillsCategoryDistributionChart`의 범례(Legend) 텍스트 색상이 다크/라이트 모드에 따라 올바르게 변경되도록 수정합니다.
 
 ---
 
 ## 📋 작업 요약
 
-`CategoryPieChart`의 범례 텍스트 색상이 테마 관리자(`ThemeManager.tsx`)에 의해 동적으로 결정되는 `--color-text-secondary` CSS 변수를 따르지 않고 항상 어둡게 표시되는 문제가 있었습니다. `Recharts`의 `Legend` 컴포넌트 스타일링 방식을 조정하여 이 문제를 해결했습니다.
+`SearchedSkillsCategoryDistributionChart`의 범례 텍스트 색상이 테마 관리자(`ThemeManager.tsx`)에 의해 동적으로 결정되는 `--color-text-secondary` CSS 변수를 따르지 않고 항상 어둡게 표시되는 문제가 있었습니다. `Recharts`의 `Legend` 컴포넌트 스타일링 방식을 조정하여 이 문제를 해결했습니다.
 
 ---
 
 ## ✅ 완료된 작업 상세 내역
 
-### 1. `CategoryPieChart.tsx` 범례 텍스트 색상 수정
+### 1. `SearchedSkillsCategoryDistributionChart.tsx` 범례 텍스트 색상 수정
 
 #### 문제점
 -   `Legend` 컴포넌트의 `wrapperStyle={{ fill: 'var(--color-text-secondary)' }}` 설정이 범례 텍스트(SVG `<text>` 요소)의 `fill` 속성에 올바르게 적용되지 않았습니다. 이는 `wrapperStyle`이 범례를 감싸는 상위 HTML 요소에 적용되고, SVG 텍스트 요소에는 직접적으로 영향을 주지 않았기 때문입니다. 그 결과, 범례 텍스트가 테마와 관계없이 항상 어둡게 표시되어 가독성이 떨어졌습니다.
@@ -34,4 +34,4 @@
 
 ## 📝 수정된 파일 목록
 
--   `src/components/dashboard/CategoryPieChart.tsx`
+-   `src/components/dashboard/SearchedSkillsCategoryDistributionChart.tsx`

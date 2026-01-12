@@ -1,9 +1,9 @@
 // src/components/input-panel/InputPanelHeader.tsx
 import React from 'react';
-import { useAppSelector } from '../../services/state/hooks';
-import { UserMode } from '../../types';
+import { useAppSelector } from '@/services/state/hooks';
+import { UserMode } from '@/types';
 import { Search, Briefcase } from 'lucide-react';
-import { CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS } from '../../constants';
+import { CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS } from '@/constants';
 
 export const InputPanelHeader: React.FC = () => {
   const mode = useAppSelector((state) => state.ui.userMode);

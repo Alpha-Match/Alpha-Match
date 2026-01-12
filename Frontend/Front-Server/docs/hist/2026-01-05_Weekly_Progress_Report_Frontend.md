@@ -44,7 +44,7 @@ UX 개선:
 └─ SSR Hydration 에러 해결 (useHydrated)
 
 새 컴포넌트:
-├─ CategoryPieChart (SVG 기반 파이 차트)
+├─ SearchedSkillsCategoryDistributionChart (SVG 기반 파이 차트)
 ├─ SkillCompetencyBadge (역량 매칭도 표시)
 ├─ Skeleton (로딩 UI)
 ├─ ResultList (검색 결과 리스트)
@@ -72,11 +72,11 @@ UX 개선:
 **📅 작업일:** 2026-01-04 ~ 2026-01-05
 **📦 Commit:** `2107b82`
 
-#### 2.1.1 CategoryPieChart 컴포넌트
+#### 2.1.1 SearchedSkillsCategoryDistributionChart 컴포넌트
 
 **목적:** 검색한 기술 스택의 카테고리별 분포를 SVG 원 그래프로 시각화
 
-**파일:** `src/components/search/CategoryPieChart.tsx`
+**파일:** `src/components/search/SearchedSkillsCategoryDistributionChart.tsx`
 
 **핵심 기술:** SVG `<circle>` + `strokeDasharray` + `strokeDashoffset`
 
@@ -100,7 +100,7 @@ UX 개선:
 **구현 코드:**
 
 ```tsx
-const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
+const SearchedSkillsCategoryDistributionChart: React.FC<CategoryPieChartProps> = ({
   skills,
   activeColor
 }) => {
@@ -603,7 +603,7 @@ Error: Hydration failed because the server rendered HTML
 didn't match the client.
 ```
 
-**발생 위치:** `DefaultDashboard.tsx`
+**발생 위치:** `MainDashboard.tsx`
 
 **근본 원인:**
 
@@ -616,7 +616,7 @@ didn't match the client.
 │  3. HomePage.client.tsx에 props 전달 ✅            │
 │  4. Server 렌더링 시 useEffect 실행 안 됨 ❌      │
 │  5. Redux 스토어: dashboardData = null ❌          │
-│  6. DefaultDashboard: Skeleton UI 렌더링 ✅        │
+│  6. MainDashboard: Skeleton UI 렌더링 ✅        │
 │                                                     │
 │  → Server HTML: <Skeleton />                       │
 └────────────────────────────────────────────────────┘
@@ -628,21 +628,21 @@ didn't match the client.
 │  2. React Hydration 시작                           │
 │  3. 이전에 방문한 페이지에서 Redux 스토어에        │
 │     dashboardData가 이미 존재 ❌                   │
-│  4. DefaultDashboard: 실제 Dashboard UI 렌더링 ❌  │
+│  4. MainDashboard: 실제 Dashboard UI 렌더링 ❌  │
 │                                                     │
-│  → Client HTML: <CategoryPieChart />               │
+│  → Client HTML: <SearchedSkillsCategoryDistributionChart />               │
 └────────────────────────────────────────────────────┘
 
 💥 불일치 발생!
 Server: <Skeleton />
-Client: <CategoryPieChart />
+Client: <SearchedSkillsCategoryDistributionChart />
 ```
 
 **핵심 문제:**
 
 ```tsx
-// DefaultDashboard.tsx (문제 코드)
-export default function DefaultDashboard() {
+// MainDashboard.tsx (문제 코드)
+export default function MainDashboard() {
   const dashboardData = useAppSelector(
     state => state.search[userMode].dashboardData
   );
@@ -651,7 +651,7 @@ export default function DefaultDashboard() {
     return <Skeleton />; // ← Server: 항상 이것
   }
 
-  return <CategoryPieChart />; // ← Client: Redux에 데이터 있으면 이것
+  return <SearchedSkillsCategoryDistributionChart />; // ← Client: Redux에 데이터 있으면 이것
 }
 ```
 
@@ -678,10 +678,10 @@ export const useHydrated = () => {
 **적용:**
 
 ```tsx
-// DefaultDashboard.tsx (개선 코드)
-import { useHydrated } from '../../hooks/useHydrated';
+// MainDashboard.tsx (개선 코드)
+import { useHydrated } from '@/hooks/useHydrated';
 
-export default function DefaultDashboard() {
+export default function MainDashboard() {
   const isHydrated = useHydrated(); // ← Hydration 상태 추적
   const dashboardData = useAppSelector(
     state => state.search[userMode].dashboardData
@@ -692,7 +692,7 @@ export default function DefaultDashboard() {
     return <Skeleton />;
   }
 
-  return <CategoryPieChart data={dashboardData} />;
+  return <SearchedSkillsCategoryDistributionChart data={dashboardData} />;
 }
 ```
 
@@ -728,7 +728,7 @@ export default function DefaultDashboard() {
 │  useHydrated() → true                              │
 │  if (!isHydrated || !dashboardData)                │
 │    → dashboardData 있으면 false                    │
-│  → return <CategoryPieChart />                     │
+│  → return <SearchedSkillsCategoryDistributionChart />                     │
 │                                                     │
 │  ✅ 실제 데이터 표시                               │
 └────────────────────────────────────────────────────┘
@@ -1021,14 +1021,14 @@ const navigationMachine = createMachine({
 ```
 2026-01-05  [2107b82] feat(dashboard): Dashboard 분석
             ├─ Files: 17 (Frontend 파트)
-            │  ├─ CategoryPieChart.tsx (new, +169)
+            │  ├─ SearchedSkillsCategoryDistributionChart.tsx (new, +169)
             │  ├─ SkillCompetencyBadge.tsx (new, +210)
             │  ├─ useSearchMatches.ts (+45, -18)
             │  ├─ MainContentPanel.tsx (+12, -8)
             │  └─ ...
             ├─ Lines: +1,263, -172 (Frontend)
             └─ Features:
-                ├─ CategoryPieChart 컴포넌트
+                ├─ SearchedSkillsCategoryDistributionChart 컴포넌트
                 ├─ SkillCompetencyBadge 컴포넌트
                 ├─ 무한 스크롤 UX 개선
                 └─ 스킬 정렬 (캐시 일관성)
@@ -1061,10 +1061,10 @@ const navigationMachine = createMachine({
 
 | 컴포넌트 | 라인 수 | 복잡도 | 비고 |
 |---------|--------|--------|------|
-| CategoryPieChart.tsx | 169 | Medium | SVG 계산 로직 |
+| SearchedSkillsCategoryDistributionChart.tsx | 169 | Medium | SVG 계산 로직 |
 | SkillCompetencyBadge.tsx | 210 | Medium | 3단계 레벨 분기 |
 | useSearchMatches.ts | 220 | High | Reactive 로직, Throttle |
-| DefaultDashboard.tsx | 180 | Medium | Hydration 처리 |
+| MainDashboard.tsx | 180 | Medium | Hydration 처리 |
 | SearchResultPanel.tsx | 150 | Low | 리스트 렌더링 |
 
 ### 4.3 타입 안정성 지표
@@ -1089,7 +1089,7 @@ TypeScript 타입 커버리지: 98%
    - ✅ SSR Hydration 에러 완전 해결
 
 2. **시각화 완성도**
-   - ✅ CategoryPieChart (SVG 기반)
+   - ✅ SearchedSkillsCategoryDistributionChart (SVG 기반)
    - ✅ SkillCompetencyBadge (3단계 레벨)
    - ✅ Skeleton 로딩 UI
    - ✅ 테마 일관성 유지

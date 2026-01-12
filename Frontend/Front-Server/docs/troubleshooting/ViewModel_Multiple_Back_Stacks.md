@@ -517,7 +517,7 @@ const runSearch = useCallback(async (mode, skills, experience) => {
 **Redux Slice 타입 정의:**
 ```typescript
 // searchSlice.ts
-import { MatchItem } from '../../../../types'; // 반드시 import
+import { MatchItem } from '@/types'; // 반드시 import
 
 export interface ModeSpecificSearchState {
   selectedSkills: string[];

@@ -1,22 +1,26 @@
 'use client';
 
-import React, { useEffect, useTransition } from 'react';
-import { useAppDispatch, useAppSelector } from '../../services/state/hooks';
-import { setSearchPerformed, setSkillCategories, setDashboardData } from '../../services/state/features/search/searchSlice';
-import { useAppNavigation } from '../../hooks/useAppNavigation';
-import { useMediaQuery } from '../../hooks/useMediaQuery';
-import { InputPanel } from '../../components/input-panel';
-import { Header } from '../../components/layout/Header';
-import { useSearchMatches } from '../../hooks/useSearchMatches';
-import { UserMode, SkillCategory, DashboardCategory } from '../../types';
-import { CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS } from '../../constants';
-import { TabController } from '@/components/layout/TabController';
-import SearchResultPanel from '@/components/search/SearchResultPanel';
-import MatchDetailPanel from '@/components/search/MatchDetailPanel';
-import DefaultDashboard from '@/components/dashboard/DefaultDashboard';
-import QueryBoundary from '@/components/common/QueryBoundary';
-import { Pickaxe, Search, Home } from 'lucide-react';
-import { SearchResultAnalysisPanel } from '@/components/search/SearchResultAnalysisPanel'; // Import the new analysis panel
+import React, {useEffect, useTransition} from 'react';
+import {useAppDispatch, useAppSelector} from '../../services/state/hooks';
+import {
+    setDashboardData,
+    setSearchPerformed,
+    setSkillCategories
+} from '../../services/state/features/search/searchSlice';
+import {useAppNavigation} from '../../hooks/navigation/useAppNavigation';
+import {useMediaQuery} from '../../hooks/ui/useMediaQuery';
+import {InputPanel} from '@/components/input-panel';
+import {Header} from '../../components/layout/Header';
+import {useSearchMatches} from '../../hooks/data/useSearchMatches';
+import {DashboardCategory, SkillCategory, UserMode} from '../../types';
+import {CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS} from '../../constants';
+import {TabController} from '@/components/layout/TabController';
+import {SearchResultPanel} from '@/components/search/results';
+import {MatchDetailPanel} from '@/components/search/detail';
+import MainDashboard from '@/app/_components/MainDashboard';
+import QueryBoundary from '@/components/utils/QueryBoundary';
+import {Search} from 'lucide-react';
+import {SearchResultAnalysisPanel} from '@/components/search/analysis'; // Import the new analysis panel
 
 /**
  * @file HomePage.client.tsx
@@ -89,7 +93,7 @@ export function HomePageClient({ initialSkillCategories, initialDashboardData }:
     if (pageViewMode === 'dashboard') {
       return (
         <main className="flex-1 flex flex-col overflow-y-auto custom-scrollbar p-6">
-            <DefaultDashboard userMode={userMode} activeColor={activeColor} />
+            <MainDashboard userMode={userMode} activeColor={activeColor} />
             <div className="absolute bottom-10 right-10 z-30">
                 <button
                     onClick={navigateToInput}
@@ -160,7 +164,7 @@ export function HomePageClient({ initialSkillCategories, initialDashboardData }:
         case 'dashboard':
           return (
             <>
-              <DefaultDashboard userMode={userMode} activeColor={activeColor} />
+              <MainDashboard userMode={userMode} activeColor={activeColor} />
               <div className="absolute bottom-10 right-6 z-30"> {/* Adjusted right for mobile padding */}
                   <button
                       onClick={navigateToInput}

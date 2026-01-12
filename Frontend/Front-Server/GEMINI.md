@@ -54,7 +54,7 @@
     데스크탑 모드에서 `InputPanel`이나 검색 결과 화면에서 초기 대시보드 화면으로 돌아가는 명확한 버튼을 제공하기 위해 상단 헤더(`Header`) 컴포넌트에 '🏠 대시보드' 버튼을 추가합니다.
     
     -   `Header` 컴포넌트에는 `onNavigateToDashboard` 콜백 함수와 `showDashboardButton` 플래그를 prop으로 전달합니다.
-    -   `Header` 내부에서는 `showDashboardButton`이 `true`일 때 이 버튼을 렌더링하고, 클릭 시 `onNavigateToDashboard`를 호출하여 `DefaultDashboard` 화면으로 전환합니다.
+    -   `Header` 내부에서는 `showDashboardButton`이 `true`일 때 이 버튼을 렌더링하고, 클릭 시 `onNavigateToDashboard`를 호출하여 `MainDashboard` 화면으로 전환합니다.
     -   이 버튼은 `pageViewMode`가 'dashboard'가 아닐 때 항상 표시되어, 사용자가 어떤 화면에 있든 한 번의 클릭으로 초기 대시보드로 돌아갈 수 있도록 접근성을 높입니다.
     
     ---
@@ -112,13 +112,13 @@
 - **Apollo Client**: GraphQL API 통신 및 네트워크 레벨 캐시 (InMemoryCache)
 - **Redux Toolkit**: ViewModel - 도메인별 UI 상태 및 검색 결과 영구 저장
   - `searchSlice.matches`: 검색 결과를 Redux에 저장하여 모드 전환 시에도 보존
-  - `searchSlice.searchedSkills`: 검색에 실제 사용된 스킬을 저장하여, 의도치 않은 UI 업데이트를 방지 (예: `CategoryPieChart`)
+  - `searchSlice.searchedSkills`: 검색에 실제 사용된 스킬을 저장하여, 의도치 않은 UI 업데이트를 방지 (예: `SearchedSkillsCategoryDistributionChart`)
   - `uiSlice.history`: 페이지 뷰(`pageViewMode`, `selectedMatchId`)의 배열을 저장하여, 모드별 탐색 기록(뒤로 가기)을 관리합니다.
 - **Multiple Back Stacks**: 각 UserMode(CANDIDATE/RECRUITER)가 독립적인 상태 스택(검색 조건, 검색 결과, 탐색 기록)을 유지합니다.
 
 **데이터 페칭 책임 (Data Fetching Responsibilities):**
 - **페이지 레벨 데이터 (Page-level Data):** `HomePage.client.tsx`와 같은 최상위 컨테이너 컴포넌트가 Redux와 상호작용하며 페이지의 핵심 데이터(`matches`, `searchedSkills` 등)를 관리하고 하위 컴포넌트에 props로 전달합니다.
-- **컴포넌트 레벨 통계/분석 데이터 (Component-level Stats/Analysis Data):** `SearchResultPanel.tsx` 이나 그 하위의 `TopSkills`, `CategoryPieChart`와 같은 분석 컴포넌트는 **자체적으로 필요한 데이터를 GraphQL 쿼리(`useQuery`)를 통해 직접 가져올 수 있습니다.** 이는 컴포넌트의 독립성과 재사용성을 높이고, props drilling을 방지하는 유효한 패턴입니다. 예를 들어, 검색 결과의 전체 개수(`totalCount`)는 `SearchResultPanel`이 직접 `GET_SEARCH_STATISTICS` 쿼리로 가져옵니다.
+- **컴포넌트 레벨 통계/분석 데이터 (Component-level Stats/Analysis Data):** `SearchResultPanel.tsx` 이나 그 하위의 `TopSkills`, `SearchedSkillsCategoryDistributionChart`와 같은 분석 컴포넌트는 **자체적으로 필요한 데이터를 GraphQL 쿼리(`useQuery`)를 통해 직접 가져올 수 있습니다.** 이는 컴포넌트의 독립성과 재사용성을 높이고, props drilling을 방지하는 유효한 패턴입니다. 예를 들어, 검색 결과의 전체 개수(`totalCount`)는 `SearchResultPanel`이 직접 `GET_SEARCH_STATISTICS` 쿼리로 가져옵니다.
 
 **주의사항:**
 - Hook의 useState로 matches를 관리하지 말 것 (컴포넌트 재렌더링 시 손실)
@@ -161,8 +161,8 @@
   - `2026-01-06_01_Improvement_Plan_Implementation.md` - 개선 계획 구현 (히스토리 스택, UI 개선 등)
   - `2026-01-06_02_SkillSelector_BugFix.md` - `SkillSelector.tsx`의 `undefined` 오류 수정 및 문서 업데이트
   - `2026-01-06_03_Refactor_CustomHooks.md` - 리팩토링: 커스텀 훅 분리를 통한 클린 아키텍처 강화
-  - `2026-01-06_04_SkillSelector_PieChart_Improvements.md` - 프론트엔드 UI 개선: SkillSelector 토글 및 CategoryPieChart 레이블 표시
-  - `2026-01-06_05_CategoryPieChart_Label_Visibility_Fix.md` - `CategoryPieChart` 레이블 가시성 개선
+  - `2026-01-06_04_SkillSelector_PieChart_Improvements.md` - 프론트엔드 UI 개선: SkillSelector 토글 및 SearchedSkillsCategoryDistributionChart 레이블 표시
+  - `2026-01-06_05_CategoryPieChart_Label_Visibility_Fix.md` - `SearchedSkillsCategoryDistributionChart` 레이블 가시성 개선
   - `2026-01-06_06_SkillSelector_DynamicHeight_Sorting_Fix.md` - `SkillSelector.tsx` 동적 높이, 정렬 및 전체 스킬 가시성 개선
 - **개선 계획**: `docs/Frontend_Improvement_Plan.md` - 향후 개선 로드맵
 - **Apollo Client 및 SSR 데이터 페칭**: `docs/Apollo_Client_and_SSR_Fetching.md`
@@ -172,23 +172,23 @@
 **최종 수정일:** 2026-01-12
 **주요 업데이트:**
 - **`MatchDetailPanel` 레이아웃 간격 일관성 확보**: Recruit 및 Candidate 상세 뷰의 주요 정보 블록 하단에 `mb-8`을 추가하여 다음 섹션과의 간격을 일관되게 조정.
-- **`RatioPieChart` 테마 색상 일관성 확보**: `CategoryPieChart`의 색상 처리 방식을 참조하여, `RatioPieChart`의 레이블 및 슬라이스 색상이 테마에 맞춰 동적으로 변경되도록 명시적으로 수정.
+- **`RatioPieChart` 테마 색상 일관성 확보**: `SearchedSkillsCategoryDistributionChart`의 색상 처리 방식을 참조하여, `RatioPieChart`의 레이블 및 슬라이스 색상이 테마에 맞춰 동적으로 변경되도록 명시적으로 수정.
 - **`TwoLevelPieChart` TypeScript 오류 수정 및 레이블 테마 색상 적용**: Legend Payload 타입 오류 수정 및 파이 차트 레이블이 테마에 따라 색상이 변경되도록 개선.
 - **데스크탑 UI 재구성 (3단 Master-Detail View)**: 검색 결과 화면을 `InputPanel`, `SearchResultAnalysisPanel`, `SearchResultPanel`/`MatchDetailPanel`로 구성된 3단 레이아웃으로 변경하여 정보 밀도를 분배하고 UX 흐름을 개선.
 - **Header에 전역 '대시보드로 돌아가기' 버튼 추가**: 사용자가 어떤 화면에 있든 초기 대시보드로 쉽게 돌아갈 수 있도록 `Header` 컴포넌트에 버튼 추가.
 - **`TwoLevelPieChart` 색상 일관성 확보**: `chroma(...).brighten(0.8)` 제거하여 하위 기술 스택의 색상이 카테고리 색상과 동일하게 유지되도록 수정.
 - **검색 결과 통계 UX 개선**: `SearchResultPanel`에서 전체 검색 결과 수를 표시하도록 수정. `GET_TOP_SKILLS_IN_SEARCH` 쿼리를 `GET_SEARCH_STATISTICS`로 리팩토링하고 `totalCount`를 포함하도록 백엔드 요구사항 정의.
 - **`SkillSelector.tsx` 동적 높이, 정렬 및 전체 스킬 가시성 개선**: 토글 시 스킬 목록 잘림 문제 해결, 카테고리별 정렬, 모든 스킬 선택 가능하도록 개선
-- **`CategoryPieChart` 레이블 가시성 개선**: 점유율과 관계없이 모든 카테고리의 레이블이 차트 내에 표시되도록 수정
+- **`SearchedSkillsCategoryDistributionChart` 레이블 가시성 개선**: 점유율과 관계없이 모든 카테고리의 레이블이 차트 내에 표시되도록 수정
 - **`SkillSelector` 카테고리 목록 토글 기능**: 각 기술 스택 카테고리 목록을 확장/축소할 수 있도록 UI 개선
-- **`CategoryPieChart` 그래프 내 레이블 표시**: 파이 차트의 각 조각에 카테고리 이름과 백분율을 직접 표시하여 직관성 향상
+- **`SearchedSkillsCategoryDistributionChart` 그래프 내 레이블 표시**: 파이 차트의 각 조각에 카테고리 이름과 백분율을 직접 표시하여 직관성 향상
 - **클린 아키텍처 리팩토링**: `useAppNavigation`과 `useIntersectionObserver` 커스텀 훅을 통해 컴포넌트 책임 분리 및 재사용성 강화
 - **`SkillSelector.tsx` 오류 수정**: `category.skills`가 `undefined`일 경우 `filter` 호출 시 발생하는 런타임 오류 해결
 - **히스토리 스택 구현**: `uiSlice`를 리팩토링하여 각 사용자 모드별 탐색 기록(뒤로 가기) 관리
-- **`CategoryPieChart` 업데이트 로직 수정**: 검색이 실행된 후에만 차트가 업데이트되도록 `searchedSkills` 상태 분리
+- **`SearchedSkillsCategoryDistributionChart` 업데이트 로직 수정**: 검색이 실행된 후에만 차트가 업데이트되도록 `searchedSkills` 상태 분리
 - **`SkillSelector` UI 개선**: 기술 스택을 카테고리별로 그룹화하여 표시
-- **Hydration 오류 수정**: `useHydrated` 훅을 도입하여 서버-클라이언트 렌더링 불일치 문제 해결 및 `DefaultDashboard.tsx` 안정성 강화
-- Dashboard 분석 컴포넌트 (CategoryPieChart, SkillCompetencyBadge)
+- **Hydration 오류 수정**: `useHydrated` 훅을 도입하여 서버-클라이언트 렌더링 불일치 문제 해결 및 `MainDashboard.tsx` 안정성 강화
+- Dashboard 분석 컴포넌트 (SearchedSkillsCategoryDistributionChart, SkillCompetencyBadge)
 - 무한 스크롤 UX 개선 (NetworkStatus 기반 로딩 구분, Throttle)
 - 기술 스택 정렬 (캐시 일관성 향상)
 - Server/Client Component 분리 (HomePage.client.tsx)

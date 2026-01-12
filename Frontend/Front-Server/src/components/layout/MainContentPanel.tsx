@@ -7,12 +7,12 @@
  * @date 2026-01-11
  */
 import React, { Suspense } from 'react';
-import { MatchItem, UserMode } from '../../types';
-import QueryBoundary from '../common/QueryBoundary';
-import SearchResultPanel from '../search/SearchResultPanel';
-import DefaultDashboard from '../dashboard/DefaultDashboard';
-import MatchDetailPanel from '../search/MatchDetailPanel';
-import { LoadingSpinner } from '../common/LoadingSpinner';
+import {MatchItem, SkillCategory, UserMode} from '@/types';
+import QueryBoundary from '@/components/utils/QueryBoundary';
+import { SearchResultPanel } from '@/components/search/results';
+import MainDashboard from '@/app/_components/MainDashboard';
+import { MatchDetailPanel } from '@/components/search/detail';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 type PageViewMode = 'dashboard' | 'results' | 'detail';
 
@@ -55,7 +55,7 @@ export const MainContentPanel: React.FC<MainContentPanelProps> = ({
     return (
       <QueryBoundary>
         <Suspense fallback={<LoadingSpinner message="대시보드 로딩 중..." />}>
-          <DefaultDashboard key={userMode} />
+          <MainDashboard key={userMode} activeColor={activeColor} userMode={userMode} />
         </Suspense>
       </QueryBoundary>
     );
@@ -80,8 +80,6 @@ export const MainContentPanel: React.FC<MainContentPanelProps> = ({
             loadMore={loadMore}
             hasMore={hasMore}
             loading={fetchingMore}
-            searchedSkills={searchedSkills}
-            skillCategories={skillCategories}
             selectedMatchId={selectedMatchId}
           />
         </QueryBoundary>

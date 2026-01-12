@@ -41,7 +41,7 @@
 #### 해결 방안
 -   **상단 헤더(Header)에 '🏠 대시보드' 버튼 추가:**
     -   `Header` 컴포넌트에 `onNavigateToDashboard` 콜백 함수와 `showDashboardButton` 플래그를 prop으로 전달합니다.
-    -   `Header` 내부에서는 `showDashboardButton`이 `true`일 때 이 버튼을 렌더링하고, 클릭 시 `onNavigateToDashboard`를 호출하여 `DefaultDashboard` 화면으로 전환합니다.
+    -   `Header` 내부에서는 `showDashboardButton`이 `true`일 때 이 버튼을 렌더링하고, 클릭 시 `onNavigateToDashboard`를 호출하여 `MainDashboard` 화면으로 전환합니다.
 -   이 버튼은 `pageViewMode`가 'dashboard'가 아닐 때 항상 표시되어, 사용자가 어떤 화면에 있든 한 번의 클릭으로 초기 대시보드로 돌아갈 수 있도록 접근성을 높입니다.
 
 ### 3. `TwoLevelPieChart` 색상 일관성 확보

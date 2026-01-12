@@ -13,7 +13,7 @@
 | **`src/components`** | **기능/화면 단위 컴포넌트 루트**: 모든 UI 컴포넌트는 이곳에 기능별로 분류되어 저장됩니다. 대부분 Client Components입니다. |
 | `components/common` | **범용 컴포넌트**: `Button`, `Tooltip`, `Icon` 등 특정 도메인에 종속되지 않고 앱 전반에서 재사용되는 가장 작은 단위의 UI 컴포넌트를 관리합니다. |
 | `components/layout` | **레이아웃 컴포넌트**: `Header`, `ThemeManager`, `TabController` 등 앱의 전체적인 구조와 레이아웃을 담당하는 컴포넌트를 관리합니다. `Header`는 전역 대시보드 버튼을 포함하여 사용자가 초기 대시보드 화면으로 쉽게 이동할 수 있도록 지원합니다. |
-| `components/dashboard` | **대시보드 컴포넌트**: `DefaultDashboard`는 초기 화면에서 전체 화면으로 렌더링될 수 있으며, 이를 구성하는 `GenericTreemap`, `CategoryPieChart` 등 대시보드 화면과 관련된 컴포넌트들을 관리합니다. |
+| `components/dashboard` | **대시보드 컴포넌트**: `MainDashboard`는 초기 화면에서 전체 화면으로 렌더링될 수 있으며, 이를 구성하는 `GenericTreemap`, `SearchedSkillsCategoryDistributionChart` 등 대시보드 화면과 관련된 컴포넌트들을 관리합니다. |
 | `components/input-panel`| **입력 패널 컴포넌트**: `InputPanel`, `SkillSelector` 등 사용자의 입력을 받는 좌측 패널과 관련된 컴포넌트들을 관리합니다. |
 | `components/search` | **검색 결과 화면 관련 컴포넌트**: `SearchResultPanel` (검색 결과 목록), `MatchDetailPanel` (상세 정보), `SearchResultAnalysisPanel` (검색 결과 분석) 등 검색 결과 표시 및 관련 분석 기능을 제공하는 컴포넌트들을 관리합니다. 이들은 새로운 3단 레이아웃의 중앙 및 우측 영역을 구성하며, `SearchResultPanel`에서 항목 클릭 시 `MatchDetailPanel`로 전환되는 등의 상호작용을 포함합니다. |
 | **`src/services`** | **외부 서비스 및 클라이언트 상태 관리**: 외부 API 연동 및 전역 클라이언트 상태를 관리하는 핵심 로직입니다. |

@@ -14,7 +14,7 @@
     - `src/components` 하위에 다음과 같은 기능별 디렉토리를 생성하여 모든 컴포넌트를 재배치했습니다.
         - `common/`: `BaseTooltip`, `SkillIcon` 등 앱 전반에서 사용되는 범용 컴포넌트.
         - `layout/`: `Header`, `ThemeManager` 등 페이지 레이아웃을 구성하는 컴포넌트.
-        - `dashboard/`: `DefaultDashboard`, `GenericTreemap`, `CategoryPieChart` 등 대시보드 화면 관련 컴포넌트.
+        - `dashboard/`: `MainDashboard`, `GenericTreemap`, `SearchedSkillsCategoryDistributionChart` 등 대시보드 화면 관련 컴포넌트.
         - `search/`: `SearchResultPanel`, `ResultList`, `MatchDetailPanel` 등 검색 결과 관련 컴포넌트.
 - **컴포넌트 일반화 (Generalization)**:
     - `SkillTooltip` -> `common/BaseTooltip`: `Skill`이라는 특정 도메인에서 분리하여, `icon`, `title`, `value`를 props로 받는 범용 툴팁으로 재작성했습니다.
