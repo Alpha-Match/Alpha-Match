@@ -6,14 +6,15 @@
  * @version 2.0.0
  * @date 2025-12-30
  */
-import React, { useEffect } from 'react';
-import { ChevronLeft, Briefcase, User, Calendar, Globe, Award } from 'lucide-react';
-import { useMatchDetail } from '../../hooks/useMatchDetail';
-import { UserMode } from '../../types';
-import { LoadingSpinner } from '../common/LoadingSpinner';
-import { RatioPieChart } from './RatioPieChart';
+import React, {useEffect} from 'react';
+import {Award, Briefcase, Calendar, ChevronLeft, Globe, User} from 'lucide-react';
+import {useMatchDetail} from '../../hooks/useMatchDetail';
+import {UserMode} from '../../types';
+import {LoadingSpinner} from '../common/LoadingSpinner';
+import {RatioPieChart} from './RatioPieChart';
 import SkillCompetencyBadge from './SkillCompetencyBadge';
-import { SkillRadarChart } from './SkillRadarChart';
+import {SkillRadarChart} from './SkillRadarChart';
+import MarkdownContentBlock from '../common/MarkdownContentBlock';
 
 interface MatchDetailPanelProps {
   matchId: string;
@@ -187,14 +188,7 @@ const MatchDetailPanel: React.FC<MatchDetailPanelProps> = ({
 
         <div className="bg-panel-main p-8 rounded-lg border border-border/30">
           {/* 상세 설명 */}
-          <div>
-            <h3 className="text-lg font-semibold mb-3 text-text-primary">상세 정보</h3>
-            <div className="prose prose-invert max-w-none">
-              <p className="text-text-secondary whitespace-pre-wrap leading-relaxed">
-                {recruitDetail.description}
-              </p>
-            </div>
-          </div>
+          <MarkdownContentBlock title="상세 정보" content={recruitDetail.description} />
         </div>
       </div>
     );
@@ -320,40 +314,11 @@ const MatchDetailPanel: React.FC<MatchDetailPanelProps> = ({
         )}
 
         <div className="bg-panel-main p-8 rounded-lg border border-border/30 mt-6">
-          {/* 상세 정보 (구직 희망사항, 추가 정보) */}
-          {candidateDetail.lookingFor && (
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold mb-3 text-text-primary">구직 희망사항</h3>
-              <div className="prose prose-invert max-w-none">
-                <p className="text-text-secondary whitespace-pre-wrap leading-relaxed">
-                  {candidateDetail.lookingFor}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {candidateDetail.moreinfo && (
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold mb-3 text-text-primary">추가 정보 (프로젝트, 성과)</h3>
-              <div className="prose prose-invert max-w-none">
-                <p className="text-text-secondary whitespace-pre-wrap leading-relaxed">
-                  {candidateDetail.moreinfo}
-                </p>
-              </div>
-            </div>
-          )}
-
           {/* 원본 이력서 */}
-          {candidateDetail.originalResume && (
-            <div>
-              <h3 className="text-lg font-semibold mb-3 text-text-primary">원본 이력서</h3>
-              <div className="p-4 bg-panel-2 rounded-lg border border-border/20">
-                <p className="text-text-tertiary text-sm whitespace-pre-wrap">
-                  {candidateDetail.originalResume}
-                </p>
-              </div>
-            </div>
-          )}
+          <MarkdownContentBlock title="원본 이력서" content={candidateDetail.originalResume} className="mb-8" />
+          {/* 상세 정보 (구직 희망사항, 추가 정보) */}
+          <MarkdownContentBlock title="추가 정보 (프로젝트, 성과)" content={candidateDetail.moreinfo} className="mb-8" />
+          <MarkdownContentBlock title="구직 희망사항" content={candidateDetail.lookingFor} className="mb-8" />
         </div>
       </div>
     );

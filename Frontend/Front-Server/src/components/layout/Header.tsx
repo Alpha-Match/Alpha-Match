@@ -35,7 +35,7 @@ export const Header: React.FC<HeaderProps> = ({ showDashboardButton, onNavigateT
   const logoColor = activeThemeColors[0];
 
   return (
-    <header className="bg-panel-1 border-b border-border z-50 flex-none h-16 flex items-center justify-between px-6">
+    <header className="bg-panel-1 border-b border-border z-50 flex items-center justify-between px-6 flex-wrap min-h-16">
       <button onClick={handleNavigateHome} className="flex items-center gap-2 focus:outline-none focus:ring-2" style={{'--ring-color': logoColor} as React.CSSProperties}>
         <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{backgroundColor: logoColor}}>
           <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -57,10 +57,10 @@ export const Header: React.FC<HeaderProps> = ({ showDashboardButton, onNavigateT
             대시보드
           </button>
         )}
-        <div className="flex bg-background p-1 rounded-xl">
+        <div className="flex flex-wrap bg-background p-1 rounded-xl">
           <button
             onClick={() => handleTabChange(UserMode.CANDIDATE)}
-            className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-bold transition-all ${
+            className={`flex flex-shrink-0 items-center gap-2 sm:px-6 px-3 py-2 rounded-lg text-sm font-bold transition-all ${
               userMode === UserMode.CANDIDATE 
                 ? 'bg-panel-1 shadow-md' 
                 : 'text-text-secondary hover:bg-panel-2 hover:text-text-primary'
@@ -72,7 +72,7 @@ export const Header: React.FC<HeaderProps> = ({ showDashboardButton, onNavigateT
           </button>
           <button
             onClick={() => handleTabChange(UserMode.RECRUITER)}
-            className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-bold transition-all ${
+            className={`flex flex-shrink-0 items-center gap-2 sm:px-6 px-3 py-2 rounded-lg text-sm font-bold transition-all ${
               userMode === UserMode.RECRUITER 
                 ? 'bg-panel-1 shadow-md' 
                 : 'text-text-secondary hover:bg-panel-2 hover:text-text-primary'
@@ -84,7 +84,7 @@ export const Header: React.FC<HeaderProps> = ({ showDashboardButton, onNavigateT
           </button>
         </div>
       </div>
-      <div className="w-32 flex justify-end">
+      <div className="w-auto flex justify-end flex-shrink-0">
         <ThemeToggle />
       </div>
     </header>
