@@ -1,7 +1,6 @@
-// Frontend/Front-Server/src/components/common/QueryBoundary.tsx
-import React, { ReactNode, useEffect } from 'react';
-import { AlertTriangle } from 'lucide-react';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import React, {ReactNode, useEffect} from 'react';
+import {AlertTriangle} from 'lucide-react';
+import {LoadingSpinner} from '@/components/ui/LoadingSpinner';
 
 interface QueryBoundaryProps {
   loading?: boolean;

@@ -1,4 +1,3 @@
-// src/components/common/Skeleton.tsx
 import React from 'react';
 
 interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {}

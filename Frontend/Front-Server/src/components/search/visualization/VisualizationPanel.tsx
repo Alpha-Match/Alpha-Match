@@ -1,9 +1,18 @@
 import React from 'react';
-import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, Tooltip } from 'recharts';
-import { useAppSelector } from '@/../services/state/hooks';
-import { UserMode, MatchItem, SkillMatch } from '@/../types';
-import { MapPin, DollarSign, Building, User, ChevronRight, BarChart3, Database } from 'lucide-react';
-import { CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS } from '@/../constants';
+import {
+    Legend,
+    PolarAngleAxis,
+    PolarGrid,
+    PolarRadiusAxis,
+    Radar,
+    RadarChart,
+    ResponsiveContainer,
+    Tooltip
+} from 'recharts';
+import {useAppSelector} from '@/services/state/hooks';
+import {MatchItem, SkillMatch, UserMode} from '@/types';
+import {BarChart3, Building, ChevronRight, Database, User} from 'lucide-react';
+import {CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS} from '@/constants';
 
 interface VisualizationPanelProps {
   matches: MatchItem[];

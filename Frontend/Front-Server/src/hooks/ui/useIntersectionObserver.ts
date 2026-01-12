@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from 'react';
+import {useCallback, useEffect, useRef} from 'react';
 
 interface IntersectionObserverOptions extends IntersectionObserverInit {
   // 한 번만 실행할지 여부

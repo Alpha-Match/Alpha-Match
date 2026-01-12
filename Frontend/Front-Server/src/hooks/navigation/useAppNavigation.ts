@@ -1,6 +1,6 @@
-import { useAppDispatch, useAppSelector } from '@/services/state/hooks';
-import { pushHistory, navigateBack } from '@/services/state/features/ui/uiSlice';
-import { MatchItem } from '@/types';
+import {useAppDispatch, useAppSelector} from '@/services/state/hooks';
+import {navigateBack, pushHistory} from '@/services/state/features/ui/uiSlice';
+import {MatchItem} from '@/types';
 
 type PageViewMode = 'dashboard' | 'input' | 'results' | 'detail' | 'analysis';
 

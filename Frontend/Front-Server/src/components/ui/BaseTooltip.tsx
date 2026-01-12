@@ -1,4 +1,3 @@
-// Frontend/Front-Server/src/components/common/BaseTooltip.tsx
 import React from 'react';
 
 export interface BaseTooltipProps {

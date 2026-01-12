@@ -1,10 +1,9 @@
-// src/components/ThemeToggle.tsx
 'use client';
 
 import React from 'react';
-import { useAppSelector, useAppDispatch } from '@/services/state/hooks';
-import { setTheme } from '@/services/state/features/ui/uiSlice';
-import { Sun, Moon } from 'lucide-react';
+import {useAppDispatch, useAppSelector} from '@/services/state/hooks';
+import {setTheme} from '@/services/state/features/ui/uiSlice';
+import {Moon, Sun} from 'lucide-react';
 
 export const ThemeToggle: React.FC = () => {
   const dispatch = useAppDispatch();

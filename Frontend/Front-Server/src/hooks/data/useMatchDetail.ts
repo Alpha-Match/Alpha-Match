@@ -1,6 +1,6 @@
-import { useLazyQuery } from '@apollo/client/react';
-import { UserMode, RecruitDetail, CandidateDetail } from '@/types';
-import { GET_RECRUIT_DETAIL, GET_CANDIDATE_DETAIL } from '@/services/api/queries/search';
+import {useLazyQuery} from '@apollo/client/react';
+import {CandidateDetail, RecruitDetail, UserMode} from '@/types';
+import {GET_CANDIDATE_DETAIL, GET_RECRUIT_DETAIL} from '@/services/api/queries/search';
 
 interface RecruitDetailData {
   getRecruit: RecruitDetail;

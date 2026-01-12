@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import {useEffect, useState} from 'react';
 
 /**
  * 컴포넌트가 클라이언트에서 성공적으로 하이드레이션되었는지 여부를 추적하는 커스텀 훅입니다.

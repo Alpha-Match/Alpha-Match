@@ -1,6 +1,5 @@
-// Frontend/Front-Server/src/components/common/LoadingSpinner.tsx
 import React from 'react';
-import { ClipLoader } from 'react-spinners';
+import {ClipLoader} from 'react-spinners';
 
 interface LoadingSpinnerProps {
   size?: number;

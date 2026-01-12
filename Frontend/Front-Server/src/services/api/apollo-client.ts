@@ -1,8 +1,8 @@
-import { ApolloClient, InMemoryCache, HttpLink, ApolloLink, from } from "@apollo/client";
-import { onError } from "@apollo/client/link/error";
-import { CombinedGraphQLErrors, ServerError } from '@apollo/client/errors';
-import type { Store } from '@reduxjs/toolkit';
-import type { showNotification } from '../state/features/notification/notificationSlice';
+import {ApolloClient, ApolloLink, HttpLink, InMemoryCache} from "@apollo/client";
+import {onError} from "@apollo/client/link/error";
+import {CombinedGraphQLErrors, ServerError} from '@apollo/client/errors';
+import type {Store} from '@reduxjs/toolkit';
+import type {showNotification} from '@/services/state/features/notification/notificationSlice';
 
 const GRAPHQL_ENDPOINT = process.env.INTERNAL_GRAPHQL_ENDPOINT!;
 const API_TIMEOUT_MS = 20 * 1000; // 20 seconds

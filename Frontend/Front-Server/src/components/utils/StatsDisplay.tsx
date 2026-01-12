@@ -1,5 +1,5 @@
 import React from 'react';
-import { Skeleton } from '../ui/Skeleton';
+import {Skeleton} from '@/components/ui';
 
 interface Stat {
     title: string;

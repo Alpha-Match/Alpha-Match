@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { useAppSelector, useAppDispatch } from '@/services/state/hooks';
-import { showNotification, hideNotification } from '@/services/state/features/notification/notificationSlice';
-import { XCircle, CheckCircle, Info } from 'lucide-react';
+import React, {useEffect} from 'react';
+import {useAppDispatch, useAppSelector} from '@/services/state/hooks';
+import {hideNotification, showNotification} from '@/services/state/features/notification/notificationSlice';
+import {CheckCircle, Info, XCircle} from 'lucide-react';
 
 const icons = {
   error: <XCircle className="w-6 h-6 text-red-500" />,

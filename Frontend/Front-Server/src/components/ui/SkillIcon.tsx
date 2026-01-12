@@ -1,4 +1,3 @@
-// Frontend/Front-Server/src/components/SkillIcon.tsx
 /**
  * @file SkillIcon.tsx
  * @description 기술 스택 이름에 따라 src/assets/icons/skills/에서 SVG 아이콘을 동적으로 가져와 렌더링합니다.

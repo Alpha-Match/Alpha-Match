@@ -1,11 +1,11 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { useQuery } from '@apollo/client/react';
-import { NetworkStatus } from '@apollo/client';
-import { CombinedGraphQLErrors, ServerError } from '@apollo/client/errors';
-import { MatchItem, SkillMatch, UserMode } from '@/types';
-import { SEARCH_MATCHES_QUERY } from '@/services/api/queries/search';
-import { useAppSelector, useAppDispatch } from '@/services/state/hooks';
-import { setMatches, setSearchedSkills } from '@/services/state/features/search/searchSlice';
+import {useCallback, useEffect, useRef, useState} from 'react';
+import {useQuery} from '@apollo/client/react';
+import {NetworkStatus} from '@apollo/client';
+import {CombinedGraphQLErrors, ServerError} from '@apollo/client/errors';
+import {MatchItem, SkillMatch, UserMode} from '@/types';
+import {SEARCH_MATCHES_QUERY} from '@/services/api/queries/search';
+import {useAppDispatch, useAppSelector} from '@/services/state/hooks';
+import {setMatches, setSearchedSkills} from '@/services/state/features/search/searchSlice';
 
 const PAGE_SIZE = 20; // 한 번에 로드할 개수
 const LOAD_MORE_THROTTLE_MS = 300; // 무한 스크롤 요청 간 최소 간격 (ms)
