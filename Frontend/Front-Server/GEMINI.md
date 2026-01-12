@@ -171,6 +171,7 @@
 
 **최종 수정일:** 2026-01-12
 **주요 업데이트:**
+- **`MatchDetailPanel` 레이아웃 간격 일관성 확보**: Recruit 및 Candidate 상세 뷰의 주요 정보 블록 하단에 `mb-8`을 추가하여 다음 섹션과의 간격을 일관되게 조정.
 - **`RatioPieChart` 테마 색상 일관성 확보**: `CategoryPieChart`의 색상 처리 방식을 참조하여, `RatioPieChart`의 레이블 및 슬라이스 색상이 테마에 맞춰 동적으로 변경되도록 명시적으로 수정.
 - **`TwoLevelPieChart` TypeScript 오류 수정 및 레이블 테마 색상 적용**: Legend Payload 타입 오류 수정 및 파이 차트 레이블이 테마에 따라 색상이 변경되도록 개선.
 - **데스크탑 UI 재구성 (3단 Master-Detail View)**: 검색 결과 화면을 `InputPanel`, `SearchResultAnalysisPanel`, `SearchResultPanel`/`MatchDetailPanel`로 구성된 3단 레이아웃으로 변경하여 정보 밀도를 분배하고 UX 흐름을 개선.

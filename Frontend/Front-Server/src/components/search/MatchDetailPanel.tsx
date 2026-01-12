@@ -82,7 +82,7 @@ const MatchDetailPanel: React.FC<MatchDetailPanelProps> = ({
           뒤로가기
         </button>
 
-        <div className="bg-panel-main p-8 rounded-lg border border-border/30">
+        <div className="bg-panel-main p-8 rounded-lg border border-border/30 mb-8">
           {/* 헤더 */}
           <div className="flex items-start gap-4 mb-6">
             <div className="p-3 bg-panel-2 rounded-lg">
@@ -212,7 +212,7 @@ const MatchDetailPanel: React.FC<MatchDetailPanelProps> = ({
           뒤로가기
         </button>
 
-        <div className="bg-panel-main p-8 rounded-lg border border-border/30">
+        <div className="bg-panel-main p-8 rounded-lg border border-border/30 mb-8">
           {/* 헤더 */}
           <div className="flex items-start gap-4 mb-6">
             <div className="p-3 bg-panel-2 rounded-lg">
