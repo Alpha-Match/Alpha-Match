@@ -64,15 +64,18 @@ public class SkillNormalizationService {
 
                     log.info("Found {} matching skills in dictionary", skillEmbeddings.size());
 
-                    // Calculate average vector
+                    // Calculate average vector (element-wise mean - matches Python np.mean(vectors, axis=0))
                     float[] queryVector = calculateAverageVector(skillEmbeddings);
+
+                    log.info("Average vector calculated - dimension: {}, sample values: [{}, {}, {}]",
+                             queryVector.length,
+                             queryVector[0], queryVector[1], queryVector[2]);
 
                     // Convert to PostgreSQL vector format string
                     String vectorString = convertToVectorString(queryVector);
 
-                    log.debug("Generated query vector: {} (length: {})",
-                              vectorString.substring(0, Math.min(100, vectorString.length())),
-                              queryVector.length);
+                    log.debug("Generated query vector string (first 100 chars): {}",
+                              vectorString.substring(0, Math.min(100, vectorString.length())));
 
                     return Mono.just(vectorString);
                 });
@@ -84,10 +87,10 @@ public class SkillNormalizationService {
      * - Normalization strategy: mean (can be changed to sum if needed)
      *
      * @param skillEmbeddings List of SkillEmbeddingDic
-     * @return float[] Average vector (384 dimensions)
+     * @return float[] Average vector (1536 dimensions)
      */
     private float[] calculateAverageVector(List<SkillEmbeddingDic> skillEmbeddings) {
-        int vectorDimension = 384; // from table_specification.md
+        int vectorDimension = 1536; // from table_specification.md
         float[] sumVector = new float[vectorDimension];
         int count = skillEmbeddings.size();
 

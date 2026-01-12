@@ -1,7 +1,10 @@
 package com.alpha.api.graphql.resolver;
 
-import com.alpha.api.domain.search.service.SearchService;
-import com.alpha.api.graphql.type.*;
+import com.alpha.api.application.service.CacheService;
+import com.alpha.api.application.service.DashboardService;
+import com.alpha.api.application.service.SearchService;
+import com.alpha.api.presentation.graphql.resolver.QueryResolver;
+import com.alpha.api.presentation.graphql.type.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,15 +24,21 @@ import static org.mockito.Mockito.*;
 /**
  * QueryResolver Test
  * - Tests GraphQL query resolvers
- * - Tests searchMatches query
+ * - Tests searchMatches query (6 parameters: mode, skills, experience, limit, offset, sortBy)
  * - Tests skillCategories query
- * - Uses Mockito for mocking SearchService
+ * - Uses Mockito for mocking SearchService, DashboardService, CacheService
  */
 @ExtendWith(MockitoExtension.class)
 class QueryResolverTest {
 
     @Mock
     private SearchService searchService;
+
+    @Mock
+    private DashboardService dashboardService;
+
+    @Mock
+    private CacheService cacheService;
 
     @InjectMocks
     private QueryResolver queryResolver;
@@ -47,7 +56,6 @@ class QueryResolverTest {
                 .score(0.85)
                 .skills(Arrays.asList("Java", "Python", "Spring"))
                 .experience(5)
-                .description("Job description...")
                 .build();
 
         MatchItem matchItem2 = MatchItem.builder()
@@ -57,7 +65,6 @@ class QueryResolverTest {
                 .score(0.78)
                 .skills(Arrays.asList("Python", "Django", "PostgreSQL"))
                 .experience(3)
-                .description("Job description...")
                 .build();
 
         SkillMatch skillMatch1 = SkillMatch.builder()
@@ -100,12 +107,15 @@ class QueryResolverTest {
         UserMode mode = UserMode.CANDIDATE;
         List<String> skills = Arrays.asList("Java", "Python");
         String experience = "3-5 Years";
+        Integer limit = 10;
+        Integer offset = 0;
+        String sortBy = "score DESC";
 
-        when(searchService.searchMatches(mode, skills, experience))
+        when(searchService.searchMatches(eq(mode), eq(skills), eq(experience), eq(limit), eq(offset), eq(sortBy)))
                 .thenReturn(Mono.just(mockSearchResult));
 
         // When
-        Mono<SearchMatchesResult> result = queryResolver.searchMatches(mode, skills, experience);
+        Mono<SearchMatchesResult> result = queryResolver.searchMatches(mode, skills, experience, limit, offset, sortBy);
 
         // Then
         StepVerifier.create(result)
@@ -124,7 +134,7 @@ class QueryResolverTest {
                 })
                 .verifyComplete();
 
-        verify(searchService, times(1)).searchMatches(mode, skills, experience);
+        verify(searchService, times(1)).searchMatches(eq(mode), eq(skills), eq(experience), eq(limit), eq(offset), eq(sortBy));
     }
 
     @Test
@@ -134,12 +144,15 @@ class QueryResolverTest {
         UserMode mode = UserMode.RECRUITER;
         List<String> skills = Arrays.asList("Java", "Spring");
         String experience = "5+ Years";
+        Integer limit = 10;
+        Integer offset = 0;
+        String sortBy = "score DESC";
 
-        when(searchService.searchMatches(mode, skills, experience))
+        when(searchService.searchMatches(eq(mode), eq(skills), eq(experience), eq(limit), eq(offset), eq(sortBy)))
                 .thenReturn(Mono.just(mockSearchResult));
 
         // When
-        Mono<SearchMatchesResult> result = queryResolver.searchMatches(mode, skills, experience);
+        Mono<SearchMatchesResult> result = queryResolver.searchMatches(mode, skills, experience, limit, offset, sortBy);
 
         // Then
         StepVerifier.create(result)
@@ -149,7 +162,7 @@ class QueryResolverTest {
                 })
                 .verifyComplete();
 
-        verify(searchService, times(1)).searchMatches(mode, skills, experience);
+        verify(searchService, times(1)).searchMatches(eq(mode), eq(skills), eq(experience), eq(limit), eq(offset), eq(sortBy));
     }
 
     @Test
@@ -159,17 +172,20 @@ class QueryResolverTest {
         UserMode mode = UserMode.CANDIDATE;
         List<String> skills = Arrays.asList("COBOL");
         String experience = "10+ Years";
+        Integer limit = 10;
+        Integer offset = 0;
+        String sortBy = "score DESC";
 
         SearchMatchesResult emptyResult = SearchMatchesResult.builder()
                 .matches(Arrays.asList())
                 .vectorVisualization(Arrays.asList())
                 .build();
 
-        when(searchService.searchMatches(mode, skills, experience))
+        when(searchService.searchMatches(eq(mode), eq(skills), eq(experience), eq(limit), eq(offset), eq(sortBy)))
                 .thenReturn(Mono.just(emptyResult));
 
         // When
-        Mono<SearchMatchesResult> result = queryResolver.searchMatches(mode, skills, experience);
+        Mono<SearchMatchesResult> result = queryResolver.searchMatches(mode, skills, experience, limit, offset, sortBy);
 
         // Then
         StepVerifier.create(result)
@@ -179,7 +195,7 @@ class QueryResolverTest {
                 })
                 .verifyComplete();
 
-        verify(searchService, times(1)).searchMatches(mode, skills, experience);
+        verify(searchService, times(1)).searchMatches(eq(mode), eq(skills), eq(experience), eq(limit), eq(offset), eq(sortBy));
     }
 
     @Test
@@ -189,12 +205,15 @@ class QueryResolverTest {
         UserMode mode = UserMode.CANDIDATE;
         List<String> skills = Arrays.asList("InvalidSkill");
         String experience = "3-5 Years";
+        Integer limit = 10;
+        Integer offset = 0;
+        String sortBy = "score DESC";
 
-        when(searchService.searchMatches(mode, skills, experience))
+        when(searchService.searchMatches(eq(mode), eq(skills), eq(experience), eq(limit), eq(offset), eq(sortBy)))
                 .thenReturn(Mono.error(new IllegalArgumentException("No matching skills found in dictionary")));
 
         // When
-        Mono<SearchMatchesResult> result = queryResolver.searchMatches(mode, skills, experience);
+        Mono<SearchMatchesResult> result = queryResolver.searchMatches(mode, skills, experience, limit, offset, sortBy);
 
         // Then
         StepVerifier.create(result)
@@ -203,14 +222,14 @@ class QueryResolverTest {
                         throwable.getMessage().contains("No matching skills found in dictionary"))
                 .verify();
 
-        verify(searchService, times(1)).searchMatches(mode, skills, experience);
+        verify(searchService, times(1)).searchMatches(eq(mode), eq(skills), eq(experience), eq(limit), eq(offset), eq(sortBy));
     }
 
     @Test
     @DisplayName("Should resolve skillCategories query")
     void testSkillCategories() {
-        // Given
-        when(searchService.getSkillCategories())
+        // Given - mock cacheService (QueryResolver uses cacheService.getOrLoadStaticUnchecked)
+        when(cacheService.getOrLoadStaticUnchecked(anyString(), any()))
                 .thenReturn(Mono.just(mockSkillCategories));
 
         // When
@@ -229,14 +248,14 @@ class QueryResolverTest {
                 })
                 .verifyComplete();
 
-        verify(searchService, times(1)).getSkillCategories();
+        verify(cacheService, times(1)).getOrLoadStaticUnchecked(anyString(), any());
     }
 
     @Test
     @DisplayName("Should handle empty skillCategories")
     void testSkillCategoriesEmpty() {
-        // Given
-        when(searchService.getSkillCategories())
+        // Given - mock cacheService
+        when(cacheService.getOrLoadStaticUnchecked(anyString(), any()))
                 .thenReturn(Mono.just(Arrays.asList()));
 
         // When
@@ -247,14 +266,14 @@ class QueryResolverTest {
                 .expectNextMatches(List::isEmpty)
                 .verifyComplete();
 
-        verify(searchService, times(1)).getSkillCategories();
+        verify(cacheService, times(1)).getOrLoadStaticUnchecked(anyString(), any());
     }
 
     @Test
     @DisplayName("Should handle skillCategories error")
     void testSkillCategoriesError() {
-        // Given
-        when(searchService.getSkillCategories())
+        // Given - mock cacheService to return error
+        when(cacheService.getOrLoadStaticUnchecked(anyString(), any()))
                 .thenReturn(Mono.error(new RuntimeException("Database connection failed")));
 
         // When
@@ -267,7 +286,7 @@ class QueryResolverTest {
                         throwable.getMessage().contains("Database connection failed"))
                 .verify();
 
-        verify(searchService, times(1)).getSkillCategories();
+        verify(cacheService, times(1)).getOrLoadStaticUnchecked(anyString(), any());
     }
 
     @Test
@@ -277,18 +296,24 @@ class QueryResolverTest {
         UserMode mode = UserMode.RECRUITER;
         List<String> skills = Arrays.asList("JavaScript", "TypeScript", "React");
         String experience = "0-2 Years";
+        Integer limit = 20;
+        Integer offset = 5;
+        String sortBy = "experience ASC";
 
-        when(searchService.searchMatches(mode, skills, experience))
+        when(searchService.searchMatches(eq(mode), eq(skills), eq(experience), eq(limit), eq(offset), eq(sortBy)))
                 .thenReturn(Mono.just(mockSearchResult));
 
         // When
-        queryResolver.searchMatches(mode, skills, experience).block();
+        queryResolver.searchMatches(mode, skills, experience, limit, offset, sortBy).block();
 
         // Then
         verify(searchService, times(1)).searchMatches(
                 eq(UserMode.RECRUITER),
                 eq(Arrays.asList("JavaScript", "TypeScript", "React")),
-                eq("0-2 Years")
+                eq("0-2 Years"),
+                eq(20),
+                eq(5),
+                eq("experience ASC")
         );
     }
 
@@ -307,12 +332,15 @@ class QueryResolverTest {
             // Given
             UserMode mode = UserMode.CANDIDATE;
             List<String> skills = Arrays.asList("Java");
+            Integer limit = 10;
+            Integer offset = 0;
+            String sortBy = "score DESC";
 
-            when(searchService.searchMatches(mode, skills, experience))
+            when(searchService.searchMatches(eq(mode), eq(skills), eq(experience), eq(limit), eq(offset), eq(sortBy)))
                     .thenReturn(Mono.just(mockSearchResult));
 
             // When
-            Mono<SearchMatchesResult> result = queryResolver.searchMatches(mode, skills, experience);
+            Mono<SearchMatchesResult> result = queryResolver.searchMatches(mode, skills, experience, limit, offset, sortBy);
 
             // Then
             StepVerifier.create(result)
@@ -320,7 +348,32 @@ class QueryResolverTest {
                     .verifyComplete();
         }
 
-        verify(searchService, times(4)).searchMatches(any(UserMode.class), anyList(), anyString());
+        verify(searchService, times(4)).searchMatches(any(UserMode.class), anyList(), anyString(), anyInt(), anyInt(), anyString());
+    }
+
+    @Test
+    @DisplayName("Should handle null pagination parameters")
+    void testSearchMatchesNullPaginationParams() {
+        // Given
+        UserMode mode = UserMode.CANDIDATE;
+        List<String> skills = Arrays.asList("Java", "Python");
+        String experience = "3-5 Years";
+        Integer limit = null;
+        Integer offset = null;
+        String sortBy = null;
+
+        when(searchService.searchMatches(eq(mode), eq(skills), eq(experience), isNull(), isNull(), isNull()))
+                .thenReturn(Mono.just(mockSearchResult));
+
+        // When
+        Mono<SearchMatchesResult> result = queryResolver.searchMatches(mode, skills, experience, limit, offset, sortBy);
+
+        // Then
+        StepVerifier.create(result)
+                .expectNextMatches(searchResult -> searchResult.getMatches().size() == 2)
+                .verifyComplete();
+
+        verify(searchService, times(1)).searchMatches(eq(mode), eq(skills), eq(experience), isNull(), isNull(), isNull());
     }
 
     @Test
@@ -330,16 +383,19 @@ class QueryResolverTest {
         UserMode mode = UserMode.CANDIDATE;
         List<String> skills = Arrays.asList("Java", "Python");
         String experience = "3-5 Years";
+        Integer limit = 10;
+        Integer offset = 0;
+        String sortBy = "score DESC";
 
-        when(searchService.searchMatches(mode, skills, experience))
+        when(searchService.searchMatches(eq(mode), eq(skills), eq(experience), eq(limit), eq(offset), eq(sortBy)))
                 .thenReturn(Mono.just(mockSearchResult));
 
         // When
-        queryResolver.searchMatches(mode, skills, experience).block();
+        queryResolver.searchMatches(mode, skills, experience, limit, offset, sortBy).block();
 
         // Then
         // Verify that the resolver called the service (logging happens in the resolver)
-        verify(searchService, times(1)).searchMatches(mode, skills, experience);
+        verify(searchService, times(1)).searchMatches(eq(mode), eq(skills), eq(experience), eq(limit), eq(offset), eq(sortBy));
         // Note: Actual logging verification would require a logging framework mock (e.g., LogCaptor)
     }
 }

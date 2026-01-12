@@ -9,9 +9,10 @@ import java.util.List;
 
 /**
  * CandidateDetail (GraphQL Type)
- * - Full candidate information including description
+ * - Full candidate information including resume
  * - Used for DETAIL views (getCandidate query)
  * - Maps to candidate + candidate_description + candidate_skill tables
+ * - Note: originalResume from candidate table (not duplicate description)
  */
 @Data
 @Builder
@@ -27,7 +28,15 @@ public class CandidateDetail {
 
     private String originalResume;
 
+    private String resumeLang;
+
+    private String moreinfo;
+
+    private String lookingFor;
+
     private List<String> skills;
 
-    private String description;
+    private String createdAt;
+
+    private String updatedAt;
 }

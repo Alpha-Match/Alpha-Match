@@ -126,16 +126,20 @@ type RecruitDetail {
 
 """
 Candidate Detail (Single Item View)
-Full candidate information including description
+Full candidate information including resume
 Used for DETAIL views (getCandidate)
 """
 type CandidateDetail {
     id: ID!
     positionCategory: String!
     experienceYears: Int
-    originalResume: String
+    originalResume: String!
+    resumeLang: String
+    moreinfo: String
+    lookingFor: String
     skills: [String!]!
-    description: String!
+    createdAt: String
+    updatedAt: String
 }
 
 """
@@ -201,6 +205,38 @@ type SkillCompetencyMatch {
     totalSearchedSkills: Int!      # Total skills searched
 }
 
+"""
+Company Job Count (Dashboard)
+Represents company name with job posting count
+For Dashboard Top Companies feature (dashboard_request.txt #1)
+"""
+type CompanyJobCount {
+    companyName: String!
+    jobCount: Int!
+}
+
+"""
+Skill Frequency (Dashboard)
+Represents skill name with frequency count and percentage
+For Dashboard Top Skills in Search Results (dashboard_request.txt #2)
+"""
+type SkillFrequency {
+    skill: String!
+    count: Int!
+    percentage: Float!    # 0-100
+}
+
+"""
+Search Statistics Result
+Comprehensive statistics for search results
+Combines top skills analysis with total result count
+For Frontend SearchResultPanel - provides complete search overview
+"""
+type SearchStatisticsResult {
+    topSkills: [SkillFrequency!]!
+    totalCount: Int!
+}
+
 # ===== Enums =====
 
 """
@@ -247,6 +283,7 @@ type Query {
     - experience: String format "0-2 Years", "3-5 Years", etc.
     - limit: Max number of results (default: 10)
     - offset: Number of results to skip for pagination (default: 0)
+    - sortBy: Sort order (e.g., "score DESC, publishedAt DESC")
     - Returns: matches + vectorVisualization
     """
     searchMatches(
@@ -255,6 +292,7 @@ type Query {
         experience: String!
         limit: Int
         offset: Int
+        sortBy: String
     ): SearchMatchesResult!
 
     """
@@ -333,6 +371,44 @@ type Query {
         targetId: ID!
         searchedSkills: [String!]!
     ): SkillCompetencyMatch!
+
+    """
+    Get Top Companies by Job Posting Count (Dashboard)
+    - Returns top N companies with most job postings
+    - Maps to dashboard_request.txt #1: "Company_name 기준 공고 많은 기업 Top 10"
+    - limit: Maximum number of companies to return (default: 10)
+    """
+    topCompanies(limit: Int): [CompanyJobCount!]!
+
+    """
+    Get Top Skills in Search Results (Dashboard)
+    - Returns top N most frequently required skills across ALL search results (not paginated)
+    - Maps to dashboard_request.txt #2: "검색된 전체 채용 공고/이력서에 관한 주요 요구 기술 Top 15"
+    - mode: CANDIDATE searches recruits, RECRUITER searches candidates
+    - skills: List of skill names for vector search
+    - limit: Maximum number of skills to return (default: 15)
+    - Used by Frontend SearchResultPanel for skill frequency statistics
+    """
+    topSkillsInSearch(
+        mode: UserMode!
+        skills: [String!]!
+        limit: Int
+    ): [SkillFrequency!]!
+
+    """
+    Get Search Statistics (Replaces topSkillsInSearch)
+    - Returns comprehensive search statistics including top skills and total result count
+    - Provides fixed totalCount for consistent UX during infinite scroll
+    - mode: CANDIDATE searches recruits, RECRUITER searches candidates
+    - skills: List of skill names for vector search
+    - limit: Maximum number of skills to return in topSkills (default: 15)
+    - Used by Frontend SearchResultPanel for complete search overview
+    """
+    searchStatistics(
+        mode: UserMode!
+        skills: [String!]!
+        limit: Int
+    ): SearchStatisticsResult!
 }
 
 # ===== Mutations =====

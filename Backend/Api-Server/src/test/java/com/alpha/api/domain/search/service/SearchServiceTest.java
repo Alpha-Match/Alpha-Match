@@ -1,19 +1,27 @@
 package com.alpha.api.domain.search.service;
 
+import com.alpha.api.application.dto.RecruitSearchResult;
+import com.alpha.api.application.dto.CandidateSearchResult;
+import com.alpha.api.application.service.CacheService;
+import com.alpha.api.application.service.SearchService;
 import com.alpha.api.domain.candidate.entity.Candidate;
 import com.alpha.api.domain.candidate.entity.CandidateSkill;
+import com.alpha.api.domain.candidate.repository.CandidateDescriptionRepository;
 import com.alpha.api.domain.candidate.repository.CandidateRepository;
+import com.alpha.api.domain.candidate.repository.CandidateSearchRepository;
 import com.alpha.api.domain.candidate.repository.CandidateSkillRepository;
 import com.alpha.api.domain.recruit.entity.Recruit;
 import com.alpha.api.domain.recruit.entity.RecruitSkill;
+import com.alpha.api.domain.recruit.repository.RecruitDescriptionRepository;
 import com.alpha.api.domain.recruit.repository.RecruitRepository;
+import com.alpha.api.domain.recruit.repository.RecruitSearchRepository;
 import com.alpha.api.domain.recruit.repository.RecruitSkillRepository;
 import com.alpha.api.domain.skilldic.entity.SkillCategoryDic;
 import com.alpha.api.domain.skilldic.entity.SkillEmbeddingDic;
 import com.alpha.api.domain.skilldic.repository.SkillCategoryDicRepository;
 import com.alpha.api.domain.skilldic.repository.SkillEmbeddingDicRepository;
 import com.alpha.api.domain.skilldic.service.SkillNormalizationService;
-import com.alpha.api.graphql.type.*;
+import com.alpha.api.presentation.graphql.type.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,10 +46,10 @@ import static org.mockito.Mockito.*;
  * - Tests searchMatches() method (integration search)
  * - Tests searchRecruits() and searchCandidates() methods
  * - Tests getSkillCategories() method
- * - Tests parseExperienceString() method ("3-5 Years" → [3, 5])
  * - Uses Mockito for mocking dependencies
  *
- * NOTE: Service uses similarityThreshold = 0.3 for CANDIDATE mode
+ * NOTE: Service uses similarityThreshold = 0.6 for both modes
+ * NOTE: searchMatches now accepts 6 parameters (mode, skills, experience, limit, offset, sortBy)
  */
 @ExtendWith(MockitoExtension.class)
 class SearchServiceTest {
@@ -50,16 +58,31 @@ class SearchServiceTest {
     private SkillNormalizationService skillNormalizationService;
 
     @Mock
+    private CacheService cacheService;
+
+    @Mock
     private RecruitRepository recruitRepository;
+
+    @Mock
+    private RecruitDescriptionRepository recruitDescriptionRepository;
 
     @Mock
     private RecruitSkillRepository recruitSkillRepository;
 
     @Mock
+    private RecruitSearchRepository recruitSearchRepository;
+
+    @Mock
     private CandidateRepository candidateRepository;
 
     @Mock
+    private CandidateDescriptionRepository candidateDescriptionRepository;
+
+    @Mock
     private CandidateSkillRepository candidateSkillRepository;
+
+    @Mock
+    private CandidateSearchRepository candidateSearchRepository;
 
     @Mock
     private SkillEmbeddingDicRepository skillEmbeddingDicRepository;
@@ -74,6 +97,8 @@ class SearchServiceTest {
     private Candidate testCandidate;
     private SkillCategoryDic backendCategory;
     private SkillEmbeddingDic javaSkill;
+    private RecruitSearchResult testRecruitSearchResult;
+    private CandidateSearchResult testCandidateSearchResult;
 
     @BeforeEach
     void setUp() {
@@ -117,6 +142,17 @@ class SearchServiceTest {
                 .createdAt(OffsetDateTime.now())
                 .updatedAt(OffsetDateTime.now())
                 .build();
+
+        // Create search result DTOs
+        testRecruitSearchResult = RecruitSearchResult.builder()
+                .recruit(testRecruit)
+                .similarityScore(0.85)
+                .build();
+
+        testCandidateSearchResult = CandidateSearchResult.builder()
+                .candidate(testCandidate)
+                .similarityScore(0.85)
+                .build();
     }
 
     @Test
@@ -126,13 +162,15 @@ class SearchServiceTest {
         UserMode mode = UserMode.CANDIDATE;
         List<String> skills = Arrays.asList("Java", "Python");
         String experience = "3-5 Years";
+        Integer limit = 10;
+        Integer offset = 0;
+        String sortBy = "score DESC";
         String queryVector = "[0.1,0.2,0.3]";
 
-        when(skillNormalizationService.normalizeSkillsToQueryVector(skills))
+        when(skillNormalizationService.normalizeSkillsToQueryVector(anyList()))
                 .thenReturn(Mono.just(queryVector));
-        // Service uses 0.3 threshold for CANDIDATE mode
-        when(recruitRepository.findSimilarByVector(eq(queryVector), eq(0.3), eq(10)))
-                .thenReturn(Flux.just(testRecruit));
+        when(recruitSearchRepository.findSimilarByVectorWithScore(eq(queryVector), eq(0.6), eq(10)))
+                .thenReturn(Flux.just(testRecruitSearchResult));
         when(recruitSkillRepository.findByRecruitId(any(UUID.class)))
                 .thenReturn(Flux.just(
                         RecruitSkill.builder().recruitId(testRecruit.getRecruitId()).skill("Java").build(),
@@ -140,7 +178,7 @@ class SearchServiceTest {
                 ));
 
         // When
-        Mono<SearchMatchesResult> result = searchService.searchMatches(mode, skills, experience);
+        Mono<SearchMatchesResult> result = searchService.searchMatches(mode, skills, experience, limit, offset, sortBy);
 
         // Then
         StepVerifier.create(result)
@@ -153,8 +191,8 @@ class SearchServiceTest {
                 })
                 .verifyComplete();
 
-        verify(skillNormalizationService, times(1)).normalizeSkillsToQueryVector(skills);
-        verify(recruitRepository, times(1)).findSimilarByVector(queryVector, 0.3, 10);
+        verify(skillNormalizationService, times(1)).normalizeSkillsToQueryVector(anyList());
+        verify(recruitSearchRepository, times(1)).findSimilarByVectorWithScore(eq(queryVector), eq(0.6), eq(10));
     }
 
     @Test
@@ -164,13 +202,15 @@ class SearchServiceTest {
         UserMode mode = UserMode.RECRUITER;
         List<String> skills = Arrays.asList("Java", "Python");
         String experience = "3-5 Years";
+        Integer limit = 10;
+        Integer offset = 0;
+        String sortBy = "score DESC";
         String queryVector = "[0.1,0.2,0.3]";
 
-        when(skillNormalizationService.normalizeSkillsToQueryVector(skills))
+        when(skillNormalizationService.normalizeSkillsToQueryVector(anyList()))
                 .thenReturn(Mono.just(queryVector));
-        // Service uses 0.7 threshold for RECRUITER mode
-        when(candidateRepository.findSimilarByVector(eq(queryVector), eq(0.7), eq(10)))
-                .thenReturn(Flux.just(testCandidate));
+        when(candidateSearchRepository.findSimilarByVectorWithScore(eq(queryVector), eq(0.6), eq(10)))
+                .thenReturn(Flux.just(testCandidateSearchResult));
         when(candidateSkillRepository.findByCandidateId(any(UUID.class)))
                 .thenReturn(Flux.just(
                         CandidateSkill.builder().candidateId(testCandidate.getCandidateId()).skill("Java").build(),
@@ -178,7 +218,7 @@ class SearchServiceTest {
                 ));
 
         // When
-        Mono<SearchMatchesResult> result = searchService.searchMatches(mode, skills, experience);
+        Mono<SearchMatchesResult> result = searchService.searchMatches(mode, skills, experience, limit, offset, sortBy);
 
         // Then
         StepVerifier.create(result)
@@ -190,8 +230,8 @@ class SearchServiceTest {
                 })
                 .verifyComplete();
 
-        verify(skillNormalizationService, times(1)).normalizeSkillsToQueryVector(skills);
-        verify(candidateRepository, times(1)).findSimilarByVector(queryVector, 0.7, 10);
+        verify(skillNormalizationService, times(1)).normalizeSkillsToQueryVector(anyList());
+        verify(candidateSearchRepository, times(1)).findSimilarByVectorWithScore(eq(queryVector), eq(0.6), eq(10));
     }
 
     @Test
@@ -220,86 +260,24 @@ class SearchServiceTest {
     }
 
     @Test
-    @DisplayName("Should parse experience string '0-2 Years' to [0, 2]")
-    void testParseExperienceString0To2() {
+    @DisplayName("Should handle empty search results")
+    void testSearchMatchesEmptyResults() {
         // Given
-        List<String> skills = Arrays.asList("Java");
-        String experience = "0-2 Years";
-        String queryVector = "[0.1,0.2,0.3]";
-
-        when(skillNormalizationService.normalizeSkillsToQueryVector(skills))
-                .thenReturn(Mono.just(queryVector));
-        when(recruitRepository.findSimilarByVector(anyString(), anyDouble(), anyInt()))
-                .thenReturn(Flux.empty());
-
-        // When
-        Mono<SearchMatchesResult> result = searchService.searchMatches(UserMode.CANDIDATE, skills, experience);
-
-        // Then
-        StepVerifier.create(result)
-                .expectNextMatches(searchResult -> searchResult.getMatches().isEmpty())
-                .verifyComplete();
-    }
-
-    @Test
-    @DisplayName("Should parse experience string '3-5 Years' to [3, 5]")
-    void testParseExperienceString3To5() {
-        // Given
+        UserMode mode = UserMode.CANDIDATE;
         List<String> skills = Arrays.asList("Java");
         String experience = "3-5 Years";
+        Integer limit = 10;
+        Integer offset = 0;
+        String sortBy = "score DESC";
         String queryVector = "[0.1,0.2,0.3]";
 
-        when(skillNormalizationService.normalizeSkillsToQueryVector(skills))
+        when(skillNormalizationService.normalizeSkillsToQueryVector(anyList()))
                 .thenReturn(Mono.just(queryVector));
-        when(recruitRepository.findSimilarByVector(anyString(), anyDouble(), anyInt()))
+        when(recruitSearchRepository.findSimilarByVectorWithScore(anyString(), anyDouble(), anyInt()))
                 .thenReturn(Flux.empty());
 
         // When
-        Mono<SearchMatchesResult> result = searchService.searchMatches(UserMode.CANDIDATE, skills, experience);
-
-        // Then
-        StepVerifier.create(result)
-                .expectNextMatches(searchResult -> searchResult.getMatches().isEmpty())
-                .verifyComplete();
-    }
-
-    @Test
-    @DisplayName("Should parse experience string '10+ Years' to [10, 999]")
-    void testParseExperienceString10Plus() {
-        // Given
-        List<String> skills = Arrays.asList("Java");
-        String experience = "10+ Years";
-        String queryVector = "[0.1,0.2,0.3]";
-
-        when(skillNormalizationService.normalizeSkillsToQueryVector(skills))
-                .thenReturn(Mono.just(queryVector));
-        when(recruitRepository.findSimilarByVector(anyString(), anyDouble(), anyInt()))
-                .thenReturn(Flux.empty());
-
-        // When
-        Mono<SearchMatchesResult> result = searchService.searchMatches(UserMode.CANDIDATE, skills, experience);
-
-        // Then
-        StepVerifier.create(result)
-                .expectNextMatches(searchResult -> searchResult.getMatches().isEmpty())
-                .verifyComplete();
-    }
-
-    @Test
-    @DisplayName("Should handle empty experience string (default to [0, 999])")
-    void testParseExperienceStringEmpty() {
-        // Given
-        List<String> skills = Arrays.asList("Java");
-        String experience = "";
-        String queryVector = "[0.1,0.2,0.3]";
-
-        when(skillNormalizationService.normalizeSkillsToQueryVector(skills))
-                .thenReturn(Mono.just(queryVector));
-        when(recruitRepository.findSimilarByVector(anyString(), anyDouble(), anyInt()))
-                .thenReturn(Flux.empty());
-
-        // When
-        Mono<SearchMatchesResult> result = searchService.searchMatches(UserMode.CANDIDATE, skills, experience);
+        Mono<SearchMatchesResult> result = searchService.searchMatches(mode, skills, experience, limit, offset, sortBy);
 
         // Then
         StepVerifier.create(result)
@@ -314,15 +292,18 @@ class SearchServiceTest {
         UserMode mode = UserMode.CANDIDATE;
         List<String> skills = Arrays.asList("Java", "Python", "React");
         String experience = "3-5 Years";
+        Integer limit = 10;
+        Integer offset = 0;
+        String sortBy = "score DESC";
         String queryVector = "[0.1,0.2,0.3]";
 
-        when(skillNormalizationService.normalizeSkillsToQueryVector(skills))
+        when(skillNormalizationService.normalizeSkillsToQueryVector(anyList()))
                 .thenReturn(Mono.just(queryVector));
-        when(recruitRepository.findSimilarByVector(anyString(), anyDouble(), anyInt()))
+        when(recruitSearchRepository.findSimilarByVectorWithScore(anyString(), anyDouble(), anyInt()))
                 .thenReturn(Flux.empty());
 
         // When
-        Mono<SearchMatchesResult> result = searchService.searchMatches(mode, skills, experience);
+        Mono<SearchMatchesResult> result = searchService.searchMatches(mode, skills, experience, limit, offset, sortBy);
 
         // Then
         StepVerifier.create(result)
@@ -337,25 +318,31 @@ class SearchServiceTest {
     }
 
     @Test
-    @DisplayName("Should handle empty search results")
-    void testSearchMatchesEmptyResults() {
+    @DisplayName("Should apply pagination with offset and limit")
+    void testSearchMatchesWithPagination() {
         // Given
         UserMode mode = UserMode.CANDIDATE;
         List<String> skills = Arrays.asList("Java");
         String experience = "3-5 Years";
+        Integer limit = 5;
+        Integer offset = 10;
+        String sortBy = "score DESC";
         String queryVector = "[0.1,0.2,0.3]";
 
-        when(skillNormalizationService.normalizeSkillsToQueryVector(skills))
+        when(skillNormalizationService.normalizeSkillsToQueryVector(anyList()))
                 .thenReturn(Mono.just(queryVector));
-        when(recruitRepository.findSimilarByVector(anyString(), anyDouble(), anyInt()))
+        // Repository should receive limit + offset for pagination
+        when(recruitSearchRepository.findSimilarByVectorWithScore(eq(queryVector), eq(0.6), eq(15)))
                 .thenReturn(Flux.empty());
 
         // When
-        Mono<SearchMatchesResult> result = searchService.searchMatches(mode, skills, experience);
+        Mono<SearchMatchesResult> result = searchService.searchMatches(mode, skills, experience, limit, offset, sortBy);
 
         // Then
         StepVerifier.create(result)
                 .expectNextMatches(searchResult -> searchResult.getMatches().isEmpty())
                 .verifyComplete();
+
+        verify(recruitSearchRepository, times(1)).findSimilarByVectorWithScore(eq(queryVector), eq(0.6), eq(15));
     }
 }

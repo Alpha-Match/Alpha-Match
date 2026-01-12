@@ -87,7 +87,7 @@ class SkillEmbeddingDicRepositoryTest {
                 .skillId(testSkillId1)
                 .categoryId(backendCategoryId)
                 .skill("Java")
-                .skillVector(generateDummyVector(384))
+                .skillVector(generateDummyVector(1536))
                 .createdAt(OffsetDateTime.now())
                 .updatedAt(OffsetDateTime.now())
                 .build();
@@ -96,7 +96,7 @@ class SkillEmbeddingDicRepositoryTest {
                 .skillId(testSkillId2)
                 .categoryId(backendCategoryId)
                 .skill("Python")
-                .skillVector(generateDummyVector(384))
+                .skillVector(generateDummyVector(1536))
                 .createdAt(OffsetDateTime.now())
                 .updatedAt(OffsetDateTime.now())
                 .build();
@@ -105,7 +105,7 @@ class SkillEmbeddingDicRepositoryTest {
                 .skillId(testSkillId3)
                 .categoryId(frontendCategoryId)
                 .skill("React")
-                .skillVector(generateDummyVector(384))
+                .skillVector(generateDummyVector(1536))
                 .createdAt(OffsetDateTime.now())
                 .updatedAt(OffsetDateTime.now())
                 .build();

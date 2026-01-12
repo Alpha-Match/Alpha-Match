@@ -33,6 +33,12 @@ public class CandidateDescription {
     @Column("resume_lang")
     private String resumeLang;
 
+    @Column("moreinfo")
+    private String moreinfo;
+
+    @Column("looking_for")
+    private String lookingFor;
+
     @Column("created_at")
     private OffsetDateTime createdAt;
 

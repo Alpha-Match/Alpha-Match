@@ -1,6 +1,7 @@
 package com.alpha.api.domain.candidate.repository;
 
 import com.alpha.api.domain.candidate.entity.CandidateDescription;
+import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import reactor.core.publisher.Mono;
 
@@ -20,5 +21,6 @@ public interface CandidateDescriptionRepository extends ReactiveCrudRepository<C
      * @param candidateId Candidate ID
      * @return Mono of CandidateDescription
      */
+    @Query("SELECT * FROM candidate_description WHERE candidate_id = :candidateId")
     Mono<CandidateDescription> findByCandidateId(UUID candidateId);
 }

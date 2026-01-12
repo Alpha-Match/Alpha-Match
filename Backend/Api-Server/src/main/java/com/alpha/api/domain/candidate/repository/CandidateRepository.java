@@ -22,7 +22,7 @@ public interface CandidateRepository extends ReactiveCrudRepository<Candidate, U
      * - Joins candidate_skills_embedding table
      * - Returns top N similar candidates
      *
-     * @param queryVector Query vector (384 dimensions)
+     * @param queryVector Query vector (1536 dimensions)
      * @param similarityThreshold Minimum similarity score (0.7 default)
      * @param limit Maximum number of results
      * @return Flux of Candidates ordered by similarity (descending)

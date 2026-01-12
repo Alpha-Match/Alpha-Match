@@ -15,7 +15,7 @@ import java.util.UUID;
 /**
  * RecruitSkillsEmbedding Entity (Domain Model)
  * - Corresponds to "recruit_skills_embedding" table in table_specification.md
- * - Stores aggregated skill vector (384 dimensions)
+ * - Stores aggregated skill vector (1536 dimensions)
  * - Used for vector similarity search
  */
 @Data
@@ -25,7 +25,7 @@ import java.util.UUID;
 @Table("recruit_skills_embedding")
 public class RecruitSkillsEmbedding {
 
-    public static final int VECTOR_DIMENSION = 384;
+    public static final int VECTOR_DIMENSION = 1536;
 
     @Id
     @Column("recruit_id")

@@ -1,6 +1,8 @@
 package com.alpha.api.domain.recruit.repository;
 
+import com.alpha.api.application.dto.RecruitSearchResult;
 import com.alpha.api.domain.recruit.entity.Recruit;
+import com.alpha.api.infrastructure.persistence.RecruitR2dbcRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -19,7 +21,7 @@ import java.util.UUID;
 /**
  * RecruitRepository Integration Test
  * - Tests R2DBC repository operations against real PostgreSQL
- * - Tests PGvector similarity search (findSimilarByVector)
+ * - Tests PGvector similarity search (via RecruitSearchRepository)
  * - Tests similarity threshold filtering (>= 0.7)
  *
  * NOTE: This is an INTEGRATION TEST that requires:
@@ -41,14 +43,20 @@ class RecruitRepositoryTest {
     @Autowired
     private RecruitRepository recruitRepository;
 
+    @Autowired
+    private RecruitSearchRepository recruitSearchRepository;
+
+    @Autowired
+    private RecruitR2dbcRepository recruitR2dbcRepository;
+
     private UUID testRecruitId1;
     private UUID testRecruitId2;
     private UUID testRecruitId3;
 
     @BeforeEach
     void setUp() {
-        // Clean up test data
-        recruitRepository.deleteAll().block();
+        // Clean up test data (use R2dbcRepository for CRUD operations)
+        recruitR2dbcRepository.deleteAll().block();
 
         // Create test data
         testRecruitId1 = UUID.randomUUID();
@@ -91,7 +99,7 @@ class RecruitRepositoryTest {
                 .updatedAt(OffsetDateTime.now())
                 .build();
 
-        recruitRepository.saveAll(Arrays.asList(recruit1, recruit2, recruit3)).blockLast();
+        recruitR2dbcRepository.saveAll(Arrays.asList(recruit1, recruit2, recruit3)).blockLast();
     }
 
     @Test
@@ -168,12 +176,12 @@ class RecruitRepositoryTest {
     @DisplayName("Should find similar recruits by vector (PGvector cosine distance)")
     void testFindSimilarByVector() {
         // Given
-        String queryVector = generateDummyVector(384);
+        String queryVector = generateDummyVector(1536);
         Double similarityThreshold = 0.7;
         Integer limit = 5;
 
-        // When
-        Flux<Recruit> result = recruitRepository.findSimilarByVector(queryVector, similarityThreshold, limit);
+        // When (using RecruitSearchRepository)
+        Flux<RecruitSearchResult> result = recruitSearchRepository.findSimilarByVectorWithScore(queryVector, similarityThreshold, limit);
 
         // Then
         StepVerifier.create(result)
@@ -185,12 +193,12 @@ class RecruitRepositoryTest {
     @DisplayName("Should filter by similarity threshold >= 0.7")
     void testFindSimilarByVectorWithThreshold() {
         // Given
-        String queryVector = generateDummyVector(384);
+        String queryVector = generateDummyVector(1536);
         Double highThreshold = 0.9;
         Integer limit = 10;
 
-        // When
-        Flux<Recruit> result = recruitRepository.findSimilarByVector(queryVector, highThreshold, limit);
+        // When (using RecruitSearchRepository)
+        Flux<RecruitSearchResult> result = recruitSearchRepository.findSimilarByVectorWithScore(queryVector, highThreshold, limit);
 
         // Then
         StepVerifier.create(result)
@@ -202,12 +210,12 @@ class RecruitRepositoryTest {
     @DisplayName("Should limit results to specified limit")
     void testFindSimilarByVectorWithLimit() {
         // Given
-        String queryVector = generateDummyVector(384);
+        String queryVector = generateDummyVector(1536);
         Double similarityThreshold = 0.0;
         Integer limit = 2;
 
-        // When
-        Flux<Recruit> result = recruitRepository.findSimilarByVector(queryVector, similarityThreshold, limit);
+        // When (using RecruitSearchRepository)
+        Flux<RecruitSearchResult> result = recruitSearchRepository.findSimilarByVectorWithScore(queryVector, similarityThreshold, limit);
 
         // Then
         StepVerifier.create(result)

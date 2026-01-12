@@ -159,7 +159,7 @@ class CandidateRepositoryTest {
     @DisplayName("Should find similar candidates by vector (PGvector cosine distance)")
     void testFindSimilarByVector() {
         // Given
-        String queryVector = generateDummyVector(384);
+        String queryVector = generateDummyVector(1536);
         Double similarityThreshold = 0.7;
         Integer limit = 5;
 
@@ -176,7 +176,7 @@ class CandidateRepositoryTest {
     @DisplayName("Should filter by similarity threshold >= 0.7")
     void testFindSimilarByVectorWithThreshold() {
         // Given
-        String queryVector = generateDummyVector(384);
+        String queryVector = generateDummyVector(1536);
         Double highThreshold = 0.9;
         Integer limit = 10;
 
@@ -193,7 +193,7 @@ class CandidateRepositoryTest {
     @DisplayName("Should limit results to specified limit")
     void testFindSimilarByVectorWithLimit() {
         // Given
-        String queryVector = generateDummyVector(384);
+        String queryVector = generateDummyVector(1536);
         Double similarityThreshold = 0.0;
         Integer limit = 2;
 

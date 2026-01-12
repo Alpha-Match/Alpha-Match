@@ -13,6 +13,7 @@ import java.util.List;
  * - Maps to Frontend MatchItem interface
  * - Unified result for both Recruit and Candidate searches
  * - Used for LIST views (searchMatches) - does NOT include description
+ * - timestamp field: Internal use only for sorting (not exposed in GraphQL schema)
  */
 @Data
 @Builder
@@ -31,4 +32,10 @@ public class MatchItem {
     private List<String> skills;
 
     private Integer experience;
+
+    /**
+     * Timestamp for sorting (publishedAt for Recruit, createdAt for Candidate)
+     * Not exposed in GraphQL schema - internal use only
+     */
+    private String timestamp;
 }

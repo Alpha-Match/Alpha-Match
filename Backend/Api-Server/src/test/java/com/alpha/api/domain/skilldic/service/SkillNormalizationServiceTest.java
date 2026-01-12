@@ -47,12 +47,12 @@ class SkillNormalizationServiceTest {
     void setUp() {
         UUID categoryId = UUID.randomUUID();
 
-        // Create Java skill with 384-dimension vector for accurate testing
+        // Create Java skill with 1536-dimension vector for accurate testing
         javaSkill = SkillEmbeddingDic.builder()
                 .skillId(UUID.randomUUID())
                 .categoryId(categoryId)
                 .skill("Java")
-                .skillVector(generateDummyVectorList(384, 0.1f))
+                .skillVector(generateDummyVectorList(1536, 0.1f))
                 .createdAt(OffsetDateTime.now())
                 .updatedAt(OffsetDateTime.now())
                 .build();
@@ -62,7 +62,7 @@ class SkillNormalizationServiceTest {
                 .skillId(UUID.randomUUID())
                 .categoryId(categoryId)
                 .skill("Python")
-                .skillVector(generateDummyVectorList(384, 0.3f))
+                .skillVector(generateDummyVectorList(1536, 0.3f))
                 .createdAt(OffsetDateTime.now())
                 .updatedAt(OffsetDateTime.now())
                 .build();
@@ -244,7 +244,7 @@ class SkillNormalizationServiceTest {
     }
 
     @Test
-    @DisplayName("Should format vector string correctly (384 dimensions)")
+    @DisplayName("Should format vector string correctly (1536 dimensions)")
     void testVectorStringFormatting() {
         // Given
         List<String> skills = Arrays.asList("Java");
@@ -259,9 +259,9 @@ class SkillNormalizationServiceTest {
         StepVerifier.create(result)
                 .expectNextMatches(vector -> {
                     // Should start with [ and end with ]
-                    // Should have 384 comma-separated values
+                    // Should have 1536 comma-separated values
                     String[] parts = vector.replace("[", "").replace("]", "").split(",");
-                    return vector.startsWith("[") && vector.endsWith("]") && parts.length == 384;
+                    return vector.startsWith("[") && vector.endsWith("]") && parts.length == 1536;
                 })
                 .verifyComplete();
     }
@@ -269,7 +269,7 @@ class SkillNormalizationServiceTest {
     /**
      * Generate dummy vector list for testing
      *
-     * @param dimension Vector dimension (384)
+     * @param dimension Vector dimension (1536)
      * @param value Value for each dimension
      * @return List<Float> vector representation
      */

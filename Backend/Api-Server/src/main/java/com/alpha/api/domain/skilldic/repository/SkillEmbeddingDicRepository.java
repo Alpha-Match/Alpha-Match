@@ -13,7 +13,7 @@ import java.util.UUID;
  * SkillEmbeddingDic Repository (Domain Interface - Port)
  * - R2DBC based reactive repository
  * - Skill normalization dictionary
- * - Maps skill names to vector embeddings (384d)
+ * - Maps skill names to vector embeddings (1536d)
  * - Used to convert user input skills to query vector
  */
 public interface SkillEmbeddingDicRepository extends ReactiveCrudRepository<SkillEmbeddingDic, UUID> {

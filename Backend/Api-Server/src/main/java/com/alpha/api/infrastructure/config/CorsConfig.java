@@ -33,6 +33,7 @@ public class CorsConfig {
         config.setAllowedOrigins(Arrays.asList(
                 "http://localhost:3000",
                 "http://127.0.0.1:3000"
+//                ,"https://originally-expand-convention-router.trycloudflare.com"
         ));
 
         config.setAllowedMethods(Arrays.asList("POST", "OPTIONS"));
