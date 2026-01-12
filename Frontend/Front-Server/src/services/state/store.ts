@@ -4,7 +4,7 @@ import storage from 'redux-persist/lib/storage'; // defaults to localStorage for
 import uiReducer from '@/services/state/features/ui/uiSlice';
 import searchReducer from '@/services/state/features/search/searchSlice';
 import notificationReducer from '@/services/state/features/notification/notificationSlice';
-import { PreloadedState } from 'redux'; // Added this import
+import { PreloadedState } from '@reduxjs/toolkit'; // Added this import
 
 export const persistConfig = {
   key: 'root',
