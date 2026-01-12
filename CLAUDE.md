@@ -57,6 +57,7 @@
 
 ### 🌐 Frontend
 - **Frontend 가이드**: `/Frontend/Front-Server/GEMINI.md`
+- **Apollo Client 및 SSR 데이터 페칭**: `/Frontend/Front-Server/docs/Apollo_Client_and_SSR_Fetching.md`
 
 ### 🏗️ 시스템 아키텍처 (공통)
 - **시스템 아키텍처**: `/docs/시스템_아키텍처.md`
@@ -67,121 +68,14 @@
 
 ## 🚀 현재 구현 상태
 
-### ✅ 완료
-- **DB 스키마 v2**: Flyway V2 (2025-12-21 스키마 재구조화)
-  - 벡터 차원 통일 (384d)
-  - 새 테이블 추가 (skill_category_dic, recruit/candidate_description, recruit_skill)
-  - TIMESTAMPTZ 적용
-- **Batch Server 엔티티 v2**: 11개 엔티티 완료
-  - Recruit 도메인: 5개 (RecruitEntity, RecruitDescriptionEntity, RecruitSkillEntity, RecruitSkillId, RecruitSkillsEmbeddingEntity)
-  - Candidate 도메인: 5개 (CandidateEntity, CandidateDescriptionEntity, CandidateSkillEntity, CandidateSkillId, CandidateSkillsEmbeddingEntity)
-  - Skill Dictionary: 2개 (SkillCategoryDicEntity, SkillEmbeddingDicEntity)
-- **Batch Server Repository v2**: 12개 완료
-  - Recruit: 4개 Domain + 4개 JPA (Native Upsert, 복합키, 벡터검색)
-  - Candidate: 1개 Domain + 1개 JPA (CandidateDescription 신규)
-  - Skill Dictionary: 2개 Domain + 2개 JPA (UUID 자동생성)
-- **Batch Server 기반**: Factory 패턴 + Quartz Scheduler + gRPC Client/Server
-- **Demo Python v2**:
-  - Proto v2 (RecruitRow 11필드, 벡터 384d 통일)
-  - Domain Models v2 (RecruitData, CandidateData, SkillEmbeddingDicData)
-  - 전처리 파이프라인 (컬럼 매핑, Exp Years 변환, 필터링, numpy→list)
-  - Skill Embeddings 전용 로더 (synonyms 제외)
-  - gRPC Server + Chunk Loader + 도메인별 제네릭 구조
-- **Python-Java gRPC 양방향 통신**: Client Streaming (Python → Java)
-- **Spring Boot 4.0**: Jackson 3 마이그레이션
-- **Frontend**: Apollo Client 4.0, 전역 에러 처리, 동적 TECH_STACKS 연동
-- **DB 초기화 및 Batch Server 기동 (2025-12-22)**:
-  - PostgreSQL alpha_match DB 초기화 (reset_db.bat)
-  - Flyway V1, V2 수동 마이그레이션 실행 (run_migrations.bat)
-  - v2 스키마 전체 테이블 생성 완료
-  - Quartz 설정 최적화 (auto-startup: false, RAMJobStore)
-  - Batch Server 성공적 기동 (gRPC 9090, HTTP 8080)
-- **PGvector 직렬화 문제 해결 및 파이프라인 검증 (2025-12-22)**:
-  - Repository 3개 수정 (RecruitSkillsEmbedding, CandidateSkillsEmbedding, SkillEmbeddingDic)
-  - PGvector → String 변환 (.toString()) 후 PostgreSQL vector 타입으로 CAST
-  - bytea → vector 변환 오류 완전 해결
-- **JVM 힙 메모리 및 로깅 최적화 (2025-12-26)**:
-  - `gradle.properties` 추가: `-Xms2g -Xmx8g -XX:+UseG1GC`
-  - 로깅 레벨 DEBUG → INFO 조정 (OOM 방지)
-  - OOM 크래시 분석 및 해결 (리포트: `Backend/Batch-Server/docs/hist/2025-12-26_01_OOM_Crash_Analysis_Report.md`)
-- **Frontend: DefaultDashboard GraphQL 연동 및 데이터 처리**
-  - **Recruit**: 87,488건, 12m 54.8s, 113.0 rps ✅
-  - **Candidate**: 118,741건, 30m 50.1s, 64.2 rps ✅
-  - **Skill_dic**: 105건, 1.69s, 62.2 rps ✅
-  - **총 처리량**: 206,334건, 44m 46.6s, 평균 76.8 rps
-  - 리포트: `Backend/Batch-Server/docs/hist/2025-12-26_02_Performance_Test_Report.md`
-- **Api-Server Clean Architecture 전면 리팩토링 (2025-12-29)**:
-  - 3-Layer 원칙 적용 (Domain → Application → Infrastructure)
-  - Application Services 이동: SearchService, DashboardService, CacheService → application/service/
-  - GraphQL 이동: resolver, type, input → infrastructure/graphql/ (Input Adapter)
-  - Configuration 이동: CacheConfig, CorsConfig, R2dbcConfig → infrastructure/config/
-  - Domain Layer 정리 (빈 service 디렉토리 삭제, SkillNormalizationService는 Domain Service로 유지)
-  - 총 16개 파일 이동, 의존성 방향 검증 완료
-  - Gradle Build 성공 (29s, 9 tasks)
-  - 리포트: `Backend/Api-Server/docs/hist/2025-12-29_02_Complete_Clean_Architecture_Refactoring.md`
-- **Api-Server 4-Layer Architecture 리팩토링 (2025-12-30)**:
-  - Presentation Layer 명시적 분리 (GraphQL Input Adapter)
-  - GraphQL resolver, type → presentation/graphql/로 이동
-  - Infrastructure → Presentation 계층 구조 명확화
-  - Application Service import 경로 수정 (10개 파일)
-  - 4계층 구조 확립 (Presentation → Application → Domain → Infrastructure)
-  - CLAUDE.md 아키텍처 문서 업데이트
-- **Frontend-Backend 완전 통합 (2025-12-30)**:
-  - GraphQL 스키마 동기화 (MatchItem 타입 정합성, description 필드 제거)
-  - Apollo Client 엔드포인트 수정 (8088 → 8080)
-  - Detail 뷰 쿼리 추가 (GET_RECRUIT_DETAIL, GET_CANDIDATE_DETAIL)
-  - TypeScript 타입 추가 (RecruitDetail, CandidateDetail)
-  - 에러 처리 시스템 개선:
-    - Custom Event 패턴 → Redux 직접 dispatch
-    - 쿼리별 맞춤형 에러 메시지 매핑
-    - Apollo Error Link 강화 (GraphQL/Server/Network 에러 구분)
-  - Apollo 캐싱 전략 최적화:
-    - typePolicies 설정 (merge: false, keyArgs)
-    - dashboardData userMode별 캐싱
-    - Detail 쿼리 ID별 캐싱
-  - useMatchDetail Hook 구현 (cache-first, lazy query)
-  - 환경 변수 외부화 (.env.example, .env.local)
-  - API Server 연동 테스트:
-    - GET_SKILL_CATEGORIES: 6 카테고리, 105 스킬 ✅
-    - GET_DASHBOARD_DATA: 카테고리별 통계 ✅
-    - SEARCH_MATCHES: Java+Spring 검색, 0.797 유사도 ✅
-  - 리포트: `Frontend/Front-Server/docs/hist/2025-12-30_Frontend_Backend_Integration.md`
-- **Dashboard 기능 및 검색 최적화 (2026-01-05)**:
-  - **Backend (Api-Server)**:
-    - 카테고리 분포 API 구현 (getCategoryDistribution): 검색한 기술 스택의 카테고리별 비율 분석
-    - 역량 매칭도 API 구현 (getSkillCompetencyMatch): 보유/부족/추가 스킬 분석 및 매칭 퍼센트
-    - 유사도 필터링 강화: 0.0 → 0.6 (60% 이상만 반환)
-    - 기술 스택 정렬 처리: 캐시 히트율 향상을 위한 일관된 쿼리 생성
-    - GraphQL 타입 추가: CategoryMatchDistribution, SkillCompetencyMatch
-  - **Frontend (Front-Server)**:
-    - CategoryPieChart 컴포넌트: SVG 기반 원 그래프 시각화 (10개 카테고리 색상 매핑)
-    - SkillCompetencyBadge 컴포넌트: High/Medium/Low 3단계 역량 레벨 표시
-    - 무한 스크롤 UX 개선:
-      - NetworkStatus 기반 초기 로딩/fetchMore 로딩 구분
-      - Throttle 적용 (300ms 최소 간격)으로 중복 요청 방지
-      - 스크롤 위치 유지 (전체 화면 새로고침 제거)
-    - 기술 스택 정렬: Frontend에서도 정렬하여 Backend 캐싱 일관성 확보
-    - Server/Client Component 분리: HomePage.client.tsx 구조 개선
-  - **성능 개선**:
-    - 캐시 히트율: ~50% → ~80% (스킬 정렬 효과)
-    - 서버 부하: 30% 감소 (throttle 효과)
-    - 검색 품질: 유사도 60% 이상으로 향상
-
-### 🔄 진행 중
-- 없음
-
 ### ⏳ 예정
 - 청크 사이즈 튜닝 (100, 500, 1000 비교)
 - Redis 연동 및 실제 성능 테스트
-- CacheService 적용 확대 (getSkillCategories, Dashboard, Detail 조회)
 - gRPC Server 구현 (캐시 무효화 수신)
 - GraphQL Mutation 구현 (캐시 무효화 API)
-- Frontend: Detail 뷰 UI 컴포넌트 구현 (useMatchDetail Hook 활용)
 - Frontend: ErrorBoundary 컴포넌트 추가
 - Frontend: GraphQL Code Generator 설정 (선택적)
 - 성능 최적화 및 모니터링
-
-**상세 일정**: `/docs/개발_우선순위.md` 참조
 
 ---
 

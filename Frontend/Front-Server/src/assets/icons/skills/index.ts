@@ -21,9 +21,9 @@ import Bert from './bert.svg';
 import Bigquery from './bigquery.svg';
 import Blender from './blender.svg';
 import Bootstrap from './bootstrap.svg';
-import C from './c.svg';
-import Csharp from './c#.svg';
-import Cplusplus from './c++.svg';
+import CLang from './c-lang.svg';
+import CSharp from './csharp.svg';
+import Cpp from './cpp.svg';
 import Cassandra from './cassandra.svg';
 import Catboost from './catboost.svg';
 import Chainlink from './chainlink.svg';
@@ -165,9 +165,13 @@ const SKILL_ICONS: { [key: string]: StaticImageData } = {
   bigquery: Bigquery,
   blender: Blender,
   bootstrap: Bootstrap,
-  c: C,
-  'c#': Csharp,
-  'c++': Cplusplus,
+  c: CLang, // Map 'c' to CLang
+  'c#': CSharp, // Map 'c#' to CSharp
+  'c++': Cpp, // Map 'c++' to Cpp
+  // Add descriptive keys for renamed files as well if they are used for direct lookup
+  'c-lang': CLang,
+  csharp: CSharp,
+  cpp: Cpp,
   cassandra: Cassandra,
   catboost: Catboost,
   chainlink: Chainlink,
