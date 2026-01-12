@@ -6,18 +6,17 @@
  * @version 2.1.0
  * @date 2026-01-11
  */
-import React, {Suspense, useState} from 'react';
+import React, {Suspense} from 'react';
 import {MatchItem, PageViewMode, SkillCategory, UserMode}from '@/types';
 import QueryBoundary from '@/components/utils/QueryBoundary';
 import {SearchResultPanel}from '@/components/search/results';
 import MainDashboard from '@/app/_components/MainDashboard';
 import {MatchDetailPanel}from '@/components/search/detail';
 import {LoadingSpinner}from '@/components/ui/LoadingSpinner';
-import {SearchResultTabs, SearchResultTab}from '@/components/search/navigation'; // Added
-import {SearchResultAnalysisPanel}from '@/components/search/analysis'; // Added
-import { InputPanel } from '@/components/input-panel'; // Added for mobile layout
-import { TabController } from '@/components/layout/TabController'; // Added for mobile layout
-import { Search } from 'lucide-react'; // Added for the search button
+import {SearchResultAnalysisPanel}from '@/components/search/analysis';
+import { InputPanel } from '@/components/input-panel';
+import { TabController } from '@/components/layout/TabController';
+import { Search } from 'lucide-react';
 
 
 
@@ -62,43 +61,37 @@ export const MainContentPanel: React.FC<MainContentPanelProps> = ({
   navigateToInput, // Added
   navigateToView, // Added
 }) => {
-  const [activeSearchResultTab, setActiveSearchResultTab] = useState<SearchResultTab>('analysis'); // Added state
-
-  if (pageViewMode === 'dashboard') {
+  // Desktop: Dashboard view (early return - no TabController needed)
+  if (isDesktop && pageViewMode === 'dashboard') {
     return (
-      <QueryBoundary>
-        <Suspense fallback={<LoadingSpinner message="대시보드 로딩 중..." />}>
-          <MainDashboard key={userMode} activeColor={activeColor} userMode={userMode} />
-        </Suspense>
-      </QueryBoundary>
+      <main className="relative flex-1 flex flex-col overflow-y-auto custom-scrollbar">
+        <QueryBoundary>
+          <Suspense fallback={<LoadingSpinner message="대시보드 로딩 중..." />}>
+            <MainDashboard key={userMode} activeColor={activeColor} userMode={userMode} onSearchClick={navigateToInput} />
+          </Suspense>
+        </QueryBoundary>
+        <div className="fixed bottom-10 right-10 z-30">
+          <button
+            onClick={navigateToInput}
+            className="px-6 py-4 bg-primary text-white rounded-full shadow-lg flex items-center gap-2 transform hover:-translate-y-1 transition-transform"
+            aria-label="검색 시작하기"
+          >
+            <Search size={20} />
+            검색 시작하기
+          </button>
+        </div>
+      </main>
     );
   }
 
   if (isDesktop) {
-    // Desktop layout (3 columns for search, 2 columns for dashboard/detail)
-    if (pageViewMode === 'dashboard') {
-      return (
-        <main className="flex-1 flex flex-col overflow-y-auto custom-scrollbar">
-          <MainDashboard userMode={userMode} activeColor={activeColor} />
-          <div className="absolute bottom-10 right-10 z-30">
-            <button
-              onClick={navigateToInput}
-              className="px-6 py-4 bg-primary text-white rounded-full shadow-lg flex items-center gap-2 transform hover:-translate-y-1 transition-transform"
-              aria-label="검색 시작하기"
-            >
-              <Search size={20} />
-              검색 시작하기
-            </button>
-          </div>
-        </main>
-      );
-    }
+    // Desktop layout (3 columns for search results view)
     return (
       <main className="flex-1 flex overflow-hidden">
         {/* Column 1: Input Panel */}
         <div className="w-[380px] flex-shrink-0 h-full bg-panel-sidebar border-r border-border/30">
           <InputPanel
-            onSearch={navigateToDashboard} // Changed onSearch to navigate to dashboard after search
+            onSearch={() => navigateToView('results')}
             isLoading={loading && pageViewMode === 'results'}
           />
         </div>
@@ -147,22 +140,14 @@ export const MainContentPanel: React.FC<MainContentPanelProps> = ({
       switch (pageViewMode) {
         case 'dashboard':
           return (
-            <>
-              <MainDashboard userMode={userMode} activeColor={activeColor} />
-              <div className="absolute bottom-10 right-6 z-30">
-                <button
-                  onClick={navigateToInput}
-                  className="px-6 py-4 bg-primary text-white rounded-full shadow-lg flex items-center gap-2 transform hover:-translate-y-1 transition-transform"
-                  aria-label="검색 시작하기"
-                >
-                  <Search size={20} />
-                  검색 시작하기
-                </button>
-              </div>
-            </>
+            <QueryBoundary>
+              <Suspense fallback={<LoadingSpinner message="대시보드 로딩 중..." />}>
+                <MainDashboard key={userMode} activeColor={activeColor} userMode={userMode} onSearchClick={() => navigateToView('input')} />
+              </Suspense>
+            </QueryBoundary>
           );
         case 'input':
-          return <InputPanel onSearch={navigateToDashboard} isLoading={loading} />; // onSearch should probably navigate to results or dashboard
+          return <InputPanel onSearch={() => navigateToView('results')} isLoading={loading} />;
         case 'results':
           return (
             <QueryBoundary loading={loading && matches.length === 0} error={error}>

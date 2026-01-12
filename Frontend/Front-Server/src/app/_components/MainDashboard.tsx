@@ -26,9 +26,10 @@ interface TopCompaniesData {
 interface DefaultDashboardProps {
     userMode: UserMode;
     activeColor: string;
+    onSearchClick?: () => void;
 }
 
-export default function MainDashboard({ userMode, activeColor }: DefaultDashboardProps) {
+export default function MainDashboard({ userMode, activeColor, onSearchClick }: DefaultDashboardProps) {
     const isHydrated = useHydrated();
     const dashboardData = useAppSelector((state) => state.search[userMode].dashboardData);
 
@@ -93,10 +94,17 @@ export default function MainDashboard({ userMode, activeColor }: DefaultDashboar
 
     return (
         <div className="p-6 h-full text-text-primary animate-fade-in overflow-y-auto custom-scrollbar">
-            <div className="bg-panel-main p-6 rounded-lg shadow-lg text-center mb-8">
+            <div
+                className={`bg-panel-main p-6 rounded-lg shadow-lg text-center mb-8 ${onSearchClick ? 'cursor-pointer hover:bg-panel-sidebar transition-colors' : ''}`}
+                onClick={onSearchClick}
+                role={onSearchClick ? 'button' : undefined}
+                tabIndex={onSearchClick ? 0 : undefined}
+                onKeyDown={onSearchClick ? (e) => e.key === 'Enter' && onSearchClick() : undefined}
+            >
                 <div className="flex flex-col items-center justify-center gap-2">
                     <Search size={24} className="text-text-secondary" />
                     <p className="text-text-secondary">{searchPrompt}</p>
+                    {onSearchClick && <p className="text-xs text-primary mt-1">클릭하여 검색 시작</p>}
                 </div>
             </div>
 
