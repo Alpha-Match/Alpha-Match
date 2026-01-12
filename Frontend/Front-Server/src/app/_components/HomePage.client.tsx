@@ -107,6 +107,9 @@ export function HomePageClient({ initialSkillCategories, initialDashboardData }:
         hasMore={hasMore}
         searchedSkills={searchedSkills}
         skillCategories={initialSkillCategories}
+        isDesktop={isDesktop} // Added
+        navigateToInput={navigateToInput} // Added
+        navigateToView={navigateToView} // Added
       />
     </div>
   );

@@ -9,14 +9,19 @@
 import React, {Suspense, useState} from 'react';
 import {MatchItem, SkillCategory, UserMode} from '@/types';
 import QueryBoundary from '@/components/utils/QueryBoundary';
-import {SearchResultPanel} from '@/components/search/results';
+import {SearchResultPanel}from '@/components/search/results';
 import MainDashboard from '@/app/_components/MainDashboard';
-import {MatchDetailPanel} from '@/components/search/detail';
-import {LoadingSpinner} from '@/components/ui/LoadingSpinner';
+import {MatchDetailPanel}from '@/components/search/detail';
+import {LoadingSpinner}from '@/components/ui/LoadingSpinner';
+import {SearchResultTabs, SearchResultTab}from '@/components/search/navigation'; // Added
+import {SearchResultAnalysisPanel}from '@/components/search/analysis'; // Added
+import { InputPanel } from '@/components/input-panel'; // Added for mobile layout
+import { TabController } from '@/components/layout/TabController'; // Added for mobile layout
+import { Search } from 'lucide-react'; // Added for the search button
 import {SearchResultTabs, SearchResultTab} from '@/components/search/navigation'; // Added
 import {SearchResultAnalysisPanel}from '@/components/search/analysis'; // Added
 
-type PageViewMode = 'dashboard' | 'results' | 'detail';
+type PageViewMode = 'dashboard' | 'results' | 'detail' | 'input' | 'analysis'; // Updated PageViewMode
 
 interface MainContentPanelProps {
   userMode: UserMode;
@@ -34,6 +39,9 @@ interface MainContentPanelProps {
   hasMore?: boolean;
   searchedSkills?: string[];
   skillCategories?: SkillCategory[];
+  isDesktop: boolean; // Added
+  navigateToInput: () => void; // Added
+  navigateToView: (view: PageViewMode) => void; // Added
 }
 
 export const MainContentPanel: React.FC<MainContentPanelProps> = ({
@@ -65,80 +73,148 @@ export const MainContentPanel: React.FC<MainContentPanelProps> = ({
     );
   }
 
-  // 'results'와 'detail' 뷰를 위한 반응형 레이아웃
-  return (
-    <div className="flex w-full h-full lg:gap-4">
-      {/* --- 왼쪽 패널: 검색 결과 및 분석 --- */}
-      <div
-        className={`w-full h-full ${
-          pageViewMode === 'detail' ? 'hidden lg:block' : 'block'
-        } ${pageViewMode === 'results' ? 'lg:w-2/5' : 'lg:w-full'}`}
-      >
-        {pageViewMode === 'results' && ( // Only show tabs and analysis/list in results mode
-          <>
-            <SearchResultTabs
-              activeTab={activeSearchResultTab}
-              onTabChange={setActiveSearchResultTab}
+  if (isDesktop) {
+    // Desktop layout (3 columns for search, 2 columns for dashboard/detail)
+    if (pageViewMode === 'dashboard') {
+      return (
+        <main className="flex-1 flex flex-col overflow-y-auto custom-scrollbar">
+          <MainDashboard userMode={userMode} activeColor={activeColor} />
+          <div className="absolute bottom-10 right-10 z-30">
+            <button
+              onClick={navigateToInput}
+              className="px-6 py-4 bg-primary text-white rounded-full shadow-lg flex items-center gap-2 transform hover:-translate-y-1 transition-transform"
+              aria-label="검색 시작하기"
+            >
+              <Search size={20} />
+              검색 시작하기
+            </button>
+          </div>
+        </main>
+      );
+    }
+    return (
+      <main className="flex-1 flex overflow-hidden">
+        {/* Column 1: Input Panel */}
+        <div className="w-[380px] flex-shrink-0 h-full bg-panel-sidebar border-r border-border/30">
+          <InputPanel
+            onSearch={navigateToDashboard} // Changed onSearch to navigate to dashboard after search
+            isLoading={loading && pageViewMode === 'results'}
+          />
+        </div>
+
+        {/* Column 2: Search Result Analysis Panel */}
+        <div className="w-[450px] flex-shrink-0 h-full overflow-y-auto custom-scrollbar p-6 border-r border-border/30">
+          <SearchResultAnalysisPanel
+            activeColor={activeColor}
+            userMode={userMode}
+            searchedSkills={searchedSkills}
+            skillCategories={skillCategories}
+          />
+        </div>
+
+        {/* Column 3: Search Result List or Detail Panel */}
+        <div className="flex-1 h-full overflow-y-auto custom-scrollbar p-6">
+          {pageViewMode === 'detail' && selectedMatchId ? (
+            <MatchDetailPanel
+              matchId={selectedMatchId}
+              userMode={userMode}
+              onBack={onBackToList}
               activeColor={activeColor}
+              searchedSkills={searchedSkills}
             />
-            {activeSearchResultTab === 'analysis' && (
-              <SearchResultAnalysisPanel
+          ) : (
+            <QueryBoundary loading={loading && matches.length === 0} error={error}>
+              <SearchResultPanel
+                matches={matches}
+                onMatchSelect={onMatchSelect}
+                onBackToDashboard={onBackToDashboard}
                 activeColor={activeColor}
                 userMode={userMode}
-                searchedSkills={searchedSkills}
-                skillCategories={skillCategories}
+                loadMore={loadMore}
+                hasMore={hasMore}
+                loading={fetchingMore}
+                selectedMatchId={selectedMatchId}
               />
-            )}
-            {activeSearchResultTab === 'list' && (
-              <div className="flex-1 overflow-y-auto custom-scrollbar pr-2"> {/* Added overflow-y-auto custom-scrollbar pr-2 */}
-                <QueryBoundary loading={loading && matches.length === 0} error={error}>
-                  <SearchResultPanel
-                    matches={matches}
-                    onMatchSelect={onMatchSelect}
-                    onBackToDashboard={onBackToDashboard}
-                    activeColor={activeColor}
-                    userMode={userMode}
-                    loadMore={loadMore}
-                    hasMore={hasMore}
-                    loading={fetchingMore}
-                    selectedMatchId={selectedMatchId}
-                  />
-                </QueryBoundary>
+            </QueryBoundary>
+          )}
+        </div>
+      </main>
+    );
+  } else {
+    // Mobile layout
+    const renderContent = () => {
+      switch (pageViewMode) {
+        case 'dashboard':
+          return (
+            <>
+              <MainDashboard userMode={userMode} activeColor={activeColor} />
+              <div className="absolute bottom-10 right-6 z-30">
+                <button
+                  onClick={navigateToInput}
+                  className="px-6 py-4 bg-primary text-white rounded-full shadow-lg flex items-center gap-2 transform hover:-translate-y-1 transition-transform"
+                  aria-label="검색 시작하기"
+                >
+                  <Search size={20} />
+                  검색 시작하기
+                </button>
               </div>
-            )}
-          </>
-        )}
-        {pageViewMode === 'detail' && ( // Display a placeholder for the list if detail view is active
-          <div className="h-full items-center justify-center bg-panel-main rounded-lg border border-border/20 hidden lg:flex">
-            <p className="text-text-tertiary px-4 text-center">
-              왼쪽 목록에서 항목을 선택하여 상세 정보를 확인하세요.
-            </p>
-          </div>
-        )}
-      </div>
+            </>
+          );
+        case 'input':
+          return <InputPanel onSearch={navigateToDashboard} isLoading={loading} />; // onSearch should probably navigate to results or dashboard
+        case 'results':
+          return (
+            <QueryBoundary loading={loading && matches.length === 0} error={error}>
+              <SearchResultPanel
+                matches={matches}
+                onMatchSelect={onMatchSelect}
+                onBackToDashboard={onBackToDashboard}
+                activeColor={activeColor}
+                userMode={userMode}
+                loadMore={loadMore}
+                hasMore={hasMore}
+                loading={fetchingMore}
+                selectedMatchId={selectedMatchId}
+              />
+            </QueryBoundary>
+          );
+        case 'detail':
+          if (!selectedMatchId) return null;
+          return (
+            <MatchDetailPanel
+              matchId={selectedMatchId}
+              userMode={userMode}
+              onBack={onBackToList}
+              activeColor={activeColor}
+              searchedSkills={searchedSkills}
+            />
+          );
+        case 'analysis':
+          return (
+            <SearchResultAnalysisPanel
+              activeColor={activeColor}
+              userMode={userMode}
+              searchedSkills={searchedSkills}
+              skillCategories={skillCategories}
+            />
+          );
+        default:
+          return null;
+      }
+    };
 
-      {/* --- 오른쪽 패널: 상세 정보 또는 플레이스홀더 --- */}
-      <div
-        className={`w-full lg:w-3/5 flex-grow h-full ${
-          pageViewMode === 'detail' ? 'block' : 'hidden lg:block'
-        }`}
-      >
-        {pageViewMode === 'detail' && selectedMatchId ? (
-          <MatchDetailPanel
-            matchId={selectedMatchId}
-            userMode={userMode}
-            onBack={onBackToList}
-            activeColor={activeColor}
-            searchedSkills={searchedSkills}
-          />
-        ) : (
-          <div className="h-full items-center justify-center bg-panel-main rounded-lg border border-border/20 hidden lg:flex">
-            <p className="text-text-tertiary px-4 text-center">
-              왼쪽 목록에서 항목을 선택하여 상세 정보를 확인하세요.
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+    return (
+      <main className="flex-1 flex flex-col overflow-hidden">
+        <TabController
+          activeView={pageViewMode}
+          onTabChange={navigateToView}
+          userMode={userMode}
+          detailAvailable={!!selectedMatchId}
+        />
+        <div className="flex-1 p-6 overflow-y-auto custom-scrollbar">
+          {renderContent()}
+        </div>
+      </main>
+    );
+  }
 };
