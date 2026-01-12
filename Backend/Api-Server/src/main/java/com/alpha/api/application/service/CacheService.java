@@ -248,4 +248,19 @@ public class CacheService {
     public static String dashboardKey(String userMode) {
         return "dashboard:" + userMode;
     }
+
+    /**
+     * Cache key builder for search statistics
+     * - Key includes mode, sorted skills, and limit for cache consistency
+     * - Skills are joined with comma (already sorted by caller)
+     *
+     * @param mode User mode (CANDIDATE or RECRUITER)
+     * @param sortedSkills Sorted list of skill names
+     * @param limit Maximum number of top skills
+     * @return Cache key
+     */
+    public static String searchStatisticsKey(String mode, java.util.List<String> sortedSkills, Integer limit) {
+        String skillsHash = String.join(",", sortedSkills);
+        return "searchStats:" + mode + ":" + skillsHash + ":" + limit;
+    }
 }
