@@ -2,10 +2,10 @@
 import React from 'react';
 import chroma from 'chroma-js';
 import {useQuery} from '@apollo/client/react';
+import { Search } from 'lucide-react';
 import {useAppSelector} from '../../services/state/hooks';
 import {CompanyJobCount, UserMode} from '../../types';
 import {useHydrated} from '../../hooks/useHydrated';
-import {CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS} from '../../constants';
 import {GET_TOP_COMPANIES} from '../../services/api/queries/dashboard';
 
 // Common Components
@@ -67,7 +67,7 @@ export default function DefaultDashboard({ userMode, activeColor }: DefaultDashb
     ];
 
     const mainTitle = isCandidateMode ? "채용 시장 기술 트렌드 (구직자)" : "인재 시장 기술 트렌드 (리크루터)";
-    const searchPrompt = isCandidateMode ? "관심 있는 기술을 선택하고, 시장의 기회를 확인하세요." : "필요한 기술을 선택하고, 최고의 인재를 찾아보세요.";
+    const searchPrompt = isCandidateMode ? "관심 있는 기술을 선택하고, 시장의 기회를 확인하세요." : "핵심 기술을 입력하고, 잠재력 있는 인재를 발견하세요!";
     const analysisSectionTitle = isCandidateMode ? "주요 기술별 채용 트렌드" : "주요 기술별 인재풀 분석";
     const topSkillsTitle = isCandidateMode ? "가장 많이 요구되는 기술 Top " : "가장 많은 인재가 보유한 기술 Top ";
     const categoryDistributionTitle = isCandidateMode ? "기술 영역별 채용 비중" : "기술 영역별 인재 비중";
@@ -94,7 +94,10 @@ export default function DefaultDashboard({ userMode, activeColor }: DefaultDashb
     return (
         <div className="p-6 h-full text-text-primary animate-fade-in">
             <div className="bg-panel-main p-6 rounded-lg shadow-lg text-center mb-8">
-                <p className="text-text-secondary">{searchPrompt}</p>
+                <div className="flex flex-col items-center justify-center gap-2">
+                    <Search size={24} className="text-text-secondary" />
+                    <p className="text-text-secondary">{searchPrompt}</p>
+                </div>
             </div>
 
             <h2 className="text-3xl font-bold text-text-primary my-4">{mainTitle}</h2>
@@ -113,6 +116,7 @@ export default function DefaultDashboard({ userMode, activeColor }: DefaultDashb
                             data={topCompaniesData}
                             color={baseColor}
                             loading={companiesLoading}
+                            error={!!companiesError} // companiesError 전달
                         />
                     )}
 

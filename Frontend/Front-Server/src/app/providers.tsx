@@ -2,28 +2,40 @@
 
 import { ApolloProvider } from '@apollo/client/react';
 import { Provider as ReduxProvider } from 'react-redux';
-import { store } from '../services/state/store';
+import { makeStore } from '../services/state/store';
 import { makeClient, setApolloStore } from '../services/api/apollo-client';
 import { showNotification } from '../services/state/features/notification/notificationSlice';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { PersistGate } from 'redux-persist/integration/react';
+import { Persistor, persistStore } from 'redux-persist';
 
 export default function Providers({
-                                      children,
-                                  }: {
-    children: React.ReactNode;
+  children,
+}: {
+  children: React.ReactNode;
 }) {
-    const [client] = useState(() => makeClient());
+  const [client] = useState(() => makeClient());
+  const storeRef = useRef<ReturnType<typeof makeStore> | null>(null);
+  const persistorRef = useRef<Persistor | null>(null);
 
-    useEffect(() => {
-        // Redux store를 Apollo Client에 주입
-        setApolloStore(store, showNotification);
-    }, []);
+  if (!storeRef.current) {
+    storeRef.current = makeStore();
+    persistorRef.current = persistStore(storeRef.current);
+  }
 
-    return (
-        <ReduxProvider store={store}>
-            <ApolloProvider client={client}>
-                {children}
-            </ApolloProvider>
-        </ReduxProvider>
-    );
+  useEffect(() => {
+    if (storeRef.current) {
+      setApolloStore(storeRef.current, showNotification);
+    }
+  }, []);
+
+  return (
+    <ReduxProvider store={storeRef.current}>
+      <PersistGate loading={null} persistor={persistorRef.current!}>
+        <ApolloProvider client={client}>
+          {children}
+        </ApolloProvider>
+      </PersistGate>
+    </ReduxProvider>
+  );
 }

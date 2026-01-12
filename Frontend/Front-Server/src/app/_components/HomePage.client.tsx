@@ -145,10 +145,7 @@ export function HomePageClient({ initialSkillCategories, initialDashboardData }:
                 loadMore={loadMore}
                 hasMore={hasMore}
                 loading={fetchingMore}
-                searchedSkills={searchedSkills} // Not used internally now
-                skillCategories={initialSkillCategories} // Not used internally now
                 selectedMatchId={selectedMatchId}
-
               />
             </QueryBoundary>
           )}
@@ -161,7 +158,21 @@ export function HomePageClient({ initialSkillCategories, initialDashboardData }:
     const renderContent = () => {
       switch (pageViewMode) {
         case 'dashboard':
-          return <DefaultDashboard userMode={userMode} activeColor={activeColor} />;
+          return (
+            <>
+              <DefaultDashboard userMode={userMode} activeColor={activeColor} />
+              <div className="absolute bottom-10 right-6 z-30"> {/* Adjusted right for mobile padding */}
+                  <button
+                      onClick={navigateToInput}
+                      className="px-6 py-4 bg-primary text-white rounded-full shadow-lg flex items-center gap-2 transform hover:-translate-y-1 transition-transform"
+                      aria-label="검색 시작하기"
+                  >
+                      <Search size={20} />
+                      검색 시작하기
+                  </button>
+              </div>
+            </>
+          );
         case 'input':
           return <InputPanel onSearch={handleSearch} isLoading={isPending} />;
         case 'results':
@@ -175,8 +186,6 @@ export function HomePageClient({ initialSkillCategories, initialDashboardData }:
                 loadMore={loadMore}
                 hasMore={hasMore}
                 loading={fetchingMore}
-                searchedSkills={searchedSkills}
-                skillCategories={initialSkillCategories}
                 selectedMatchId={selectedMatchId}
               />
             </QueryBoundary>
@@ -190,6 +199,15 @@ export function HomePageClient({ initialSkillCategories, initialDashboardData }:
               onBack={goBack}
               activeColor={activeColor}
               searchedSkills={searchedSkills}
+            />
+          );
+        case 'analysis':
+          return (
+            <SearchResultAnalysisPanel
+              activeColor={activeColor}
+              userMode={userMode}
+              searchedSkills={searchedSkills}
+              skillCategories={initialSkillCategories}
             />
           );
         default:

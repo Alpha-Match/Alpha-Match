@@ -8,6 +8,7 @@
     --color-background: 241 245 249;     /* slate-100 */
     --color-panel-sidebar: 255 255 255; /* white */
     --color-panel-main: 248 250 252;    /* slate-50 */
+    --color-panel-2: 226 232 240;       /* slate-200 */
     
     --color-text-primary: 15 23 42;    /* slate-900 */
     --color-text-secondary: 51 65 85;  /* slate-700 */
@@ -22,6 +23,7 @@
     --color-background: 7 11 20;        /* ~slate-950 */
     --color-panel-sidebar: 15 23 42;     /* slate-900 */
     --color-panel-main: 30 41 59;        /* slate-800 */
+    --color-panel-2: 51 65 85;           /* slate-700 */
 
     --color-text-primary: 248 250 252;   /* slate-50 */
     --color-text-secondary: 203 213 225; /* slate-300 */
