@@ -6,7 +6,7 @@
  * @version 2.1.0
  * @date 2026-01-11
  */
-import React, {Suspense} from 'react';
+import React, {Suspense, useState} from 'react';
 import {MatchItem, SkillCategory, UserMode} from '@/types';
 import QueryBoundary from '@/components/utils/QueryBoundary';
 import {SearchResultPanel} from '@/components/search/results';
@@ -90,19 +90,21 @@ export const MainContentPanel: React.FC<MainContentPanelProps> = ({
               />
             )}
             {activeSearchResultTab === 'list' && (
-              <QueryBoundary loading={loading && matches.length === 0} error={error}>
-                <SearchResultPanel
-                  matches={matches}
-                  onMatchSelect={onMatchSelect}
-                  onBackToDashboard={onBackToDashboard}
-                  activeColor={activeColor}
-                  userMode={userMode}
-                  loadMore={loadMore}
-                  hasMore={hasMore}
-                  loading={fetchingMore}
-                  selectedMatchId={selectedMatchId}
-                />
-              </QueryBoundary>
+              <div className="flex-1 overflow-y-auto custom-scrollbar pr-2"> {/* Added overflow-y-auto custom-scrollbar pr-2 */}
+                <QueryBoundary loading={loading && matches.length === 0} error={error}>
+                  <SearchResultPanel
+                    matches={matches}
+                    onMatchSelect={onMatchSelect}
+                    onBackToDashboard={onBackToDashboard}
+                    activeColor={activeColor}
+                    userMode={userMode}
+                    loadMore={loadMore}
+                    hasMore={hasMore}
+                    loading={fetchingMore}
+                    selectedMatchId={selectedMatchId}
+                  />
+                </QueryBoundary>
+              </div>
             )}
           </>
         )}

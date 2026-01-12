@@ -92,7 +92,7 @@ export default function MainDashboard({ userMode, activeColor }: DefaultDashboar
         .slice(0, 20);
 
     return (
-        <div className="p-6 h-full text-text-primary animate-fade-in">
+        <div className="p-6 h-full text-text-primary animate-fade-in overflow-y-auto custom-scrollbar">
             <div className="bg-panel-main p-6 rounded-lg shadow-lg text-center mb-8">
                 <div className="flex flex-col items-center justify-center gap-2">
                     <Search size={24} className="text-text-secondary" />
