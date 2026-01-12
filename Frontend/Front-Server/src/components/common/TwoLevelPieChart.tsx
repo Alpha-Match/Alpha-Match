@@ -1,8 +1,7 @@
 import React from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import chroma from 'chroma-js';
-import { SkillIcon } from './SkillIcon'; // Import SkillIcon
-import { PieData } from '../../types'; // Import PieData
+import {Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, LegendPayload} from 'recharts';
+import {SkillIcon} from './SkillIcon'; // Import SkillIcon
+import {PieData} from '../../types'; // Import PieData
 
 // Props for the component
 interface TwoLevelPieChartProps {
@@ -11,17 +10,36 @@ interface TwoLevelPieChartProps {
     categoryColorMap: Map<string, string>;
 }
 
+
+
+interface TooltipPayloadItem {
+  payload: PieData; 
+  name?: string;
+  value?: number;
+  dataKey?: string;
+  fill?: string;
+  stroke?: string;
+  color?: string;
+}
+
+interface CustomTooltipComponentProps {
+  active?: boolean;
+  payload?: TooltipPayloadItem[];
+  categoryColorMap: Map<string, string>;
+}
+
 // --- Sub-component: Custom Tooltip ---
-const CustomTooltip = ({ active, payload, categoryColorMap }: any) => {
+const CustomTooltip: React.FC<CustomTooltipComponentProps> = ({ active, payload, categoryColorMap }) => {
     if (active && payload && payload.length) {
-        const data = payload[0].payload;
-        // The payload for outer pie slices will have a 'category' field
-        const category = data.category || (data.payload && data.payload.category);
-        const color = categoryColorMap.get(category) || '#CCCCCC'; 
+        const data = payload[0].payload; 
+        const category = data.category || data.name; 
+        const color = categoryColorMap.get(category); 
+
+        if (!color) return null; 
 
         return (
             <div className="bg-panel-main p-2 border border-border rounded-md shadow-lg flex items-center gap-2">
-                <SkillIcon skill={data.name} className="w-5 h-5" color={color} />
+                <SkillIcon skill={data.name} className="w-5 h-5" />
                 <div className="flex flex-col">
                   <p className="label text-text-primary">{`${data.name} : ${data.value.toLocaleString()}`}</p>
                   {data.percentage && (
@@ -35,22 +53,41 @@ const CustomTooltip = ({ active, payload, categoryColorMap }: any) => {
 };
 
 
+interface CustomLegendPayloadItem {
+  value: string; 
+  color: string; 
+  id?: string;
+  type?: string;
+}
+
+interface CustomLegendComponentProps {
+  payload?: LegendPayload[]; 
+}
+
 // Custom Legend formatter component
-const RenderCustomizedLegend = (props: any) => {
-  const { payload, categoryColorMap } = props;
-  const tickColor = 'rgb(var(--color-text-secondary))'; // Assuming text-secondary for legend items
+const RenderCustomizedLegend: React.FC<CustomLegendComponentProps> = (props) => {
+  const { payload } = props;
+  const tickColor = 'rgb(var(--color-text-secondary))'; 
+
+  // Filter payload to show only categories (innerData)
+  const categoryPayload = payload?.filter(entry => {
+    // Recharts payload item has a nested 'payload' which is our original PieData
+    const originalData = entry.payload as PieData;
+    // Categories are assumed to be in innerData and do not have a 'category' field themselves,
+    // while outerData items (skills) will have a 'category' field linking them to their parent category.
+    return !originalData?.category;
+  });
 
   return (
     <ul className="flex flex-wrap gap-x-4 gap-y-1 justify-center p-2">
-      {payload.map((entry: any, index: number) => {
-        // payload only contains categories (from innerData)
-        const itemCategory = entry.value; 
-        const color = categoryColorMap.get(itemCategory) || '#CCCCCC';
+      {categoryPayload?.map((entry, index: number) => {
+        const itemLabel = entry.value;
+        const color = entry.color; 
 
         return (
           <li key={`item-${index}`} className="flex items-center text-sm" style={{ color: tickColor }}>
             <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: color }}></div>
-            {itemCategory}
+            {itemLabel}
           </li>
         );
       })}
@@ -73,7 +110,7 @@ export const TwoLevelPieChart: React.FC<TwoLevelPieChartProps> = ({ innerData, o
                     cy="50%"
                     outerRadius={90} // Increased outer radius
                     labelLine={false} // Label inside, no line
-                    label={({ name, percent, x, y, cx, cy, midAngle, outerRadius, fill }) => {
+                    label={({ name, percent = 0, x, y, cx, cy, midAngle = 0, outerRadius, fill }) => {
                       if (percent < 0.05) return null; // Only show for slices > 5%
 
                       // Calculate position closer to the outer edge of the inner ring
@@ -85,7 +122,7 @@ export const TwoLevelPieChart: React.FC<TwoLevelPieChartProps> = ({ innerData, o
                         <text
                           x={ex}
                           y={ey}
-                          fill="#FFFFFF" // White for better visibility inside dark slices
+                          fill="var(--color-text-primary)" // 테마에 맞는 색상으로 변경
                           textAnchor="middle" // Still middle for general centering
                           dominantBaseline="central"
                           className="text-sm font-bold" // Increased font size
@@ -96,7 +133,7 @@ export const TwoLevelPieChart: React.FC<TwoLevelPieChartProps> = ({ innerData, o
                     }}
                 >
                     {innerData.map((entry) => (
-                        <Cell key={`cell-inner-${entry.name}`} fill={categoryColorMap.get(entry.name) || '#CCCCCC'} />
+                        <Cell key={`cell-inner-${entry.name}`} fill={categoryColorMap.get(entry.name)} />
                     ))}
                 </Pie>
                 {/* Outer Ring: Skills */}
@@ -117,8 +154,8 @@ export const TwoLevelPieChart: React.FC<TwoLevelPieChartProps> = ({ innerData, o
                         return <Cell key={`cell-outer-${entry.name}`} fill={skillColor} />;
                     })}
                 </Pie>
-                <Tooltip content={<CustomTooltip categoryColorMap={categoryColorMap} />} />
-                <Legend content={<RenderCustomizedLegend categoryColorMap={categoryColorMap} />} payload={innerData.map(d => ({ value: d.name, payload: d }))} />
+                <Tooltip content={<CustomTooltip categoryColorMap={categoryColorMap}  />} />
+                <Legend content={<RenderCustomizedLegend />} />
             </PieChart>
         </ResponsiveContainer>
     );

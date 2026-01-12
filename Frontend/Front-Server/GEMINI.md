@@ -34,7 +34,32 @@
 
 ---
 
-## ⚠️ AI가 반드시 알아야 할 규칙
+## 🎯 UI/UX 아키텍처
+
+### 1. 데스크탑 레이아웃 재구성: 3단 Master-Detail View
+
+사용자 피드백을 반영하여 데스크탑 검색 결과 화면을 **3단 레이아웃**으로 재구성합니다 (`pageViewMode`가 'dashboard'가 아닐 때). 이를 통해 각 패널의 책임이 명확해지고, 정보의 밀도를 적절히 분배하여 화면의 압박감을 해소하며, 사용자가 검색 조건 입력, 분석 결과 확인, 목록 탐색, 상세 정보 확인이라는 흐름을 자연스럽게 따라갈 수 있도록 돕습니다.
+
+-   **좌측 (1단, `w-[380px]`): 검색 조건 입력 패널**
+    -   `InputPanel` (항상 표시되어 검색 조건 변경 가능)
+-   **중앙 (2단, `w-[450px]`): 검색 결과 분석 패널**
+    -   `SearchResultAnalysisPanel` (검색된 스킬에 대한 통계, 차트 등 분석 정보 표시)
+-   **우측 (3단, `flex-1`): 결과 목록 및 상세 정보 영역**
+    -   **초기 상태:** `SearchResultPanel` (검색 결과 리스트만 표시)
+    -   **항목 클릭 시:** `MatchDetailPanel` (선택된 항목의 상세 정보 표시)
+        - `MatchDetailPanel` 내의 '뒤로가기' 버튼을 클릭하면 다시 `SearchResultPanel` (목록)로 돌아갑니다.
+    
+    ### 2. Header에 전역 '대시보드로 돌아가기' 버튼 추가
+    
+    데스크탑 모드에서 `InputPanel`이나 검색 결과 화면에서 초기 대시보드 화면으로 돌아가는 명확한 버튼을 제공하기 위해 상단 헤더(`Header`) 컴포넌트에 '🏠 대시보드' 버튼을 추가합니다.
+    
+    -   `Header` 컴포넌트에는 `onNavigateToDashboard` 콜백 함수와 `showDashboardButton` 플래그를 prop으로 전달합니다.
+    -   `Header` 내부에서는 `showDashboardButton`이 `true`일 때 이 버튼을 렌더링하고, 클릭 시 `onNavigateToDashboard`를 호출하여 `DefaultDashboard` 화면으로 전환합니다.
+    -   이 버튼은 `pageViewMode`가 'dashboard'가 아닐 때 항상 표시되어, 사용자가 어떤 화면에 있든 한 번의 클릭으로 초기 대시보드로 돌아갈 수 있도록 접근성을 높입니다.
+    
+    ---
+    
+    ## ⚠️ AI가 반드시 알아야 할 규칙
 
 ### 1. 코드 컨벤션 참조
 **상세 컨벤션은 README.md와 GEMINI.md 참조!** AI는 코드 작성 전에:
@@ -110,6 +135,7 @@
   - `tailwind.config.ts`에 시맨틱 CSS 변수(예: `background`, `panel-main`, `text-primary`)를 정의하여 컬러 팔레트를 관리합니다.
   - `globals.css`에서 라이트/다크 모드 및 `userMode` (CANDIDATE/RECRUITER)에 따른 이러한 CSS 변수의 실제 값을 정의합니다.
   - 컴포넌트에서는 `bg-panel-main`, `text-text-secondary`, `border-border`와 같은 시맨틱 클래스를 사용하여 테마 변경에 자동으로 반응하도록 합니다.
+- **`TwoLevelPieChart` 색상 일관성 확보**: `TwoLevelPieChart.tsx` 컴포넌트 내 `skillColor` 계산 로직에서 `chroma(...).brighten(0.8)` 부분을 제거하여, 하위 기술 스택도 해당 카테고리와 동일한 색상을 사용하도록 수정합니다. 이를 통해 차트 내에서 카테고리와 하위 스킬 간의 시각적 연결성이 강화되고, 전체적인 테마 일관성이 향상됩니다.
 - **커스텀 스크롤바:** `globals.css`에 정의된 `custom-scrollbar` 클래스를 통해 테마에 맞는 스크롤바를 제공하며, 필요한 스크롤 영역에 적용합니다.
 
 ### 6. 에러 처리
@@ -139,11 +165,16 @@
   - `2026-01-06_05_CategoryPieChart_Label_Visibility_Fix.md` - `CategoryPieChart` 레이블 가시성 개선
   - `2026-01-06_06_SkillSelector_DynamicHeight_Sorting_Fix.md` - `SkillSelector.tsx` 동적 높이, 정렬 및 전체 스킬 가시성 개선
 - **개선 계획**: `docs/Frontend_Improvement_Plan.md` - 향후 개선 로드맵
+- **Apollo Client 및 SSR 데이터 페칭**: `docs/Apollo_Client_and_SSR_Fetching.md`
 
 ---
 
-**최종 수정일:** 2026-01-08
+**최종 수정일:** 2026-01-12
 **주요 업데이트:**
+- **`TwoLevelPieChart` TypeScript 오류 수정 및 레이블 테마 색상 적용**: Legend Payload 타입 오류 수정 및 파이 차트 레이블이 테마에 따라 색상이 변경되도록 개선.
+- **데스크탑 UI 재구성 (3단 Master-Detail View)**: 검색 결과 화면을 `InputPanel`, `SearchResultAnalysisPanel`, `SearchResultPanel`/`MatchDetailPanel`로 구성된 3단 레이아웃으로 변경하여 정보 밀도를 분배하고 UX 흐름을 개선.
+- **Header에 전역 '대시보드로 돌아가기' 버튼 추가**: 사용자가 어떤 화면에 있든 초기 대시보드로 쉽게 돌아갈 수 있도록 `Header` 컴포넌트에 버튼 추가.
+- **`TwoLevelPieChart` 색상 일관성 확보**: `chroma(...).brighten(0.8)` 제거하여 하위 기술 스택의 색상이 카테고리 색상과 동일하게 유지되도록 수정.
 - **검색 결과 통계 UX 개선**: `SearchResultPanel`에서 전체 검색 결과 수를 표시하도록 수정. `GET_TOP_SKILLS_IN_SEARCH` 쿼리를 `GET_SEARCH_STATISTICS`로 리팩토링하고 `totalCount`를 포함하도록 백엔드 요구사항 정의.
 - **`SkillSelector.tsx` 동적 높이, 정렬 및 전체 스킬 가시성 개선**: 토글 시 스킬 목록 잘림 문제 해결, 카테고리별 정렬, 모든 스킬 선택 가능하도록 개선
 - **`CategoryPieChart` 레이블 가시성 개선**: 점유율과 관계없이 모든 카테고리의 레이블이 차트 내에 표시되도록 수정
