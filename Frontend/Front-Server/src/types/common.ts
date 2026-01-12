@@ -10,3 +10,5 @@ export enum ExperienceLevel {
     SENIOR = '6-9 Years',
     LEAD = '10+ Years',
 }
+
+export type PageViewMode = 'dashboard' | 'input' | 'results' | 'detail' | 'analysis';

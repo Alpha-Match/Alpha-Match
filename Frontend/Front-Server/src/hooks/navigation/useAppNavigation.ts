@@ -1,8 +1,6 @@
 import {useAppDispatch, useAppSelector} from '@/services/state/hooks';
 import {navigateBack, pushHistory} from '@/services/state/features/ui/uiSlice';
-import {MatchItem} from '@/types';
-
-type PageViewMode = 'dashboard' | 'input' | 'results' | 'detail' | 'analysis';
+import {MatchItem, PageViewMode}from '@/types';
 
 /**
  * 앱 내 페이지 네비게이션 로직을 관리하는 커스텀 훅입니다.

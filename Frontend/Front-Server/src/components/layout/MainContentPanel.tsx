@@ -7,7 +7,7 @@
  * @date 2026-01-11
  */
 import React, {Suspense, useState} from 'react';
-import {MatchItem, SkillCategory, UserMode} from '@/types';
+import {MatchItem, PageViewMode, SkillCategory, UserMode}from '@/types';
 import QueryBoundary from '@/components/utils/QueryBoundary';
 import {SearchResultPanel}from '@/components/search/results';
 import MainDashboard from '@/app/_components/MainDashboard';
@@ -18,10 +18,8 @@ import {SearchResultAnalysisPanel}from '@/components/search/analysis'; // Added
 import { InputPanel } from '@/components/input-panel'; // Added for mobile layout
 import { TabController } from '@/components/layout/TabController'; // Added for mobile layout
 import { Search } from 'lucide-react'; // Added for the search button
-import {SearchResultTabs, SearchResultTab} from '@/components/search/navigation'; // Added
-import {SearchResultAnalysisPanel}from '@/components/search/analysis'; // Added
 
-type PageViewMode = 'dashboard' | 'results' | 'detail' | 'input' | 'analysis'; // Updated PageViewMode
+
 
 interface MainContentPanelProps {
   userMode: UserMode;
@@ -60,6 +58,9 @@ export const MainContentPanel: React.FC<MainContentPanelProps> = ({
   hasMore,
   searchedSkills = [],
   skillCategories = [],
+  isDesktop, // Added
+  navigateToInput, // Added
+  navigateToView, // Added
 }) => {
   const [activeSearchResultTab, setActiveSearchResultTab] = useState<SearchResultTab>('analysis'); // Added state
 
