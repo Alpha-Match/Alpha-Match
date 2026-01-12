@@ -68,7 +68,10 @@ erDiagram
 
     candidate_description {
         UUID candidate_id PK,FK "아이디 (UUID, 구분용)"
-        TEXT original_resume "채용 공고 원문 (Markdown)"
+        TEXT original_resume "이력서 원문 (Markdown)"
+        TEXT resume_lang "원문 언어"
+        TEXT moreinfo "추가 정보 (프로젝트, 성과)"
+        TEXT looking_for "구직 희망사항"
         TIMESTAMPTZ created_at "생성 날짜"
         TIMESTAMPTZ updated_at "수정 날짜"
     }
@@ -83,7 +86,7 @@ erDiagram
     candidate_skills_embedding {
         UUID candidate_id PK,FK "아이디 (UUID, 구분용)"
         TEXT[] skills "보유 스킬명 배열"
-        VECTOR skills_vector "후보자 전체 스킬 벡터 (예: VECTOR(768))"
+        VECTOR skills_vector "후보자 전체 스킬 벡터 (VECTOR(1536))"
         TIMESTAMPTZ created_at "생성 날짜"
         TIMESTAMPTZ updated_at "수정 날짜"
     }
@@ -111,20 +114,24 @@ erDiagram
 
 ### 2. `candidate_description` (이력서 상세 원문)
 
-> 채용 공고의 Original Resume (Markdown 원문)
-> 
+> 지원자 이력서의 Original Resume (Markdown 원문) 및 추가 정보
+>
 
 | column_name | data_type | nullable | default_value | constraint | description |
 | --- | --- | --- | --- | --- | --- |
 | candidate_id | `UUID` | Not Null |  | PK / FK | candidate.candidate_id |
-| original_resume | `TEXT` | Not Null |  |  | 채용 공고 원문 |
-| resume_lang | `TEXT` | Null |  |  | 원문 언어 |
+| original_resume | `TEXT` | Not Null |  |  | 이력서 원문 |
+| resume_lang | `TEXT` | Null |  |  | 원문 언어 (en, ko 등) |
+| moreinfo | `TEXT` | Null |  |  | 추가 정보 (프로젝트, 성과, 경력 상세) |
+| looking_for | `TEXT` | Null |  |  | 구직 희망사항 (선호 직무, 근무 조건) |
 | created_at | `TIMESTAMPTZ` | Not Null | `NOW()` |  | 생성 날짜 |
 | updated_at | `TIMESTAMPTZ` | Not Null | `NOW()` |  | 수정 날짜 |
 
 📌 **설계 포인트**
 
 - 개행·Markdown·리스트 그대로 저장
+- moreinfo: 프로젝트 경험, 성과, 상세 경력 등 (nullable)
+- looking_for: 구직 희망사항, 선호 직무 등 (nullable, 약 50%만 작성)
 - 요약·재임베딩의 기준 데이터
 
 ### 3. `candidate_skill`(기술 스택 상세)
@@ -145,24 +152,30 @@ erDiagram
 ### 4. `candidate_skills_embedding`(이력서 기술 스택 뭉치 벡터 테이블)
 
 > 한 지원자의 이력서가 가진 기술 스택 뭉치의 임베딩 테이블
-> 
+>
 
 | column_name | data_type | nullable | default_value | constraint | description |
 | --- | --- | --- | --- | --- | --- |
 | candidate_id | `UUID`  | Not Null |  | PK / FK | candidate.candidate_id |
 | skills | `TEXT[]` | Not Null |  |  | 보유 스킬명 |
-| skills_vector | `vector(384)` | Not Null |  |  | 기술 스택 벡터 정보 |
+| skills_vector | `vector(1536)` | Not Null |  |  | 기술 스택 벡터 정보 (text-embedding-3-large) |
 | created_at | `TIMESTAMPTZ` | Not Null | `NOW()` |  | 생성 날짜 |
 | updated_at | `TIMESTAMPTZ` | Not Null | `NOW()` |  | 수정 날짜 |
 
-**벡터 임베딩**
+**벡터 임베딩 인덱스**
 
 ```sql
-CREATE INDEX idx_candidate_skills_vector
+-- HNSW 인덱스 (고정확도, 권장)
+CREATE INDEX candidate_skills_embedding_hnsw_idx
 ON candidate_skills_embedding
-USING ivfflat (skills_vector vector_cosine_ops)
-WITH (lists = 100);
+USING hnsw (skills_vector vector_cosine_ops)
+WITH (m = 32, ef_construction = 128);
 ```
+
+📌 **설계 포인트**
+- 벡터 차원: 1536d (OpenAI text-embedding-3-large)
+- HNSW 인덱스: m=32, ef_construction=128 (고정확도)
+- 중간 유사도(60-70%) 검색 정확도 99%+
 
 ---
 
@@ -284,7 +297,7 @@ erDiagram
     recruit_skills_embedding {
         UUID recruit_id PK,FK "아이디 (UUID, 구분용)"
         TEXT[] skills "요구 기술 스택 배열"
-        VECTOR skills_vector "채용 공고 기술 스택 벡터 (예: VECTOR(768))"
+        VECTOR skills_vector "채용 공고 기술 스택 벡터 (VECTOR(1536))"
         TIMESTAMPTZ created_at "생성 날짜"
         TIMESTAMPTZ updated_at "수정 날짜"
     }
@@ -365,13 +378,13 @@ erDiagram
 ### 4. `recruit_skills_embedding`(채용 공고 기술 스택 뭉치 벡터 테이블)
 
 > 한 채용 공고에 포함된 기술 스택 전체를 하나의 벡터로 표현
-> 
+>
 
 | column_name | data_type | nullable | default_value | constraint | description |
 | --- | --- | --- | --- | --- | --- |
 | recruit_id | `UUID` | Not Null |  | PK / FK | recruit.recruit_id |
 | skills | `TEXT[]` | Not Null |  |  | 기술 스택 배열 |
-| skills_vector | `VECTOR(384)` | Not Null |  |  | 기술 스택 집합 벡터 |
+| skills_vector | `VECTOR(1536)` | Not Null |  |  | 기술 스택 집합 벡터 (text-embedding-3-large) |
 | created_at | `TIMESTAMPTZ` | Not Null | `NOW()` |  | 생성 날짜 |
 | updated_at | `TIMESTAMPTZ` | Not Null | `NOW()` |  | 수정 날짜 |
 
@@ -379,14 +392,16 @@ erDiagram
 
 - candidate 구조와 **완전히 대칭**
 - 매칭 시 cosine similarity 계산 대상
+- 벡터 차원: 1536d (OpenAI text-embedding-3-large)
 
-**벡터 임베딩**
+**벡터 임베딩 인덱스**
 
 ```sql
-CREATE INDEX idx_recruit_skills_vector
+-- HNSW 인덱스 (고정확도, 권장)
+CREATE INDEX recruit_skills_embedding_hnsw_idx
 ON recruit_skills_embedding
-USING ivfflat (skills_vector vector_cosine_ops)
-WITH (lists = 100);
+USING hnsw (skills_vector vector_cosine_ops)
+WITH (m = 32, ef_construction = 128);
 ```
 
 ---
@@ -834,7 +849,7 @@ erDiagram
         UUID category_id FK "정규화된 직종 UUID"
         UUID skill_id PK "스킬 UUID"
         TEXT skill UK "스킬명 (유니크)"
-        VECTOR skill_vector "스킬 벡터 정보 (예: VECTOR(384))"
+        VECTOR skill_vector "스킬 벡터 정보 (VECTOR(1536))"
         TIMESTAMPTZ created_at "생성 날짜"
         TIMESTAMPTZ updated_at "수정 날짜"
     }
@@ -858,17 +873,22 @@ ex - Backend, Frontend
 ### 2. `skill_embedding_dic` (기술 스택 임베딩 사전)
 
 > 개별 기술 스택에 대한 임베딩 값을 저장한 사전
-위 벡터 값을 통해 공고나 지원자의 기술스택 뭉치의 임베딩값
-> 
+> 쿼리 벡터 생성 시 스킬별 벡터를 조회하여 평균/합산
+>
 
 | column_name | data_type | nullable | default_value | constraint | description |
 | --- | --- | --- | --- | --- | --- |
 | category_id | `UUID` | Not Null |  | FK | skill_category_dic.category_id |
-| skill_id  | `UUID` | Not Null |  | PK |  |
-| skill | `TEXT`  | Not Null |  | UK | 직종명 |
-| skills_vector | `VECTOR(384)` | Not Null |  |  | 기술 스택 집합 벡터 |
+| skill_id  | `UUID` | Not Null |  | PK | 스킬 UUID (자동 생성) |
+| skill | `TEXT`  | Not Null |  | UK | 스킬명 (유니크) |
+| skill_vector | `VECTOR(1536)` | Not Null |  |  | 스킬 벡터 (text-embedding-3-large) |
 | created_at | `TIMESTAMPTZ` | Not Null | `NOW()` |  | 생성 날짜 |
 | updated_at | `TIMESTAMPTZ` | Not Null | `NOW()` |  | 수정 날짜 |
+
+📌 **설계 포인트**
+- 벡터 차원: 1536d (OpenAI text-embedding-3-large)
+- skill 컬럼: UNIQUE 제약 (비즈니스 키)
+- HNSW 인덱스로 유사 스킬 검색 가능
 
 ---
 

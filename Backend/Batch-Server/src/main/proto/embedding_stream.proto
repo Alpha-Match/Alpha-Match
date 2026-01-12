@@ -77,7 +77,7 @@ message RecruitRow {
   string description_lang = 10;     // 원문 언어 (e.g., "en", "ko", Nullable)
 
   // recruit_skills_embedding 테이블
-  repeated float skills_vector = 11; // 기술 스택 벡터 (384d)
+  repeated float skills_vector = 11; // 기술 스택 벡터 (1536d)
 }
 
 // Candidate 도메인 (후보자) - v2 (4-table 구조)
@@ -94,14 +94,14 @@ message CandidateRow {
   string original_resume = 4;       // 원문 이력서
 
   // candidate_skills_embedding 테이블
-  repeated float skills_vector = 6; // 기술 스택 벡터 (384d, v2 통일)
+  repeated float skills_vector = 6; // 기술 스택 벡터 (1536d, v2 통일)
 }
 
 // SkillEmbeddingDic 도메인 (기술 사전) - v2
 message SkillEmbeddingDicRow {
   string skill = 1;                 // 스킬명 (PK)
   string position_category = 2;     // 직종 카테고리 (skill_category_dic FK)
-  repeated float skill_vector = 3;  // 스킬 벡터 (384d, v2 통일)
+  repeated float skill_vector = 3;  // 스킬 벡터 (1536d, v2 통일)
 }
 
 // --- 신규 메시지 정의 ---

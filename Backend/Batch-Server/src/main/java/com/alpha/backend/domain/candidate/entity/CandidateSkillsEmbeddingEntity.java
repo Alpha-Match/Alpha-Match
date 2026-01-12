@@ -16,7 +16,7 @@ import java.util.UUID;
  * SQL 매핑:
  * - candidate_id (UUID, PK, FK → candidate)
  * - skills (TEXT[], PostgreSQL 배열)
- * - skills_vector (VECTOR(384))
+ * - skills_vector (VECTOR(1536))
  * - created_at, updated_at (자동 관리)
  */
 @Entity
@@ -28,7 +28,7 @@ import java.util.UUID;
 @Builder
 public class CandidateSkillsEmbeddingEntity {
 
-    public static final int VECTOR_DIMENSION = 384;
+    public static final int VECTOR_DIMENSION = 1536;
 
     @Id
     @Column(name = "candidate_id", columnDefinition = "UUID", updatable = false, nullable = false)
@@ -37,7 +37,7 @@ public class CandidateSkillsEmbeddingEntity {
     @Column(name = "skills", columnDefinition = "TEXT[]", nullable = false)
     private String[] skills;
 
-    @Column(name = "skills_vector", columnDefinition = "vector(384)", nullable = false)
+    @Column(name = "skills_vector", columnDefinition = "vector(1536)", nullable = false)
     private PGvector skillsVector;
 
     @CreationTimestamp
