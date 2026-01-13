@@ -30,7 +30,7 @@ const CustomTooltip = ({ active, payload }: any) => {
 };
 
 export const GenericRadialBarChart: React.FC<TopCompaniesRadialChartProps> = ({ title, data, loading, error }) => {
-  const theme = useAppSelector((state) => state.ui.theme);
+  const theme = useAppSelector((state) => state.theme.theme);
   const [textColor, setTextColor] = useState('currentColor');
 
   useEffect(() => {

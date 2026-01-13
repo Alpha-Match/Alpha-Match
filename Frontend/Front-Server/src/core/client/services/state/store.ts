@@ -13,6 +13,7 @@ import storage from 'redux-persist/lib/storage';
 import uiReducer from '@/core/client/services/state/features/ui/uiSlice';
 import searchReducer from '@/core/client/services/state/features/search/searchSlice';
 import notificationReducer from '@/core/client/services/state/features/notification/notificationSlice';
+import themeReducer from '@/core/client/services/state/features/theme/themeSlice';
 
 /* ------------------------------------------------------------------ */
 /* root reducer (NON-persisted) */
@@ -21,6 +22,7 @@ export const rootReducer = combineReducers({
     ui: uiReducer,
     search: searchReducer,
     notification: notificationReducer,
+    theme: themeReducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;
@@ -32,7 +34,7 @@ const persistedReducer = persistReducer(
     {
         key: 'root',
         storage,
-        whitelist: ['ui', 'search'],
+        whitelist: ['search', 'theme'],
     },
     rootReducer
 );

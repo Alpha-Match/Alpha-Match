@@ -23,7 +23,7 @@ export const RatioPieChart: React.FC<RatioPieChartProps> = ({
 }) => {
   const [resolvedLabelColor, setResolvedLabelColor] = useState('currentColor');
   const [resolvedPanel2Color, setResolvedPanel2Color] = useState('currentColor');
-  const theme = useAppSelector((state) => state.ui.theme); // Get theme for useEffect dependency
+  const theme = useAppSelector((state) => state.theme.theme); // Get theme for useEffect dependency
 
   useEffect(() => {
     const getCssVariableColor = (variableName: string) => {

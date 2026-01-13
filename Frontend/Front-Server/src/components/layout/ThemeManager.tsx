@@ -11,7 +11,7 @@ import {UserMode} from '@/types';
  *              운영체제: Windows
  */
 export const ThemeManager: React.FC = () => {
-  const theme = useAppSelector((state) => state.ui.theme);
+  const theme = useAppSelector((state) => state.theme.theme);
   const userMode = useAppSelector((state) => state.ui.userMode);
 
   useEffect(() => {

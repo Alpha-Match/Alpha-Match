@@ -47,7 +47,7 @@ interface RadarDataPoint {
  * - Used in MatchDetailPanel (detail page)
  */
 export const SkillComparisonRadarChart: React.FC<SkillRadarChartProps> = ({ mode, targetId, searchedSkills }) => {
-  const theme = useAppSelector((state) => state.ui.theme);
+  const theme = useAppSelector((state) => state.theme.theme);
   const [radarData, setRadarData] = useState<RadarDataPoint[]>([]);
 
   const { data, loading, error } = useQuery<SkillCompetencyData, SkillCompetencyVars>(

@@ -40,6 +40,7 @@ export function HomePageClient({ initialSkillCategories, initialDashboardData }:
   const dispatch = useAppDispatch();
   const [isPending, startTransition] = useTransition();
   const isDesktop = useMediaQuery('(min-width: 1024px)');
+  const theme = useAppSelector((state) => state.theme.theme);
 
   const {
     userMode,

@@ -38,9 +38,16 @@ Apollo Client의 `InMemoryCache`는 GraphQL 쿼리 결과를 정규화하여 캐
     *   `getRecruit`, `getCandidate`: 상세 정보를 `id`별로 캐시하고 `toReference`를 사용하여 다른 쿼리에서 참조될 수 있도록 합니다.
 *   **Fetch Policy**: `watchQuery`는 'cache-and-network', `query`는 'network-only'를 기본으로 설정하여 데이터 신뢰성과 성능을 균형 있게 관리합니다.
 
-### 2.4 Redux-persist를 활용한 상태 저장
+### 2.4 Redux-persist를 활용한 상태 저장 및 멀티 탭 동기화
 
-`redux-persist` 라이브러리를 사용하여 Redux 스토어의 특정 상태(`ui`, `search`)를 브라우저의 로컬 스토리지에 영구적으로 저장합니다. 이는 앱 재시작 시에도 사용자의 UI 설정, 검색 조건, 탐색 히스토리 등이 유지되어 일관된 사용자 경험을 제공하는 데 기여합니다.
+`redux-persist` 라이브러리를 사용하여 Redux 스토어의 특정 상태(`search`, `theme`)를 브라우저의 로컬 스토리지에 영구적으로 저장하고 멀티 탭 환경에서 동기화합니다.
+
+*   **영속화 대상**: `search` (검색 조건 및 결과), `theme` (테마 설정).
+    *   `ui` 관련 상태(예: `pageViewMode`, `selectedMatchId`)는 각 탭의 독립적인 UI 경험을 위해 `redux-persist`에서 제외됩니다.
+*   **멀티 탭 동기화**: `Frontend/Front-Server/src/app/providers.tsx`에 `window.addEventListener('storage', ...)`를 구현하여, `localStorage`의 `redux-persist` 키(`'root'`) 변경 이벤트를 감지합니다.
+    *   다른 탭에서 `search` 또는 `theme` 상태가 변경되어 `localStorage`에 저장되면, 현재 탭은 변경된 슬라이스(`search`, `theme`)만 재수화하여 모든 탭의 뷰모델 상태를 최신으로 유지합니다.
+    *   이를 통해 검색 조건의 일관성을 유지하고 불필요한 API 호출을 최소화하며, 테마 설정도 탭 간에 공유됩니다.
+*   **사용자 경험**: 앱 재시작 및 멀티 탭 환경에서도 검색 조건, 검색 결과, 테마 설정 등이 유지되어 일관되고 최적화된 사용자 경험을 제공합니다.
 
 ## 3. 🧠 처리 흐름 (Flow / Sequence Diagram)
 
@@ -104,8 +111,10 @@ sequenceDiagram
 
 ### 4.2 ViewModel & Multiple Back Stacks
 
-*   **문제**: Redux의 `useState` 훅으로 `matches`와 같은 주요 데이터를 관리할 경우, 컴포넌트 재렌더링 시 데이터가 손실되거나 모드(CANDIDATE/RECRUITER) 전환 시 이전 상태가 유지되지 않는 문제가 발생했습니다.
-*   **해결**: `matches` 데이터를 Redux의 `searchSlice`에 저장하고, `dispatch(setMatches({ userMode, matches }))` 액션을 통해 명시적으로 관리하도록 했습니다. 또한, `uiSlice` 내부에 각 `userMode`별로 독립적인 탐색 히스토리 스택(`history`, `currentIndex`)을 구현하여 모드 전환 후에도 사용자의 이전 탐색 상태를 완벽하게 복원할 수 있도록 "Multiple Back Stacks" 패턴을 적용했습니다.
+*   **문제**: Redux의 `useState` 훅으로 `matches`와 같은 주요 데이터를 관리할 경우, 컴포넌트 재렌더링 시 데이터가 손실되거나 모드(CANDIDATE/RECRUITER) 전환 시 이전 상태가 유지되지 않는 문제가 발생했습니다. 또한, 멀티 탭 환경에서 `redux-persist` 사용 시 UI 상태(예: `pageViewMode`)가 탭 간에 동기화되어 각 탭의 독립적인 UI 경험을 저해할 수 있었습니다.
+*   **해결**: `matches` 데이터를 Redux의 `searchSlice`에 저장하고, `dispatch(setMatches({ userMode, matches }))` 액션을 통해 명시적으로 관리하도록 했습니다.
+    *   `uiSlice` 내부에 각 `userMode`별로 독립적인 탐색 히스토리 스택(`history`, `currentIndex`)을 구현하여 모드 전환 후에도 사용자의 이전 탐색 상태를 완벽하게 복원할 수 있도록 "Multiple Back Stacks" 패턴을 적용했습니다.
+    *   `redux-persist`의 `whitelist`에서 `ui` 슬라이스를 제외하고, `search` 및 `theme` 슬라이스에 대해서만 멀티 탭 동기화를 구현하여 각 탭의 UI 독립성을 보장하면서도 핵심 뷰모델 상태는 일관성을 유지하도록 개선했습니다.
 
 ### 4.3 Apollo Error Link를 통한 전역 에러 처리
 

@@ -22,7 +22,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export const BasicBarChart: React.FC<CategoryBarChartProps> = ({ title, data, colorScale, loading }) => {
-  const theme = useAppSelector((state) => state.ui.theme);
+  const theme = useAppSelector((state) => state.theme.theme);
   const [resolvedTickColor, setResolvedTickColor] = useState('currentColor');
 
   useEffect(() => {

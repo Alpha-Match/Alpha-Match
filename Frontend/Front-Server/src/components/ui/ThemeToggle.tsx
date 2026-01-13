@@ -2,12 +2,12 @@
 
 import React from 'react';
 import {useAppDispatch, useAppSelector} from '@/core/client/services/state/hooks';
-import {setTheme} from '@/core/client/services/state/features/ui/uiSlice';
+import {setTheme} from '@/core/client/services/state/features/theme/themeSlice';
 import {Moon, Sun} from 'lucide-react';
 
 export const ThemeToggle: React.FC = () => {
   const dispatch = useAppDispatch();
-  const currentTheme = useAppSelector((state) => state.ui.theme);
+  const currentTheme = useAppSelector((state) => state.theme.theme);
 
   const handleToggle = () => {
     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';

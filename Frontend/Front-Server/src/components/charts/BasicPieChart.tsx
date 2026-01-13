@@ -45,7 +45,7 @@ interface CategoryPieChartProps {
 export const BasicPieChart: React.FC<CategoryPieChartProps> = ({ title, data, colorScale, baseColor, loading }) => {
     const [resolvedLabelColor, setResolvedLabelColor] = useState('currentColor');
     const [resolvedLegendItemColor, setResolvedLegendItemColor] = useState('currentColor');
-    const theme = useAppSelector((state) => state.ui.theme);
+    const theme = useAppSelector((state) => state.theme.theme);
 
     useEffect(() => {
         const getCssVariableColor = (variableName: string) => {

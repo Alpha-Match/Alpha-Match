@@ -24,7 +24,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export const TopItemsBarChart: React.FC<TopItemsBarChartProps> = ({ title, data, color, loading, error }) => {
-  const theme = useAppSelector((state) => state.ui.theme);
+  const theme = useAppSelector((state) => state.theme.theme);
   const [resolvedTickColor, setResolvedTickColor] = useState('currentColor');
 
   useEffect(() => {

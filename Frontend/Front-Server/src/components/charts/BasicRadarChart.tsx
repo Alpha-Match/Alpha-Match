@@ -10,7 +10,7 @@ interface CategoryRadarChartProps {
 
 export const BasicRadarChart: React.FC<CategoryRadarChartProps> = ({ title, data, color }) => {
     const [tickColor, setTickColor] = useState('currentColor');
-    const theme = useAppSelector((state) => state.ui.theme);
+    const theme = useAppSelector((state) => state.theme.theme);
 
     useEffect(() => {
         const getCssVariableColor = (variableName: string) => {

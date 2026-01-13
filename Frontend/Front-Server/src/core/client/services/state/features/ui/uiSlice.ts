@@ -15,7 +15,6 @@ export interface ModeSpecificUiState {
 
 interface UiState {
   isSidebarOpen: boolean;
-  theme: 'light' | 'dark';
   viewResetCounter: number;
   userMode: UserMode;
   [UserMode.CANDIDATE]: ModeSpecificUiState;
@@ -29,7 +28,6 @@ const initialModeSpecificUiState: ModeSpecificUiState = {
 
 const initialState: UiState = {
   isSidebarOpen: true,
-  theme: 'dark',
   viewResetCounter: 0,
   userMode: UserMode.CANDIDATE, // Default mode
   [UserMode.CANDIDATE]: { ...initialModeSpecificUiState },
@@ -46,9 +44,6 @@ const uiSlice = createSlice({
   reducers: {
     toggleSidebar(state) {
       state.isSidebarOpen = !state.isSidebarOpen;
-    },
-    setTheme(state, action: PayloadAction<'light' | 'dark'>) {
-      state.theme = action.payload;
     },
     resetView(state, action: PayloadAction<UserMode>) {
       // Resets view state for a specific user mode
@@ -87,7 +82,6 @@ const uiSlice = createSlice({
 
 export const { 
     toggleSidebar, 
-    setTheme, 
     resetView, 
     setUserMode,
     pushHistory,

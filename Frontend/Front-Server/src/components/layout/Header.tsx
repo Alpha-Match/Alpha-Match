@@ -17,7 +17,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ showDashboardButton, onNavigateToDashboard }) => {
   const dispatch = useAppDispatch();
   const userMode = useAppSelector((state) => state.ui.userMode);
-  const theme = useAppSelector((state) => state.ui.theme);
+  const theme = useAppSelector((state) => state.theme.theme);
 
   const handleTabChange = (mode: UserMode) => {
     dispatch(setUserMode(mode));
