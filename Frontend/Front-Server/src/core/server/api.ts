@@ -1,5 +1,5 @@
 /**
- * @file lib/server/api.ts
+ * @file core/server/api.ts
  * @description Server-side API 함수들 (Server Components에서만 사용)
  *              클라이언트 번들에 포함되지 않으며, 서버에서만 실행됩니다.
  * @version 1.0.0
@@ -7,8 +7,8 @@
  */
 
 import {SkillCategory} from '@/types';
-import {GET_SKILL_CATEGORIES} from '@/lib/client/services/api/queries/skills';
-import {GET_DASHBOARD_DATA} from '@/lib/client/services/api/queries/dashboard';
+import {GET_SKILL_CATEGORIES} from '@/core/client/services/api/queries/skills';
+import {GET_DASHBOARD_DATA} from '@/core/client/services/api/queries/dashboard';
 
 const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT!;
 
