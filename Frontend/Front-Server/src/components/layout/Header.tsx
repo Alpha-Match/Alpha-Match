@@ -2,8 +2,8 @@
 'use client';
 
 import React from 'react';
-import {useAppDispatch, useAppSelector} from '@/services/state/hooks';
-import {resetView, setUserMode} from '@/services/state/features/ui/uiSlice';
+import {useAppDispatch, useAppSelector} from '@/lib/client/services/state/hooks';
+import {resetView, setUserMode} from '@/lib/client/services/state/features/ui/uiSlice';
 import {UserMode} from '@/types';
 import {Briefcase, Home, UserSearch} from 'lucide-react';
 import {ThemeToggle} from '@/components/ui/ThemeToggle';

@@ -1,6 +1,6 @@
 import React from 'react';
-import { useAppSelector, useAppDispatch } from '@/services/state/hooks';
-import { setExperience } from '@/services/state/features/search/searchSlice';
+import { useAppSelector, useAppDispatch } from '@/lib/client/services/state/hooks';
+import { setExperience } from '@/lib/client/services/state/features/search/searchSlice';
 import { UserMode } from '@/types';
 import { EXPERIENCE_LEVELS } from '@/constants';
 import { CheckCircle2 } from 'lucide-react';

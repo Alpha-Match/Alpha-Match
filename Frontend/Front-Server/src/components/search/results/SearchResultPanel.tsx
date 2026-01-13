@@ -8,7 +8,7 @@
  */
 import React from 'react';
 import {MatchItem, UserMode} from '@/types';
-import {useIntersectionObserver} from '@/hooks/ui';
+import {useIntersectionObserver} from '@/lib/client/hooks/ui';
 import {ResultListItem} from '@/components/search/results';
 import {LoadingSpinner} from '@/components/ui';
 

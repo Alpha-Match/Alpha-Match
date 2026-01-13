@@ -9,7 +9,7 @@ import {
     ResponsiveContainer,
     Tooltip
 } from 'recharts';
-import {useAppSelector} from '@/services/state/hooks';
+import {useAppSelector} from '@/lib/client/services/state/hooks';
 import {MatchItem, SkillMatch, UserMode} from '@/types';
 import {BarChart3, Building, ChevronRight, Database, User} from 'lucide-react';
 import {CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS} from '@/constants';

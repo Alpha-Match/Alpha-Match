@@ -3,10 +3,10 @@
 import React, {useMemo} from 'react';
 import {useQuery} from '@apollo/client/react';
 import chroma from 'chroma-js';
-import {GET_SEARCH_STATISTICS} from '@/services/api/queries/stats';
+import {GET_SEARCH_STATISTICS} from '@/lib/client/services/api/queries/stats';
 import {PieData, SkillCategory, SkillFrequency, UserMode} from '@/types';
 import {LoadingSpinner} from '@/components/ui/LoadingSpinner';
-import {useAppSelector} from '@/services/state/hooks';
+import {useAppSelector} from '@/lib/client/services/state/hooks';
 import {CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS} from "@/constants";
 import {TwoLevelPieChart} from '@/components/charts';
 

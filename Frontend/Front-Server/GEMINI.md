@@ -24,8 +24,8 @@
 
 ### 📡 GraphQL & Hooks
 
-- `src/services/api/queries/` - GraphQL 쿼리 정의
-- `src/hooks/` - 커스텀 React Hooks
+- `src/lib/client/services/api/queries/` - GraphQL 쿼리 정의
+- `src/lib/client/hooks/` - 커스텀 React Hooks
   - `useSearchMatches` - 검색 실행 및 Redux ViewModel 연동
   - `useMatchDetail` - 상세 정보 조회 (도메인별 분리)
   - `useAppNavigation` - 앱 네비게이션 로직 및 히스토리 관리
@@ -86,7 +86,7 @@
                 │
 ┌───────────────▼─────────────────────┐
 │  ViewModel Layer (Redux Toolkit)    │ ← UI 상태 + 검색 결과 캐시
-│  - searchSlice: {                   │
+│  - src/lib/client/services/state/features/search/searchSlice: { │
 │      CANDIDATE: {                   │
 │        selectedSkills,              │
 │        searchedSkills, ← 검색된 스킬 │
@@ -94,7 +94,7 @@
 │      },                             │
 │      RECRUITER: { ... }             │
 │    }                                │
-│  - uiSlice: {                       │
+│  - src/lib/client/services/state/features/ui/uiSlice: { │
 │      CANDIDATE: {                   │
 │        history: [{...}, ...],       │
 │        currentIndex: number         │
@@ -136,6 +136,8 @@
   - `globals.css`에서 라이트/다크 모드 및 `userMode` (CANDIDATE/RECRUITER)에 따른 이러한 CSS 변수의 실제 값을 정의합니다.
   - 컴포넌트에서는 `bg-panel-main`, `text-text-secondary`, `border-border`와 같은 시맨틱 클래스를 사용하여 테마 변경에 자동으로 반응하도록 합니다.
 - **`TwoLevelPieChart` 색상 일관성 확보**: `TwoLevelPieChart.tsx` 컴포넌트 내 `skillColor` 계산 로직에서 `chroma(...).brighten(0.8)` 부분을 제거하여, 하위 기술 스택도 해당 카테고리와 동일한 색상을 사용하도록 수정합니다. 이를 통해 차트 내에서 카테고리와 하위 스킬 간의 시각적 연결성이 강화되고, 전체적인 테마 일관성이 향상됩니다.
+- **`RatioPieChart` 및 기타 파이 차트 테마 색상 일관성 확보**: `SearchedSkillsCategoryDistributionChart`의 색상 처리 방식을 참조하여, `RatioPieChart`와 같은 다른 파이 차트의 레이블 및 슬라이스 색상도 테마에 맞춰 동적으로 변경되도록 명시적으로 관리합니다.
+- **레이아웃 간격 일관성 확보**: `MatchDetailPanel` 및 기타 상세 뷰의 주요 정보 블록 하단에 `mb-8`과 같은 간격 유틸리티 클래스를 일관되게 적용하여 다음 섹션과의 시각적 구분을 명확히 합니다.
 - **커스텀 스크롤바:** `globals.css`에 정의된 `custom-scrollbar` 클래스를 통해 테마에 맞는 스크롤바를 제공하며, 필요한 스크롤 영역에 적용합니다.
 
 ### 6. 에러 처리

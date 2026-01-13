@@ -1,6 +1,6 @@
 // src/components/input-panel/SearchButton.tsx
 import React from 'react';
-import { useAppSelector } from '@/services/state/hooks';
+import { useAppSelector } from '@/lib/client/services/state/hooks';
 import { UserMode } from '@/types';
 import { Search } from 'lucide-react';
 import { CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS } from '@/constants';

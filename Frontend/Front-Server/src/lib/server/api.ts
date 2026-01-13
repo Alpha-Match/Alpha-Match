@@ -7,8 +7,8 @@
  */
 
 import {SkillCategory} from '@/types';
-import {GET_SKILL_CATEGORIES} from '@/services/api/queries/skills';
-import {GET_DASHBOARD_DATA} from '@/services/api/queries/dashboard';
+import {GET_SKILL_CATEGORIES} from '@/lib/client/services/api/queries/skills';
+import {GET_DASHBOARD_DATA} from '@/lib/client/services/api/queries/dashboard';
 
 const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT!;
 

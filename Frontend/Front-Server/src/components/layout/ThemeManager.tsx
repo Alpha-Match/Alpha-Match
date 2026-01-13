@@ -1,7 +1,7 @@
 'use client';
 
 import {useEffect} from 'react';
-import {useAppSelector} from '@/services/state/hooks';
+import {useAppSelector} from '@/lib/client/services/state/hooks';
 import {UserMode} from '@/types';
 
 /**

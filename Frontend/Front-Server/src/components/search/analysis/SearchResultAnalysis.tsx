@@ -1,6 +1,6 @@
 import React from 'react';
 import {useQuery} from '@apollo/client/react';
-import {GET_CATEGORY_DISTRIBUTION} from '@/services/api/queries/search';
+import {GET_CATEGORY_DISTRIBUTION} from '@/lib/client/services/api/queries/search';
 import {CategoryMatchDistribution} from '@/types';
 import {LoadingSpinner} from '@/components/ui';
 import chroma from 'chroma-js';

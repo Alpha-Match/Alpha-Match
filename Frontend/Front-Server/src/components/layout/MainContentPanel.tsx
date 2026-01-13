@@ -36,9 +36,10 @@ interface MainContentPanelProps {
   hasMore?: boolean;
   searchedSkills?: string[];
   skillCategories?: SkillCategory[];
-  isDesktop: boolean; // Added
-  navigateToInput: () => void; // Added
-  navigateToView: (view: PageViewMode) => void; // Added
+  isDesktop: boolean;
+  navigateToInput: () => void;
+  navigateToView: (view: PageViewMode) => void;
+  onSearch: () => void;
 }
 
 export const MainContentPanel: React.FC<MainContentPanelProps> = ({
@@ -57,9 +58,10 @@ export const MainContentPanel: React.FC<MainContentPanelProps> = ({
   hasMore,
   searchedSkills = [],
   skillCategories = [],
-  isDesktop, // Added
-  navigateToInput, // Added
-  navigateToView, // Added
+  isDesktop,
+  navigateToInput,
+  navigateToView,
+  onSearch,
 }) => {
   // Desktop: Dashboard view (early return - no TabController needed)
   if (isDesktop && pageViewMode === 'dashboard') {
@@ -91,7 +93,7 @@ export const MainContentPanel: React.FC<MainContentPanelProps> = ({
         {/* Column 1: Input Panel */}
         <div className="w-[380px] flex-shrink-0 h-full bg-panel-sidebar border-r border-border/30">
           <InputPanel
-            onSearch={() => navigateToView('results')}
+            onSearch={onSearch}
             isLoading={loading && pageViewMode === 'results'}
           />
         </div>
@@ -147,7 +149,7 @@ export const MainContentPanel: React.FC<MainContentPanelProps> = ({
             </QueryBoundary>
           );
         case 'input':
-          return <InputPanel onSearch={() => navigateToView('results')} isLoading={loading} />;
+          return <InputPanel onSearch={onSearch} isLoading={loading} />;
         case 'results':
           return (
             <QueryBoundary loading={loading && matches.length === 0} error={error}>

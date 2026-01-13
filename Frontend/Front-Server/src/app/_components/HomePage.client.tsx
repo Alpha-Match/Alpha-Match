@@ -1,22 +1,21 @@
 'use client';
 
 import React, {useEffect, useTransition} from 'react';
-import {useAppDispatch, useAppSelector} from '@/services/state/hooks';
-import {setDashboardData, setSearchPerformed, setSkillCategories} from '@/services/state/features/search/searchSlice';
-import {useAppNavigation} from '@/hooks/navigation';
-import {useMediaQuery} from '@/hooks/ui';
+import {useAppDispatch, useAppSelector} from '@/lib/client/services/state/hooks';
+import {
+    setDashboardData,
+    setSearchPerformed,
+    setSkillCategories
+} from '@/lib/client/services/state/features/search/searchSlice';
+import {useAppNavigation} from '@/lib/client/hooks/navigation';
+import {useMediaQuery} from '@/lib/client/hooks/ui';
 
 import {Header} from '@/components/layout/Header';
-import {useSearchMatches} from '@/hooks/data/useSearchMatches';
+import {useSearchMatches} from '@/lib/client/hooks/data/useSearchMatches';
 import {DashboardCategory, SkillCategory, UserMode} from '@/types';
 import {CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS} from '@/constants';
 
 import {MainContentPanel} from '@/components/layout/MainContentPanel'; // Added this line
-
-
-
-
-
 
 
 /**
@@ -107,9 +106,10 @@ export function HomePageClient({ initialSkillCategories, initialDashboardData }:
         hasMore={hasMore}
         searchedSkills={searchedSkills}
         skillCategories={initialSkillCategories}
-        isDesktop={isDesktop} // Added
-        navigateToInput={navigateToInput} // Added
-        navigateToView={navigateToView} // Added
+        isDesktop={isDesktop}
+        navigateToInput={navigateToInput}
+        navigateToView={navigateToView}
+        onSearch={handleSearch}
       />
     </div>
   );

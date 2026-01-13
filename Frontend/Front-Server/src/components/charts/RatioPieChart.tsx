@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Label } from 'recharts';
-import { useAppSelector } from '@/services/state/hooks';
+import { useAppSelector } from '@/lib/client/services/state/hooks';
 
 interface RatioPieChartProps {
   title: string;

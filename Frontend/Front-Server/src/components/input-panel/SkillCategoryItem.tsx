@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {ChevronDown} from 'lucide-react';
-import {useAppDispatch, useAppSelector} from '@/services/state/hooks';
-import {toggleSkill} from '@/services/state/features/search/searchSlice';
+import {useAppDispatch, useAppSelector} from '@/lib/client/services/state/hooks';
+import {toggleSkill} from '@/lib/client/services/state/features/search/searchSlice';
 
 interface SkillCategoryItemProps {
   category: {
@@ -41,6 +41,7 @@ export const SkillCategoryItem: React.FC<SkillCategoryItemProps> = ({
   }, [isOpen, contentRef.current]);
 
   const handleSkillToggle = (skill: string) => {
+    console.log(`Toggling skill: ${skill} for mode: ${mode}`); // 디버깅 로그 추가
     dispatch(toggleSkill({ userMode: mode, skill }));
   };
 
