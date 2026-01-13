@@ -54,6 +54,8 @@ export function HomePageClient({ initialSkillCategories, initialDashboardData }:
     navigateToView,
   } = useAppNavigation();
 
+  console.log('HomePage.client.tsx: userMode on render:', userMode);
+
   useEffect(() => {
     if (initialSkillCategories?.length > 0) {
       dispatch(setSkillCategories(initialSkillCategories));
