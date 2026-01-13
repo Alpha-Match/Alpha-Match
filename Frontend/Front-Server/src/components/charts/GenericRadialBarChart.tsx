@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { RadialBarChart, RadialBar, Legend, ResponsiveContainer, Tooltip, PolarAngleAxis } from 'recharts';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { useAppSelector } from '@/lib/client/services/state/hooks';
+import { useAppSelector } from '@/core/client/services/state/hooks';
 
 interface RadialChartData {
     name: string;

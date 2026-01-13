@@ -1,7 +1,7 @@
 // Frontend/Front-Server/src/components/dashboard/SearchedSkillsCategoryDistributionChart.tsx
 import React, {useEffect, useState} from 'react';
 import {Cell, Legend, Pie, PieChart, ResponsiveContainer} from 'recharts';
-import {useAppSelector} from '@/lib/client/services/state/hooks';
+import {useAppSelector} from '@/core/client/services/state/hooks';
 import {Skeleton} from '@/components/ui';
 
 // --- Sub-components ---

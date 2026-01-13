@@ -1,5 +1,5 @@
 import React from 'react';
-import {useAppSelector} from '@/lib/client/services/state/hooks';
+import {useAppSelector} from '@/core/client/services/state/hooks';
 import {UserMode} from '@/types';
 import {Briefcase, Search} from 'lucide-react';
 

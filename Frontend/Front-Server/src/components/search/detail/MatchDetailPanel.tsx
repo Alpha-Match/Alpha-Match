@@ -8,7 +8,7 @@
  */
 import React, {useEffect} from 'react';
 import {Award, Briefcase, Calendar, ChevronLeft, Globe, User} from 'lucide-react';
-import {useMatchDetail} from '@/lib/client/hooks/data/useMatchDetail';
+import {useMatchDetail} from '@/core/client/hooks/data/useMatchDetail';
 import {UserMode} from '@/types';
 import {LoadingSpinner} from '@/components/ui';
 import {RatioPieChart} from '@/components/charts';

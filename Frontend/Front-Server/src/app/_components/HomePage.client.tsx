@@ -1,17 +1,17 @@
 'use client';
 
 import React, {useEffect, useTransition} from 'react';
-import {useAppDispatch, useAppSelector} from '@/lib/client/services/state/hooks';
+import {useAppDispatch, useAppSelector} from '@/core/client/services/state/hooks';
 import {
     setDashboardData,
     setSearchPerformed,
     setSkillCategories
-} from '@/lib/client/services/state/features/search/searchSlice';
-import {useAppNavigation} from '@/lib/client/hooks/navigation';
-import {useMediaQuery} from '@/lib/client/hooks/ui';
+} from '@/core/client/services/state/features/search/searchSlice';
+import {useAppNavigation} from '@/core/client/hooks/navigation';
+import {useMediaQuery} from '@/core/client/hooks/ui';
 
 import {Header} from '@/components/layout/Header';
-import {useSearchMatches} from '@/lib/client/hooks/data/useSearchMatches';
+import {useSearchMatches} from '@/core/client/hooks/data/useSearchMatches';
 import {DashboardCategory, SkillCategory, UserMode} from '@/types';
 import {CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS} from '@/constants';
 

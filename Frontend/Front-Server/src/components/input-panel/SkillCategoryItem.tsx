@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {ChevronDown} from 'lucide-react';
-import {useAppDispatch, useAppSelector} from '@/lib/client/services/state/hooks';
-import {toggleSkill} from '@/lib/client/services/state/features/search/searchSlice';
+import {useAppDispatch, useAppSelector} from '@/core/client/services/state/hooks';
+import {toggleSkill} from '@/core/client/services/state/features/search/searchSlice';
 
 interface SkillCategoryItemProps {
   category: {

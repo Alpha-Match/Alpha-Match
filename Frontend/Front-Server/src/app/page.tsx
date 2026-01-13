@@ -1,4 +1,4 @@
-import { getSkillCategories, getDashboardData } from '../lib/server/api';
+import { getSkillCategories, getDashboardData } from '@/core/server/api';
 import { HomePageClient } from '@/app/_components/HomePage.client';
 import { UserMode } from '@/types';
 

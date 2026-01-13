@@ -4,7 +4,7 @@
 import React from 'react';
 import {BarChart3, FileText, LayoutDashboard, Settings} from 'lucide-react';
 import {UserMode} from '@/types';
-import {useAppSelector} from '@/lib/client/services/state/hooks'; // useAppSelector 임포트
+import {useAppSelector} from '@/core/client/services/state/hooks'; // useAppSelector 임포트
 import {CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS} from '@/constants'; // 테마 색상 임포트
 
 type PageViewMode = 'dashboard' | 'input' | 'results' | 'detail' | 'analysis';

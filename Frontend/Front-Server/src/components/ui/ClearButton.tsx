@@ -1,6 +1,6 @@
 import React from 'react';
-import {useAppDispatch, useAppSelector} from '@/lib/client/services/state/hooks';
-import {resetSearch} from '@/lib/client/services/state/features/search/searchSlice';
+import {useAppDispatch, useAppSelector} from '@/core/client/services/state/hooks';
+import {resetSearch} from '@/core/client/services/state/features/search/searchSlice';
 import {X} from 'lucide-react';
 
 interface ClearButtonProps {

@@ -7,7 +7,7 @@
  */
 import React from 'react';
 import {useQuery} from '@apollo/client/react';
-import {GET_SKILL_COMPETENCY_MATCH} from '@/lib/client/services/api/queries/search';
+import {GET_SKILL_COMPETENCY_MATCH} from '@/core/client/services/api/queries/search';
 import {SkillCompetencyMatch, UserMode} from '@/types';
 import {LoadingSpinner} from '@/components/ui';
 import {AlertCircle, CheckCircle2, TrendingUp, XCircle} from 'lucide-react';
@@ -119,7 +119,7 @@ export const SkillCompetencyBadge: React.FC<SkillCompetencyBadgeProps> = ({
             <LevelIcon size={32} style={{ color: levelConfig.color }} />
             <div>
               <div className="text-2xl font-bold" style={{ color: levelConfig.color }}>
-                {match.matchingPercentage.toFixed(1)}%
+                {match.matchingPercentage.toFixed(2)}%
               </div>
               <div className="text-sm text-text-tertiary">
                 매칭 역량: <span className="font-medium" style={{ color: levelConfig.color }}>{levelConfig.label}</span>

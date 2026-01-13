@@ -104,7 +104,7 @@ Frontend/Front-Server/
 **파일**: `src/app/page.tsx`
 
 ```tsx
-import { getSkillCategories } from '../lib/server/api';
+import { getSkillCategories } from '../core/server/api';
 import { HomePageClient } from './_components/HomePage.client';
 
 export default async function HomePage() {
@@ -341,7 +341,7 @@ useEffect(() => {
 
 ### 3. GraphQL과 Server Components
 ```tsx
-// lib/server/api.ts (서버에서만 실행)
+// core/server/api.ts (서버에서만 실행)
 export async function getSkillCategories() {
   const response = await fetch(GRAPHQL_ENDPOINT, {
     method: 'POST',

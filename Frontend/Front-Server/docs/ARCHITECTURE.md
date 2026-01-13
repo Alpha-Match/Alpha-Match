@@ -93,7 +93,7 @@
 
 ```typescript
 // app/page.tsx (Server Component)
-import { getSkillCategories } from '../lib/server/api';
+import { getSkillCategories } from '../core/server/api';
 import { HomePageClient } from './_components/HomePage.client';
 
 export default async function HomePage() {
@@ -104,7 +104,7 @@ export default async function HomePage() {
   return <HomePageClient initialSkillCategories={initialSkillCategories} />;
 }
 
-// lib/server/api.ts (Server-only)
+// core/server/api.ts (Server-only)
 export async function getSkillCategories(): Promise<SkillCategory[]> {
   const response = await fetch(GRAPHQL_ENDPOINT, {
     method: 'POST',

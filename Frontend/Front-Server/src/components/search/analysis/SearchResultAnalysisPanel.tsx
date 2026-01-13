@@ -4,7 +4,7 @@ import React from 'react';
 import {useQuery} from '@apollo/client/react';
 import {SkillCategory, SkillFrequency, UserMode} from '@/types';
 import {TopSkills, SearchResultAnalysis} from '@/components/search/analysis';
-import {GET_SEARCH_STATISTICS} from '@/lib/client/services/api/queries/stats';
+import {GET_SEARCH_STATISTICS} from '@/core/client/services/api/queries/stats';
 
 interface SearchResultAnalysisPanelProps {
   activeColor: string;

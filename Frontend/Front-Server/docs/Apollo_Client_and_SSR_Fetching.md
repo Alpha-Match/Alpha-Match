@@ -30,7 +30,7 @@ For Server Components in Next.js, a dedicated utility (`fetchGraphQLServer`) is 
 This approach strictly separates client-side and server-side data fetching concerns, adhering to the "localhost는 서버에서만 쓰고, 클라이언트는 절대 localhost를 몰라야 한다" 원칙.
 
 ```typescript
-// lib/server/graphql.ts
+// core/server/graphql.ts
 // This utility is for Server Components to fetch data from the API server.
 // It uses INTERNAL_GRAPHQL_ENDPOINT which is a full URL,
 // ensuring server-side fetches work correctly without rewrites.

@@ -12,10 +12,10 @@ import {
     ResponsiveContainer,
     Tooltip
 } from 'recharts';
-import {GET_SKILL_COMPETENCY_MATCH} from '@/lib/client/services/api/queries/search';
+import {GET_SKILL_COMPETENCY_MATCH} from '@/core/client/services/api/queries/search';
 import {SkillCompetencyMatch, UserMode} from '@/types';
 import {LoadingSpinner} from '@/components/ui';
-import {useAppSelector} from '@/lib/client/services/state/hooks';
+import {useAppSelector} from '@/core/client/services/state/hooks';
 
 interface SkillRadarChartProps {
   mode: UserMode;

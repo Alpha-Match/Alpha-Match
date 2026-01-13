@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
-import {useAppDispatch, useAppSelector} from '@/lib/client/services/state/hooks';
-import {resetSearch, toggleSkill} from '@/lib/client/services/state/features/search/searchSlice';
+import {useAppDispatch, useAppSelector} from '@/core/client/services/state/hooks';
+import {resetSearch, toggleSkill} from '@/core/client/services/state/features/search/searchSlice';
 import {Code, Search, X} from 'lucide-react';
 import {ClearButton} from '@/components/ui/ClearButton';
 import {SkillCategoryItem} from '@/components/input-panel'; // Import the new component

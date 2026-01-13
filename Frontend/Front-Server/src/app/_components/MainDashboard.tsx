@@ -3,10 +3,10 @@ import React from 'react';
 import chroma from 'chroma-js';
 import {useQuery} from '@apollo/client/react';
 import { Search } from 'lucide-react';
-import {useAppSelector} from '@/lib/client/services/state/hooks';
+import {useAppSelector} from '@/core/client/services/state/hooks';
 import {CompanyJobCount, DashboardCategory, DashboardSkill, UserMode} from '@/types';
-import {useHydrated} from '@/lib/client/hooks/ui/useHydrated';
-import {GET_TOP_COMPANIES} from '@/lib/client/services/api/queries/dashboard';
+import {useHydrated} from '@/core/client/hooks/ui/useHydrated';
+import {GET_TOP_COMPANIES} from '@/core/client/services/api/queries/dashboard';
 
 // Common Components
 import {

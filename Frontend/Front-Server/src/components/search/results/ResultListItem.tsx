@@ -67,7 +67,7 @@ export const ResultListItem: React.FC<ResultListItemProps> = ({ match, onSelect,
               className="text-sm font-medium px-2.5 py-1 rounded-full w-28 text-center"
               style={{ backgroundColor: scoreBgColor, color: scoreTextColor }}
             >
-              유사도 {(match.score * 100).toFixed(1)}%
+              유사도 {(match.score).toFixed(2)}%
             </span>
           )}
         </div>
