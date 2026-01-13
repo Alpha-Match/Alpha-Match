@@ -34,7 +34,7 @@ const persistedReducer = persistReducer(
     {
         key: 'root',
         storage,
-        whitelist: ['ui', 'search', 'theme'],
+        whitelist: ['search', 'theme'],
     },
     rootReducer
 );
