@@ -31,6 +31,10 @@ public class CacheService {
     private static final Duration STATIC_L1_TTL = Duration.ofHours(24);
     private static final Duration STATIC_L2_TTL = Duration.ofHours(24);
 
+    // Search results TTLs (for hybrid score pagination)
+    private static final Duration SEARCH_RESULTS_L1_TTL = Duration.ofSeconds(30);
+    private static final Duration SEARCH_RESULTS_L2_TTL = Duration.ofMinutes(5);
+
     /**
      * Get from cache with fallback to source
      * - L1 (Caffeine) → L2 (Redis) → Source
@@ -262,5 +266,61 @@ public class CacheService {
     public static String searchStatisticsKey(String mode, java.util.List<String> sortedSkills, Integer limit) {
         String skillsHash = String.join(",", sortedSkills);
         return "searchStats:" + mode + ":" + skillsHash + ":" + limit;
+    }
+
+    /**
+     * Cache key builder for search results (hybrid score pagination)
+     * - Key includes mode and sorted skills
+     * - Used for caching full search results to enable consistent pagination
+     *
+     * @param mode User mode (CANDIDATE or RECRUITER)
+     * @param sortedSkills Sorted list of skill names
+     * @return Cache key
+     */
+    public static String searchResultsKey(String mode, java.util.List<String> sortedSkills) {
+        String skillsHash = String.join(",", sortedSkills);
+        return "searchResults:" + mode + ":" + skillsHash;
+    }
+
+    /**
+     * Get search results from cache with fallback to source
+     * - Used for hybrid score pagination
+     * - L1 (30s) → L2 (5min) → Source
+     * - Returns full list of MatchItems sorted by hybrid score
+     *
+     * @param key Cache key
+     * @param source Data source (computes full search results)
+     * @param <T> Value type (List<MatchItem>)
+     * @return Mono of cached/computed value
+     */
+    @SuppressWarnings("unchecked")
+    public <T> Mono<T> getOrLoadSearchResults(String key, Supplier<Mono<T>> source) {
+        log.debug("Search results cache lookup: key={}", key);
+
+        return l1Cache.get(key, Object.class)
+                .map(obj -> (T) obj)
+                .doOnNext(value -> log.debug("L1 search results cache HIT: key={}", key))
+                .switchIfEmpty(Mono.defer(() -> {
+                    log.debug("L1 search results cache MISS: key={}", key);
+                    return l2Cache.get(key, Object.class)
+                            .map(obj -> (T) obj)
+                            .doOnNext(value -> log.debug("L2 search results cache HIT: key={}", key))
+                            .flatMap(value -> {
+                                // Populate L1 on L2 hit
+                                return l1Cache.put(key, value, SEARCH_RESULTS_L1_TTL)
+                                        .thenReturn(value);
+                            })
+                            .switchIfEmpty(Mono.defer(() -> {
+                                log.debug("L2 search results cache MISS: key={}, loading from source", key);
+                                return source.get()
+                                        .flatMap(value -> {
+                                            // Populate both L1 and L2 on source load
+                                            return Mono.when(
+                                                    l1Cache.put(key, value, SEARCH_RESULTS_L1_TTL),
+                                                    l2Cache.put(key, value, SEARCH_RESULTS_L2_TTL)
+                                            ).thenReturn(value);
+                                        });
+                            }));
+                }));
     }
 }

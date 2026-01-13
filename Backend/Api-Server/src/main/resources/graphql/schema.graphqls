@@ -97,14 +97,32 @@ Match Item (Frontend Compatible)
 Unified result type for both Recruit and Candidate searches
 Maps to Frontend MatchItem interface
 Used for LIST views (searchMatches) - does not include description
+Includes hybrid scoring details for visualization
 """
 type MatchItem {
     id: ID!
     title: String!
     company: String!
+    "최종 하이브리드 점수 (0-100)"
     score: Float!
     skills: [String!]!
     experience: Int
+
+    "벡터 유사도 점수 (0-100)"
+    vectorScore: Float
+    "검색 스킬 활용도 (0-100)"
+    overlapRatio: Float
+    "대상 스킬 충족도 (0-100)"
+    coverageRatio: Float
+    "추가 스킬 비율 (Candidate: 가산점, Recruit: 감점)"
+    extraRatio: Float
+
+    "매칭된 스킬 (교집합)"
+    matchedSkills: [String!]
+    "검색자만 보유한 스킬"
+    extraSkills: [String!]
+    "대상만 보유한 스킬"
+    missingSkills: [String!]
 }
 
 """

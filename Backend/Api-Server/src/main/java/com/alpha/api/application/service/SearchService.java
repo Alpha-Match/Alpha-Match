@@ -1,5 +1,6 @@
 package com.alpha.api.application.service;
 
+import com.alpha.api.application.scoring.ScoringStrategyFactory;
 import com.alpha.api.domain.candidate.entity.Candidate;
 import com.alpha.api.domain.candidate.entity.CandidateDescription;
 import com.alpha.api.domain.candidate.repository.CandidateDescriptionRepository;
@@ -11,6 +12,9 @@ import com.alpha.api.domain.recruit.repository.RecruitDescriptionRepository;
 import com.alpha.api.domain.recruit.repository.RecruitRepository;
 import com.alpha.api.domain.recruit.repository.RecruitSearchRepository;
 import com.alpha.api.domain.recruit.repository.RecruitSkillRepository;
+import com.alpha.api.domain.scoring.ScoringContext;
+import com.alpha.api.domain.scoring.ScoringResult;
+import com.alpha.api.domain.scoring.ScoringStrategy;
 import com.alpha.api.domain.skilldic.entity.SkillEmbeddingDic;
 import com.alpha.api.domain.skilldic.repository.SkillCategoryDicRepository;
 import com.alpha.api.domain.skilldic.repository.SkillEmbeddingDicRepository;
@@ -40,6 +44,7 @@ public class SearchService {
 
     private final SkillNormalizationService skillNormalizationService;
     private final CacheService cacheService;
+    private final ScoringStrategyFactory scoringStrategyFactory;
     private final RecruitRepository recruitRepository;
     private final RecruitDescriptionRepository recruitDescriptionRepository;
     private final RecruitSkillRepository recruitSkillRepository;
@@ -82,145 +87,157 @@ public class SearchService {
                 .collect(Collectors.toList());
         log.debug("Sorted skills: {}", sortedSkills);
 
-        // Normalize skills to query vector
-        return skillNormalizationService.normalizeSkillsToQueryVector(sortedSkills)
-                .flatMap(queryVector -> {
-                    // Note: experience parameter is ignored (no filtering by experience years)
-                    // This can be re-enabled later if needed
+        // Cache key for full search results (hybrid score sorted)
+        String cacheKey = CacheService.searchResultsKey(mode.name(), sortedSkills);
 
-                    // Search based on mode
-                    if (mode == UserMode.CANDIDATE) {
-                        // Job seeker searching for jobs
-                        return searchRecruits(queryVector, sortedSkills, finalLimit, finalOffset, sortBy);
-                    } else {
-                        // Recruiter searching for candidates
-                        return searchCandidates(queryVector, sortedSkills, finalLimit, finalOffset, sortBy);
-                    }
+        // Get full results from cache or compute
+        return cacheService.getOrLoadSearchResults(cacheKey, () ->
+                        // Compute full search results if cache miss
+                        skillNormalizationService.normalizeSkillsToQueryVector(sortedSkills)
+                                .flatMap(queryVector -> {
+                                    if (mode == UserMode.CANDIDATE) {
+                                        return computeAllRecruits(queryVector, sortedSkills, sortBy);
+                                    } else {
+                                        return computeAllCandidates(queryVector, sortedSkills, sortBy);
+                                    }
+                                })
+                )
+                .flatMap(allMatches -> {
+                    // Paginate from cached results
+                    int fromIndex = Math.min(finalOffset, allMatches.size());
+                    int toIndex = Math.min(finalOffset + finalLimit, allMatches.size());
+                    List<MatchItem> paginatedMatches = allMatches.subList(fromIndex, toIndex);
+
+                    log.debug("Pagination: total={}, offset={}, limit={}, returned={}",
+                            allMatches.size(), finalOffset, finalLimit, paginatedMatches.size());
+
+                    // Generate vector visualization
+                    return generateVectorVisualization(sortedSkills)
+                            .map(vectorVisualization -> SearchMatchesResult.builder()
+                                    .matches(paginatedMatches)
+                                    .vectorVisualization(vectorVisualization)
+                                    .build());
                 });
     }
 
     /**
-     * Search Recruits (for CANDIDATE mode)
-     *
-     * @param queryVector Query vector
-     * @param skills Original skill names
-     * @param limit Max number of results
-     * @param offset Number of results to skip
-     * @param sortBy Sort order string (nullable)
-     * @return Mono<SearchMatchesResult>
+     * Compute all recruit matches (for caching)
+     * - Fetches ALL results above threshold
+     * - Calculates hybrid scores
+     * - Sorts by hybrid score
      */
-    private Mono<SearchMatchesResult> searchRecruits(String queryVector, List<String> skills, int limit, int offset, String sortBy) {
-        Double similarityThreshold = 0.6; // Filter results with similarity >= 60%
+    private Mono<List<MatchItem>> computeAllRecruits(String queryVector, List<String> skills, String sortBy) {
+        Double similarityThreshold = 0.6;
+        int maxResults = 500; // Maximum results to cache
 
-        return recruitSearchRepository.findSimilarByVectorWithScore(queryVector, similarityThreshold, limit + offset)
-                .skip(offset) // Skip offset results for pagination
-                .take(limit) // Take only limit results
+        ScoringStrategy scoringStrategy = scoringStrategyFactory.getStrategy(UserMode.CANDIDATE);
+        Set<String> searchSkillsSet = skills.stream()
+                .map(String::toLowerCase)
+                .map(String::trim)
+                .collect(Collectors.toSet());
+
+        return recruitSearchRepository.findSimilarByVectorWithScore(queryVector, similarityThreshold, maxResults)
                 .flatMap(recruitSearchResult -> {
                     Recruit recruit = recruitSearchResult.getRecruit();
                     Double similarityScore = recruitSearchResult.getSimilarityScore();
 
-                    // Fetch skills for each recruit
                     return recruitSkillRepository.findByRecruitId(recruit.getRecruitId())
                             .map(recruitSkill -> recruitSkill.getSkill())
                             .collectList()
                             .map(recruitSkills -> {
-                                // [SCORING STRATEGY - Option 1: ACTIVE]
-                                // Simple vector similarity (matches Python baseline)
-                                double score = similarityScore; // Direct cosine similarity from DB (0.0 ~ 1.0)
+                                Set<String> targetSkillsSet = recruitSkills.stream()
+                                        .map(String::toLowerCase)
+                                        .map(String::trim)
+                                        .collect(Collectors.toSet());
 
-                                // [SCORING STRATEGY - Option 2: COMMENTED]
-                                // Hybrid scoring combines:
-                                //   - 40% Vector Similarity (cosine similarity from pgvector)
-                                //   - 30% Overlap Ratio (matched skills / selected skills)
-                                //   - 30% Coverage Ratio (matched skills / target skills)
-                                // To activate: uncomment calculateHybridScore() method below and use:
-                                // double score = calculateHybridScore(similarityScore, skills, recruitSkills);
+                                ScoringContext context = ScoringContext.builder()
+                                        .vectorSimilarity(similarityScore)
+                                        .searchSkills(searchSkillsSet)
+                                        .targetSkills(targetSkillsSet)
+                                        .build();
+
+                                ScoringResult scoringResult = scoringStrategy.calculate(context);
 
                                 return MatchItem.builder()
                                         .id(recruit.getRecruitId().toString())
                                         .title(recruit.getPosition())
                                         .company(recruit.getCompanyName())
-                                        .score(score) // Use simple vector similarity
+                                        .score(scoringResult.getHybridScore())
                                         .skills(recruitSkills)
                                         .experience(recruit.getExperienceYears())
                                         .timestamp(recruit.getPublishedAt() != null ? recruit.getPublishedAt().toString() : null)
+                                        .vectorScore(scoringResult.getVectorScore())
+                                        .overlapRatio(scoringResult.getOverlapRatio())
+                                        .coverageRatio(scoringResult.getCoverageRatio())
+                                        .extraRatio(scoringResult.getExtraRatio())
+                                        .matchedSkills(new ArrayList<>(scoringResult.getMatchedSkills()))
+                                        .extraSkills(new ArrayList<>(scoringResult.getExtraSkills()))
+                                        .missingSkills(new ArrayList<>(scoringResult.getMissingSkills()))
                                         .build();
                             });
                 })
                 .collectList()
-                .flatMap(matches -> {
-                    // Apply sorting based on sortBy parameter
-                    List<MatchItem> sortedMatches = applySorting(matches, sortBy != null ? sortBy : "score DESC");
-
-                    // Generate vector visualization
-                    return generateVectorVisualization(skills)
-                            .map(vectorVisualization -> SearchMatchesResult.builder()
-                                    .matches(sortedMatches)
-                                    .vectorVisualization(vectorVisualization)
-                                    .build());
-                });
+                .map(matches -> applySorting(matches, sortBy != null ? sortBy : "score DESC"));
     }
 
     /**
-     * Search Candidates (for RECRUITER mode)
-     *
-     * @param queryVector Query vector
-     * @param skills Original skill names
-     * @param limit Max number of results
-     * @param offset Number of results to skip
-     * @param sortBy Sort order string (nullable)
-     * @return Mono<SearchMatchesResult>
+     * Compute all candidate matches (for caching)
+     * - Fetches ALL results above threshold
+     * - Calculates hybrid scores
+     * - Sorts by hybrid score
      */
-    private Mono<SearchMatchesResult> searchCandidates(String queryVector, List<String> skills, int limit, int offset, String sortBy) {
-        Double similarityThreshold = 0.6; // Filter results with similarity >= 60%
+    private Mono<List<MatchItem>> computeAllCandidates(String queryVector, List<String> skills, String sortBy) {
+        Double similarityThreshold = 0.6;
+        int maxResults = 500; // Maximum results to cache
 
-        return candidateSearchRepository.findSimilarByVectorWithScore(queryVector, similarityThreshold, limit + offset)
-                .skip(offset) // Skip offset results for pagination
-                .take(limit) // Take only limit results
+        ScoringStrategy scoringStrategy = scoringStrategyFactory.getStrategy(UserMode.RECRUITER);
+        Set<String> searchSkillsSet = skills.stream()
+                .map(String::toLowerCase)
+                .map(String::trim)
+                .collect(Collectors.toSet());
+
+        return candidateSearchRepository.findSimilarByVectorWithScore(queryVector, similarityThreshold, maxResults)
                 .flatMap(candidateSearchResult -> {
                     Candidate candidate = candidateSearchResult.getCandidate();
                     Double similarityScore = candidateSearchResult.getSimilarityScore();
 
-                    // Fetch skills for each candidate
                     return candidateSkillRepository.findByCandidateId(candidate.getCandidateId())
                             .map(candidateSkill -> candidateSkill.getSkill())
                             .collectList()
                             .map(candidateSkills -> {
-                                // [SCORING STRATEGY - Option 1: ACTIVE]
-                                // Simple vector similarity (matches Python baseline)
-                                double score = similarityScore; // Direct cosine similarity from DB (0.0 ~ 1.0)
+                                Set<String> targetSkillsSet = candidateSkills.stream()
+                                        .map(String::toLowerCase)
+                                        .map(String::trim)
+                                        .collect(Collectors.toSet());
 
-                                // [SCORING STRATEGY - Option 2: COMMENTED]
-                                // Hybrid scoring combines:
-                                //   - 40% Vector Similarity (cosine similarity from pgvector)
-                                //   - 30% Overlap Ratio (matched skills / selected skills)
-                                //   - 30% Coverage Ratio (matched skills / target skills)
-                                // To activate: uncomment calculateHybridScore() method below and use:
-                                // double score = calculateHybridScore(similarityScore, skills, candidateSkills);
+                                ScoringContext context = ScoringContext.builder()
+                                        .vectorSimilarity(similarityScore)
+                                        .searchSkills(searchSkillsSet)
+                                        .targetSkills(targetSkillsSet)
+                                        .build();
+
+                                ScoringResult scoringResult = scoringStrategy.calculate(context);
 
                                 return MatchItem.builder()
                                         .id(candidate.getCandidateId().toString())
-                                        .title(candidate.getOriginalResume()) // TODO: Use name if available
+                                        .title(candidate.getOriginalResume())
                                         .company(candidate.getPositionCategory())
-                                        .score(score) // Use simple vector similarity
+                                        .score(scoringResult.getHybridScore())
                                         .skills(candidateSkills)
                                         .experience(candidate.getExperienceYears())
                                         .timestamp(candidate.getCreatedAt() != null ? candidate.getCreatedAt().toString() : null)
+                                        .vectorScore(scoringResult.getVectorScore())
+                                        .overlapRatio(scoringResult.getOverlapRatio())
+                                        .coverageRatio(scoringResult.getCoverageRatio())
+                                        .extraRatio(scoringResult.getExtraRatio())
+                                        .matchedSkills(new ArrayList<>(scoringResult.getMatchedSkills()))
+                                        .extraSkills(new ArrayList<>(scoringResult.getExtraSkills()))
+                                        .missingSkills(new ArrayList<>(scoringResult.getMissingSkills()))
                                         .build();
                             });
                 })
                 .collectList()
-                .flatMap(matches -> {
-                    // Apply sorting based on sortBy parameter
-                    List<MatchItem> sortedMatches = applySorting(matches, sortBy != null ? sortBy : "score DESC");
-
-                    // Generate vector visualization
-                    return generateVectorVisualization(skills)
-                            .map(vectorVisualization -> SearchMatchesResult.builder()
-                                    .matches(sortedMatches)
-                                    .vectorVisualization(vectorVisualization)
-                                    .build());
-                });
+                .map(matches -> applySorting(matches, sortBy != null ? sortBy : "score DESC"));
     }
 
     /**

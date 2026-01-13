@@ -29,14 +29,15 @@ public class CorsConfig {
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // Allow Frontend origin
-        config.setAllowedOrigins(Arrays.asList(
-                "http://localhost:3000",
-                "http://127.0.0.1:3000"
-//                ,"https://originally-expand-convention-router.trycloudflare.com"
+        // Allow all origins for development (SSR requests come from different origins)
+        // Note: When using allowCredentials=true, specific origins must be listed
+        config.setAllowedOriginPatterns(Arrays.asList(
+                "http://localhost:*",
+                "http://127.0.0.1:*",
+                "https://*.trycloudflare.com"
         ));
 
-        config.setAllowedMethods(Arrays.asList("POST", "OPTIONS"));
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "OPTIONS"));
 
         // Allow all headers (including GraphQL-specific headers)
         config.setAllowedHeaders(List.of("*"));
