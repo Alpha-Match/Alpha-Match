@@ -9,6 +9,7 @@ import {
     REGISTER,
 } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
+import sessionStorage from 'redux-persist/lib/storage/session'; // Import sessionStorage
 
 import uiReducer from '@/core/client/services/state/features/ui/uiSlice';
 import searchReducer from '@/core/client/services/state/features/search/searchSlice';
@@ -16,10 +17,21 @@ import notificationReducer from '@/core/client/services/state/features/notificat
 import themeReducer from '@/core/client/services/state/features/theme/themeSlice';
 
 /* ------------------------------------------------------------------ */
+/* ui reducer with sessionStorage (per session) */
+/* ------------------------------------------------------------------ */
+const uiPersistConfig = {
+    key: 'ui',
+    storage: sessionStorage,
+    whitelist: ['isSidebarOpen', 'userMode', 'viewResetCounter', 'CANDIDATE', 'RECRUITER'], // Whitelist properties of ui slice
+};
+
+const uiPersistedReducer = persistReducer(uiPersistConfig, uiReducer);
+
+/* ------------------------------------------------------------------ */
 /* root reducer (NON-persisted) */
 /* ------------------------------------------------------------------ */
 export const rootReducer = combineReducers({
-    ui: uiReducer,
+    ui: uiPersistedReducer, // Use the persisted ui reducer
     search: searchReducer,
     notification: notificationReducer,
     theme: themeReducer,
@@ -28,13 +40,13 @@ export const rootReducer = combineReducers({
 export type RootState = ReturnType<typeof rootReducer>;
 
 /* ------------------------------------------------------------------ */
-/* persisted reducer */
+/* persisted reducer (for search and theme, using localStorage) */
 /* ------------------------------------------------------------------ */
 const persistedReducer = persistReducer(
     {
         key: 'root',
-        storage,
-        whitelist: ['search', 'theme'],
+        storage, // localStorage
+        whitelist: ['search', 'theme'], // Only search and theme for localStorage
     },
     rootReducer
 );
@@ -44,7 +56,7 @@ const persistedReducer = persistReducer(
 /* ------------------------------------------------------------------ */
 export const makeStore = (initialState?: Partial<RootState>) =>
     configureStore({
-        reducer: persistedReducer,
+        reducer: persistedReducer, // This will wrap the rootReducer, which already includes uiPersistedReducer
         preloadedState: initialState as RootState,
         middleware: (getDefaultMiddleware) =>
             getDefaultMiddleware({
@@ -63,3 +75,4 @@ export const makeStore = (initialState?: Partial<RootState>) =>
 
 export type AppStore = ReturnType<typeof makeStore>;
 export type AppDispatch = AppStore['dispatch'];
+
