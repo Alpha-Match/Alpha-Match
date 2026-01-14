@@ -55,9 +55,9 @@ class DataConfig:
 
     # 도메인별 설정을 관리하는 딕셔너리
     DOMAIN_CONFIGS: Dict[str, DomainConfig] = field(default_factory=lambda: {
-        "recruit": DomainConfig(vector_dimension=384),
-        "candidate": DomainConfig(vector_dimension=384),  # v2: 384차원으로 통일
-        "skill_dic": DomainConfig(vector_dimension=384),  # 스킬 임베딩 사전 (loader factory에서 사용하는 이름)
+        "recruit": DomainConfig(vector_dimension=1536),  # v5: 1536d OpenAI Embedding
+        "candidate": DomainConfig(vector_dimension=1536),  # v5: 1536d OpenAI Embedding
+        "skill_dic": DomainConfig(vector_dimension=1536),  # v5: 1536d OpenAI Embedding
     })
 
 

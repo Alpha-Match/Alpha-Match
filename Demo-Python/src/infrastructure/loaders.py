@@ -90,6 +90,9 @@ class PklChunkLoader(BaseChunkLoader[T_Row]):
             # pkl 파일이 dict 형태인 경우 data_frame 키로 접근
             if isinstance(pkl_data, dict) and 'data_frame' in pkl_data:
                 df = pkl_data['data_frame']
+            elif isinstance(pkl_data, list):
+                # list 형태인 경우 DataFrame으로 변환
+                df = pd.DataFrame(pkl_data)
             else:
                 df = pkl_data
 
@@ -101,6 +104,8 @@ class PklChunkLoader(BaseChunkLoader[T_Row]):
                 df = self._preprocess_recruit_data(df)
             elif self.row_class.__name__ == 'CandidateData':
                 df = self._preprocess_candidate_data(df)
+            elif self.row_class.__name__ == 'SkillEmbeddingDicData':
+                df = self._preprocess_skill_dic_data(df)
 
             total_rows_after = len(df)
             if total_rows_before != total_rows_after:
@@ -116,9 +121,30 @@ class PklChunkLoader(BaseChunkLoader[T_Row]):
                     # skills 변환
                     if 'skills' in record and hasattr(record['skills'], 'tolist'):
                         record['skills'] = record['skills'].tolist()
-                    # skills_vector 변환
-                    if 'skills_vector' in record and hasattr(record['skills_vector'], 'tolist'):
-                        record['skills_vector'] = record['skills_vector'].tolist()
+                    # skills_vector 변환 (v3: string으로 저장된 경우 JSON 파싱)
+                    if 'skills_vector' in record:
+                        if isinstance(record['skills_vector'], str):
+                            import json
+                            record['skills_vector'] = json.loads(record['skills_vector'])
+                        elif hasattr(record['skills_vector'], 'tolist'):
+                            record['skills_vector'] = record['skills_vector'].tolist()
+                    # skills_openai_vector → skills_vector 매핑 (v3: pkl 컬럼명)
+                    if 'skills_openai_vector' in record:
+                        if isinstance(record['skills_openai_vector'], str):
+                            import json
+                            record['skills_vector'] = json.loads(record['skills_openai_vector'])
+                        elif hasattr(record['skills_openai_vector'], 'tolist'):
+                            record['skills_vector'] = record['skills_vector'].tolist()
+                        else:
+                            record['skills_vector'] = record['skills_openai_vector']
+                        del record['skills_openai_vector']  # 원본 컬럼 제거
+                    # skill_vector 변환 (SkillEmbeddingDic용)
+                    if 'skill_vector' in record:
+                        if isinstance(record['skill_vector'], str):
+                            import json
+                            record['skill_vector'] = json.loads(record['skill_vector'])
+                        elif hasattr(record['skill_vector'], 'tolist'):
+                            record['skill_vector'] = record['skill_vector'].tolist()
                     # NaN을 None으로 변환 (Pydantic 호환성)
                     for key, value in list(record.items()):
                         if isinstance(value, float) and pd.isna(value):
@@ -148,7 +174,7 @@ class PklChunkLoader(BaseChunkLoader[T_Row]):
         """
         logger.info("Applying Recruit domain preprocessing...")
 
-        # 1. 컬럼명 매핑 (Title Case → snake_case)
+        # 1. 컬럼명 매핑 (Title Case → snake_case, v3: skills_openai_vector 지원)
         column_mapping = {
             'Position': 'position',
             'Company Name': 'company_name',
@@ -158,7 +184,8 @@ class PklChunkLoader(BaseChunkLoader[T_Row]):
             'Published': 'published_at',
             'Long Description': 'long_description',
             'Long Description_lang': 'description_lang',
-            'skill_vector': 'skills_vector',
+            'skill_vector': 'skills_vector',  # v2 호환성
+            'skills_openai_vector': 'skills_vector',  # v3: OpenAI 1536d
             'skills': 'skills',
             'id': 'id'
         }
@@ -238,18 +265,22 @@ class PklChunkLoader(BaseChunkLoader[T_Row]):
         3. 불필요한 컬럼 삭제
         4. skills 빈 배열 제외
         5. 벡터 누락 행 필터링
-        6. 벡터 차원 검증 (384d)
+        6. 벡터 차원 검증 (1536d)
         """
         logger.info("Applying Candidate domain preprocessing...")
 
-        # 1. 컬럼명 매핑 (Title Case → snake_case)
+        # 1. 컬럼명 매핑 (Title Case → snake_case, v3: skills_openai_vector 지원)
         column_mapping = {
             'id': 'candidate_id',                  # BaseData.id → candidate_id
             'Primary Keyword': 'position_category',
             'Experience Years': 'experience_years',
             'CV': 'original_resume',
+            'CV_lang': 'resume_lang',              # v3 신규
+            'Moreinfo': 'moreinfo',                # v3 신규
+            'Looking For': 'looking_for',          # v3 신규
             'skills': 'skills',
-            'skill_vector': 'skills_vector'
+            'skill_vector': 'skills_vector',  # v2 호환성
+            'skills_openai_vector': 'skills_vector'  # v3: OpenAI 1536d
         }
         df = df.rename(columns=column_mapping)
 
@@ -262,16 +293,16 @@ class PklChunkLoader(BaseChunkLoader[T_Row]):
 
         # 3. Experience Years 전처리 (float → int)
         def convert_exp_years(value):
-            """float64 → int, NaN → 0"""
+            """float64 → int, NaN → None (NULL 저장)"""
             if pd.isna(value):
-                return 0  # Default to 0 for candidates with unknown experience
+                return None  # NULL for candidates with unknown experience
             try:
                 return int(round(value))  # Round and convert to int
             except (ValueError, TypeError):
-                return 0
+                return None
 
         df['experience_years'] = df['experience_years'].apply(convert_exp_years)
-        logger.debug(f"Experience Years converted: float64 → int, NaN → 0")
+        logger.debug(f"Experience Years converted: float64 → int, NaN → None")
 
         # 4. 불필요한 컬럼 삭제
         unnecessary_cols = [
@@ -280,11 +311,9 @@ class PklChunkLoader(BaseChunkLoader[T_Row]):
             'embedding_input_text',
             'embedding_sample',
             'Position',          # Display field, not needed
-            'Moreinfo',          # Additional info, not needed
-            'Looking For',       # Preferences, not needed
             'Highlights',        # Achievements, not needed
             'English Level',     # Language level, not needed
-            'CV_lang'           # Resume language, not needed
+            'db_id'              # v3: Remove database ID column if present
         ]
         existing_unnecessary = [col for col in unnecessary_cols if col in df.columns]
         if existing_unnecessary:
@@ -322,14 +351,59 @@ class PklChunkLoader(BaseChunkLoader[T_Row]):
             elif isinstance(sample_vector, list):
                 logger.debug(f"Vector dimension: {len(sample_vector)}")
 
-        # 필요한 컬럼만 선택 (v2 스키마 순서대로)
+        # 필요한 컬럼만 선택 (v3 스키마 순서대로)
         required_cols = [
             'candidate_id', 'position_category', 'experience_years',
-            'original_resume', 'skills', 'skills_vector'
+            'original_resume', 'resume_lang', 'moreinfo', 'looking_for',
+            'skills', 'skills_vector'
         ]
         df = df[required_cols]
 
         logger.info("Candidate preprocessing completed")
+        return df
+
+    def _preprocess_skill_dic_data(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        SkillEmbeddingDic 도메인 전처리
+
+        1. 컬럼명 매핑 (pkl → models.py)
+        2. 불필요한 컬럼 삭제
+        3. 벡터 누락 행 필터링
+        """
+        logger.info("Applying SkillEmbeddingDic domain preprocessing...")
+
+        # 1. 컬럼명 매핑
+        column_mapping = {
+            'name': 'skill',                              # v3: name → skill
+            'category': 'position_category',              # category → position_category
+            'skill_set_openai_vector': 'skill_vector',    # v3: OpenAI 1536d
+            'id': 'id'                                    # id (사용하지 않지만 유지)
+        }
+        df = df.rename(columns=column_mapping)
+
+        # 2. 불필요한 컬럼 삭제
+        unnecessary_cols = [
+            'id',
+            '__index_level_0__',
+            'synonyms'  # synonyms 컬럼 제외 (SkillEmbeddingDic에서는 불필요)
+        ]
+        existing_unnecessary = [col for col in unnecessary_cols if col in df.columns]
+        if existing_unnecessary:
+            df = df.drop(columns=existing_unnecessary)
+            logger.debug(f"Dropped columns: {', '.join(existing_unnecessary)}")
+
+        # 3. 벡터 누락 행 필터링
+        before_vector_filter = len(df)
+        df = df[df['skill_vector'].notna()]
+        after_vector_filter = len(df)
+        if before_vector_filter != after_vector_filter:
+            logger.info(f"Filtered null vectors: {before_vector_filter - after_vector_filter} rows")
+
+        # 필요한 컬럼만 선택
+        required_cols = ['skill', 'position_category', 'skill_vector']
+        df = df[required_cols]
+
+        logger.info("SkillEmbeddingDic preprocessing completed")
         return df
 
 

@@ -64,13 +64,13 @@ class RecruitData(BaseData):
     skills: List[str] = Field(..., min_length=1, description="요구 기술 스택 배열")
     long_description: Optional[str] = Field(None, description="채용 공고 원문 (Markdown)")
     description_lang: Optional[str] = Field(None, description="원문 언어 (e.g., 'en', 'ko')")
-    skills_vector: List[float] = Field(..., description="기술 스택 벡터 (384d)")
+    skills_vector: List[float] = Field(..., description="기술 스택 벡터 (1536d, OpenAI Embedding)")
 
     @field_validator('skills_vector')
     @classmethod
     def validate_vector_dimension(cls, v):
-        if len(v) != 384:
-            raise ValueError(f'Recruit skills_vector must be 384 dimensions, got {len(v)}')
+        if len(v) != 1536:
+            raise ValueError(f'Recruit skills_vector must be 1536 dimensions, got {len(v)}')
         return v
 
     @field_validator('skills')
@@ -87,20 +87,23 @@ class RecruitData(BaseData):
 
 class CandidateData(BaseModel):
     """
-    후보자 데이터 모델 (v2 - Flat DTO 구조)
+    후보자 데이터 모델 (v3 - Flat DTO 구조, candidate_description 확장)
 
     Java gRPC DTO 매핑: CandidateRowDto
     - candidate_id → candidate_id (UUID v7)
     - position_category → position_category
     - experience_years → experience_years
     - original_resume → original_resume
+    - resume_lang → resume_lang (v3 신규)
+    - moreinfo → moreinfo (v3 신규)
+    - looking_for → looking_for (v3 신규)
     - skills → skills (배열)
-    - skills_vector → skills_vector (384d)
+    - skills_vector → skills_vector (1536d)
 
     Java 매핑: Batch Writer가 4개 테이블에 분산 저장 (v2)
     - CandidateEntity (candidate 테이블 - 기본 정보)
     - CandidateSkillEntity (candidate_skill 테이블 - skills 배열 분해, 1:N)
-    - CandidateDescriptionEntity (candidate_description 테이블 - 이력서 원문)
+    - CandidateDescriptionEntity (candidate_description 테이블 - 이력서 원문, moreinfo, looking_for)
     - CandidateSkillsEmbeddingEntity (candidate_skills_embedding 테이블 - 벡터)
 
     Note: BaseModel을 직접 상속 (BaseData가 아님, candidate_id 사용)
@@ -109,14 +112,17 @@ class CandidateData(BaseModel):
     position_category: str = Field(..., description="직종 카테고리")
     experience_years: int = Field(..., ge=0, description="경력 (연)")
     original_resume: str = Field(..., description="원문 이력서")
+    resume_lang: Optional[str] = Field(None, description="이력서 언어 (예: ko, en)")
+    moreinfo: Optional[str] = Field(None, description="추가 정보 (프로젝트, 성과, 자격증 등)")
+    looking_for: Optional[str] = Field(None, description="구직 희망사항 (희망 역할, 급여, 근무 조건 등)")
     skills: List[str] = Field(..., min_length=1, description="보유 스킬 배열 (예: ['Java', 'Python'])")
-    skills_vector: List[float] = Field(..., description="기술 스택 벡터 (384차원)")
+    skills_vector: List[float] = Field(..., description="기술 스택 벡터 (1536차원, OpenAI Embedding)")
 
     @field_validator('skills_vector')
     @classmethod
     def validate_vector_dimension(cls, v):
-        if len(v) != 384:
-            raise ValueError(f'Candidate skills_vector must be 384 dimensions, got {len(v)}')
+        if len(v) != 1536:
+            raise ValueError(f'Candidate skills_vector must be 1536 dimensions, got {len(v)}')
         return v
 
     @field_validator('skills')
@@ -136,27 +142,28 @@ class CandidateData(BaseModel):
 
 class SkillEmbeddingDicData(BaseModel):
     """
-    기술 스택 사전 데이터 모델 (v2)
+    기술 스택 사전 데이터 모델 (v3)
 
-    v2 변경사항:
-    - 벡터 차원 통일: 768d → 384d
+    v3 변경사항:
+    - 벡터 차원 변경: 384d → 1536d (OpenAI Embedding)
+    - 컬럼명 변경: skill → name, skill_vector → skill_set_openai_vector
 
     Java gRPC DTO 매핑: SkillEmbeddingDicRowDto
-    - skill → skill (PK)
-    - position_category → position_category
-    - skill_vector → skill_vector (384d)
+    - name → skill (PK로 매핑)
+    - category → position_category
+    - skill_set_openai_vector → skill_vector (1536d)
 
     Java 매핑: SkillEmbeddingDicEntity (skill_embedding_dic 테이블)
     """
-    skill: str = Field(..., description="스킬명 (PK)")
+    skill: str = Field(..., description="스킬명 (PK, v3: name → skill)")
     position_category: str = Field(..., description="직종 카테고리")
-    skill_vector: List[float] = Field(..., description="스킬 벡터 (384차원)")
+    skill_vector: List[float] = Field(..., description="스킬 벡터 (1536차원, OpenAI Embedding)")
 
     @field_validator('skill_vector')
     @classmethod
     def validate_vector_dimension(cls, v):
-        if len(v) != 384:
-            raise ValueError(f'Skill vector must be 384 dimensions, got {len(v)}')
+        if len(v) != 1536:
+            raise ValueError(f'Skill vector must be 1536 dimensions, got {len(v)}')
         return v
 
     class Config:
