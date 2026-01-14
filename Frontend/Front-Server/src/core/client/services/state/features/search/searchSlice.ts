@@ -74,6 +74,10 @@ export const searchSlice = createSlice({
       const { userMode, count } = action.payload;
       state[userMode].totalCount = count;
     },
+    clearMatches: (state, action: PayloadAction<UserMode>) => {
+      state[action.payload].matches = [];
+      state[action.payload].totalCount = null; // Also clear totalCount
+    },
     resetSearch: (state, action: PayloadAction<UserMode>) => {
         state[action.payload] = { ...initialModeSpecificState, searchedSkills: [], dashboardData: state[action.payload].dashboardData };
     },
@@ -99,6 +103,7 @@ export const {
   setSearchedSkills,
   setDashboardData,
   setTotalCount,
+  clearMatches,
   resetSearch,
   setSkillCategories,
 } = searchSlice.actions;

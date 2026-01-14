@@ -1,11 +1,11 @@
+import {MatchItem, SkillMatch, UserMode} from '@/types';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {useQuery} from '@apollo/client/react';
 import {NetworkStatus} from '@apollo/client';
 import {CombinedGraphQLErrors, ServerError} from '@apollo/client/errors';
-import {MatchItem, SkillMatch, UserMode} from '@/types';
 import {SEARCH_MATCHES_QUERY} from '@/core/client/services/api/queries/search';
 import {useAppDispatch, useAppSelector} from '@/core/client/services/state/hooks';
-import {setMatches, setSearchedSkills} from '@/core/client/services/state/features/search/searchSlice';
+import {setMatches, setSearchedSkills, clearMatches} from '@/core/client/services/state/features/search/searchSlice';
 
 const PAGE_SIZE = 20; // 한 번에 로드할 개수
 const LOAD_MORE_THROTTLE_MS = 300; // 무한 스크롤 요청 간 최소 간격 (ms)
@@ -85,6 +85,9 @@ export const useSearchMatches = () => {
           matches: data.searchMatches.matches,
         })
       );
+      // setSearchedSkills is now dispatched in HomePage.client.tsx before runSearch
+      // This ensures that the analysis panel can start fetching concurrently.
+      // We keep this here in case the backend returns filtered skills or for robustness.
       dispatch(
         setSearchedSkills({
           userMode: searchParams.mode,
@@ -160,6 +163,7 @@ export const useSearchMatches = () => {
       setError(null);
       setHasMore(true);
       setIsSearching(true); // 검색 시작 시 즉시 로딩 상태로 설정
+      dispatch(clearMatches(mode)); // Clear previous matches to show spinner immediately
 
       console.log('[Search] Starting new search:', {
         mode,
