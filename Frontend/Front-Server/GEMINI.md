@@ -171,8 +171,12 @@
 
 ---
 
-**최종 수정일:** 2026-01-12
+**최종 수정일:** 2026-01-14
 **주요 업데이트:**
+- **redux-persist TypeScript 오류 수정**: `store.ts` 파일 내 `redux-persist` 관련 타입 오류를 수정하여 애플리케이션 빌드 안정성 확보.
+- **`SearchResultAnalysisPanel` 로딩 스피너 개선**: 분석 데이터 로딩 중 스피너가 표시되도록 하여 사용자 경험 향상.
+- **`SearchResultPanel` 총 검색 결과 수 표시 기능 추가**: `totalCount` prop을 받아 전체 검색 결과 수를 정확히 표시하도록 로직 개선.
+- **`TwoLevelPieChart` 레이블 테마 색상 적용**: 파이 차트 레이블이 테마에 따라 동적으로 색상이 변경되도록 수정.
 - **`MatchDetailPanel` 레이아웃 간격 일관성 확보**: Recruit 및 Candidate 상세 뷰의 주요 정보 블록 하단에 `mb-8`을 추가하여 다음 섹션과의 간격을 일관되게 조정.
 - **`RatioPieChart` 테마 색상 일관성 확보**: `SearchedSkillsCategoryDistributionChart`의 색상 처리 방식을 참조하여, `RatioPieChart`의 레이블 및 슬라이스 색상이 테마에 맞춰 동적으로 변경되도록 명시적으로 수정.
 - **`TwoLevelPieChart` TypeScript 오류 수정 및 레이블 테마 색상 적용**: Legend Payload 타입 오류 수정 및 파이 차트 레이블이 테마에 따라 색상이 변경되도록 개선.

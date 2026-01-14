@@ -66,7 +66,7 @@ export function HomePageClient({ initialSkillCategories, initialDashboardData }:
     }
   }, [initialSkillCategories, initialDashboardData, dispatch]);
 
-  const { selectedSkills, searchedSkills, isInitial, matches } = useAppSelector((state) => state.search[userMode]);
+  const { selectedSkills, searchedSkills, isInitial, matches, totalCount } = useAppSelector((state) => state.search[userMode]);
   
   const { runSearch, loadMore, loading, fetchingMore, error, hasMore } = useSearchMatches();
 
@@ -87,8 +87,6 @@ export function HomePageClient({ initialSkillCategories, initialDashboardData }:
 
   const themeColors = userMode === UserMode.CANDIDATE ? CANDIDATE_THEME_COLORS : RECRUITER_THEME_COLORS;
   const activeColor = themeColors[0];
-
-
 
   return (
     <div className="h-screen w-screen flex flex-col bg-background text-text-primary overflow-hidden font-sans">
@@ -113,6 +111,7 @@ export function HomePageClient({ initialSkillCategories, initialDashboardData }:
         navigateToInput={navigateToInput}
         navigateToView={navigateToView}
         onSearch={handleSearch}
+        totalCount={totalCount}
       />
     </div>
   );

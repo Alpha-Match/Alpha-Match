@@ -40,6 +40,7 @@ interface MainContentPanelProps {
   navigateToInput: () => void;
   navigateToView: (view: PageViewMode) => void;
   onSearch: () => void;
+  totalCount?: number | null;
 }
 
 export const MainContentPanel: React.FC<MainContentPanelProps> = ({
@@ -62,6 +63,7 @@ export const MainContentPanel: React.FC<MainContentPanelProps> = ({
   navigateToInput,
   navigateToView,
   onSearch,
+  totalCount,
 }) => {
   // Desktop: Dashboard view (early return - no TabController needed)
   if (isDesktop && pageViewMode === 'dashboard') {
@@ -130,6 +132,7 @@ export const MainContentPanel: React.FC<MainContentPanelProps> = ({
                 hasMore={hasMore}
                 loading={fetchingMore}
                 selectedMatchId={selectedMatchId}
+                totalCount={totalCount}
               />
             </QueryBoundary>
           )}
@@ -163,6 +166,7 @@ export const MainContentPanel: React.FC<MainContentPanelProps> = ({
                 hasMore={hasMore}
                 loading={fetchingMore}
                 selectedMatchId={selectedMatchId}
+                totalCount={totalCount}
               />
             </QueryBoundary>
           );

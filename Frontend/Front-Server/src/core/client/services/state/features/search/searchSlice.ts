@@ -10,6 +10,7 @@ export interface ModeSpecificSearchState {
   isInitial: boolean;
   matches: MatchItem[];
   dashboardData: DashboardCategory[] | null;
+  totalCount?: number | null;
 }
 
 export interface SearchState {
@@ -26,6 +27,7 @@ const initialModeSpecificState: ModeSpecificSearchState = {
   isInitial: true,
   matches: [],
   dashboardData: null,
+  totalCount: null,
 };
 
 const initialState: SearchState = {
@@ -68,6 +70,10 @@ export const searchSlice = createSlice({
       const { userMode, data } = action.payload;
       state[userMode].dashboardData = data;
     },
+    setTotalCount: (state, action: PayloadAction<{ userMode: UserMode; count: number | null }>) => {
+      const { userMode, count } = action.payload;
+      state[userMode].totalCount = count;
+    },
     resetSearch: (state, action: PayloadAction<UserMode>) => {
         state[action.payload] = { ...initialModeSpecificState, searchedSkills: [], dashboardData: state[action.payload].dashboardData };
     },
@@ -92,9 +98,9 @@ export const {
   setMatches,
   setSearchedSkills,
   setDashboardData,
+  setTotalCount,
   resetSearch,
   setSkillCategories,
 } = searchSlice.actions;
 
 export default searchSlice.reducer;
-

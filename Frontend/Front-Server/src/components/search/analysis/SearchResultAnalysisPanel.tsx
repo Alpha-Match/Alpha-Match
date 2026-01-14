@@ -1,11 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useQuery } from '@apollo/client/react';
 import { SkillCategory, SkillFrequency, UserMode } from '@/types';
 import { TopSkills, SearchResultAnalysis } from '@/components/search/analysis';
 import { GET_SEARCH_STATISTICS } from '@/core/client/services/api/queries/stats';
 import { LoadingSpinner } from '@/components/ui';
+import { useAppDispatch } from '@/core/client/services/state/hooks';
+import { setTotalCount } from '@/core/client/services/state/features/search/searchSlice';
 
 interface SearchResultAnalysisPanelProps {
 	activeColor: string;
@@ -29,6 +31,7 @@ interface SearchStatisticsVars {
 export const SearchResultAnalysisPanel: React.FC<
 	SearchResultAnalysisPanelProps
 > = ({ activeColor, userMode, searchedSkills = [], skillCategories }) => {
+	const dispatch = useAppDispatch();
 	const { data: statsData, loading: statsLoading } = useQuery<
 		SearchStatisticsData,
 		SearchStatisticsVars
@@ -38,6 +41,12 @@ export const SearchResultAnalysisPanel: React.FC<
 	});
 
 	const totalCount = statsData?.searchStatistics?.totalCount;
+
+	useEffect(() => {
+		if (totalCount !== undefined) {
+			dispatch(setTotalCount({ userMode, count: totalCount }));
+		}
+	}, [totalCount, userMode, dispatch]);
 
 	if (searchedSkills.length === 0) {
 		return (

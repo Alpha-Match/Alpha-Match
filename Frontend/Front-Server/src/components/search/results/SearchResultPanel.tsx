@@ -22,7 +22,7 @@ interface SearchResultPanelProps {
   hasMore?: boolean;
   loading?: boolean;
   selectedMatchId?: string | null;
-  totalCount?: number; // Added totalCount prop
+  totalCount?: number | null; // Added totalCount prop
 }
 
 export const SearchResultPanel: React.FC<SearchResultPanelProps> = ({
