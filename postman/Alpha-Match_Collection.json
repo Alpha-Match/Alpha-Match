@@ -1,0 +1,553 @@
+{
+  "info": {
+    "_postman_id": "alpha-match-collection-2025-12-27",
+    "name": "Alpha-Match API Collection",
+    "description": "Alpha-Match 프로젝트의 전체 API 테스트를 위한 Postman 컬렉션입니다.\n\n## 사전 준비사항\n1. PostgreSQL 실행 (포트 5433)\n2. Batch Server 실행: `cd Backend/Batch-Server && ./gradlew bootRun` (gRPC 9090)\n3. Python Server 실행: `cd Demo-Python && python -m uvicorn src.main:app --port 8000`\n4. Api Server 실행: `cd Backend/Api-Server && ./gradlew bootRun` (HTTP 8080, GraphQL)\n\n## 테스트 순서\n**Phase 1: 데이터 적재 (Python → Batch)**\n1. Health Check로 서버 상태 확인\n2. Skill Dictionary 먼저 적재 (FK 참조용)\n3. Recruit 또는 Candidate 데이터 적재\n\n**Phase 2: GraphQL API 테스트 (Frontend → Api)**\n4. skillCategories 쿼리로 스킬 목록 조회\n5. searchMatches 쿼리로 벡터 유사도 검색",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "python_base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "api_base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "graphql_endpoint",
+      "value": "http://localhost:8080/graphql",
+      "type": "string"
+    },
+    {
+      "key": "grpc_batch_port",
+      "value": "9090",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Python Server Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{python_base_url}}/",
+              "host": ["{{python_base_url}}"],
+              "path": [""]
+            },
+            "description": "Python FastAPI 서버의 상태를 확인합니다."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{python_base_url}}/",
+                  "host": ["{{python_base_url}}"],
+                  "path": [""]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"status\": \"ok\",\n  \"message\": \"Demo-Python 서버에 오신 것을 환영합니다!\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Python OpenAPI Docs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{python_base_url}}/docs",
+              "host": ["{{python_base_url}}"],
+              "path": ["docs"]
+            },
+            "description": "FastAPI 자동 생성 Swagger UI 문서를 엽니다. (브라우저에서 열기 권장)"
+          }
+        }
+      ],
+      "description": "서버 상태 확인을 위한 Health Check 엔드포인트들"
+    },
+    {
+      "name": "Data Ingestion (Python → Batch)",
+      "item": [
+        {
+          "name": "1. Skill Dictionary 적재",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{python_base_url}}/data/ingest/skill_dic?file_name=skill_embeddings_from_json.pkl&chunk_size=100",
+              "host": ["{{python_base_url}}"],
+              "path": ["data", "ingest", "skill_dic"],
+              "query": [
+                {
+                  "key": "file_name",
+                  "value": "skill_embeddings_from_json.pkl",
+                  "description": "스킬 임베딩 딕셔너리 파일 (105건)"
+                },
+                {
+                  "key": "chunk_size",
+                  "value": "100",
+                  "description": "gRPC 스트리밍 청크 크기 (기본: 100)"
+                }
+              ]
+            },
+            "description": "스킬 임베딩 딕셔너리를 Batch Server로 전송합니다.\n\n**처리 시간:** ~1.7초 (105건)\n**테이블:** skill_category_dic, skill_embedding_dic\n\n⚠️ Recruit/Candidate 적재 전에 먼저 실행하세요 (FK 참조용)"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{python_base_url}}/data/ingest/skill_dic?file_name=skill_embeddings_from_json.pkl&chunk_size=100",
+                  "host": ["{{python_base_url}}"],
+                  "path": ["data", "ingest", "skill_dic"],
+                  "query": [
+                    {"key": "file_name", "value": "skill_embeddings_from_json.pkl"},
+                    {"key": "chunk_size", "value": "100"}
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"received_chunks\": 2,\n  \"message\": \"Successfully processed 105 skill_dic records\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "2. Recruit 데이터 적재",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{python_base_url}}/data/ingest/recruit?file_name=recruitment_v1.pkl&chunk_size=100",
+              "host": ["{{python_base_url}}"],
+              "path": ["data", "ingest", "recruit"],
+              "query": [
+                {
+                  "key": "file_name",
+                  "value": "recruitment_v1.pkl",
+                  "description": "채용공고 데이터 파일 (87,488건, 471MB)"
+                },
+                {
+                  "key": "chunk_size",
+                  "value": "100",
+                  "description": "gRPC 스트리밍 청크 크기 (기본: 100, Virtual Thread 병렬 쓰기 시 권장)"
+                }
+              ]
+            },
+            "description": "채용공고(Recruit) 데이터를 Batch Server로 전송합니다.\n\n**처리 시간:** ~8분 38초 (Virtual Thread 병렬 쓰기)\n**레코드 수:** 87,488건\n**파일 크기:** 471MB\n**테이블:** recruit, recruit_skill, recruit_description, recruit_skills_embedding"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{python_base_url}}/data/ingest/recruit?file_name=recruitment_v1.pkl&chunk_size=100",
+                  "host": ["{{python_base_url}}"],
+                  "path": ["data", "ingest", "recruit"],
+                  "query": [
+                    {"key": "file_name", "value": "recruitment_v1.pkl"},
+                    {"key": "chunk_size", "value": "100"}
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"received_chunks\": 875,\n  \"message\": \"Successfully processed 87488 recruit records\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "3. Candidate 데이터 적재",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{python_base_url}}/data/ingest/candidate?file_name=candidate_v1.pkl&chunk_size=100",
+              "host": ["{{python_base_url}}"],
+              "path": ["data", "ingest", "candidate"],
+              "query": [
+                {
+                  "key": "file_name",
+                  "value": "candidate_v1.pkl",
+                  "description": "후보자 데이터 파일 (118,741건, 454MB)"
+                },
+                {
+                  "key": "chunk_size",
+                  "value": "100",
+                  "description": "gRPC 스트리밍 청크 크기 (기본: 100)"
+                }
+              ]
+            },
+            "description": "후보자(Candidate) 데이터를 Batch Server로 전송합니다.\n\n**처리 시간:** ~30분 50초\n**레코드 수:** 118,741건\n**파일 크기:** 454MB\n**테이블:** candidate, candidate_skill, candidate_description, candidate_skills_embedding"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{python_base_url}}/data/ingest/candidate?file_name=candidate_v1.pkl&chunk_size=100",
+                  "host": ["{{python_base_url}}"],
+                  "path": ["data", "ingest", "candidate"],
+                  "query": [
+                    {"key": "file_name", "value": "candidate_v1.pkl"},
+                    {"key": "chunk_size", "value": "100"}
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"received_chunks\": 1188,\n  \"message\": \"Successfully processed 118741 candidate records\"\n}"
+            }
+          ]
+        }
+      ],
+      "description": "Python Server에서 Batch Server로 gRPC Client Streaming을 통해 데이터를 전송합니다.\n\n## 처리 흐름\n1. POST 요청 → Python FastAPI\n2. Python gRPC Client → Batch Server gRPC Server (포트 9090)\n3. Batch Server → PostgreSQL DB (포트 5433)\n\n## 청크 사이즈 가이드\n- **100 (기본)**: 안정적인 메모리 사용\n- **200-300**: 처리량 향상 (Virtual Thread 병렬 쓰기 시)\n- **500+**: 메모리 사용량 증가 주의"
+    },
+    {
+      "name": "Performance Tuning",
+      "item": [
+        {
+          "name": "Recruit - Chunk Size 200",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{python_base_url}}/data/ingest/recruit?file_name=recruitment_v1.pkl&chunk_size=200",
+              "host": ["{{python_base_url}}"],
+              "path": ["data", "ingest", "recruit"],
+              "query": [
+                {"key": "file_name", "value": "recruitment_v1.pkl"},
+                {"key": "chunk_size", "value": "200"}
+              ]
+            },
+            "description": "청크 사이즈 200으로 성능 테스트"
+          }
+        },
+        {
+          "name": "Recruit - Chunk Size 300",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{python_base_url}}/data/ingest/recruit?file_name=recruitment_v1.pkl&chunk_size=300",
+              "host": ["{{python_base_url}}"],
+              "path": ["data", "ingest", "recruit"],
+              "query": [
+                {"key": "file_name", "value": "recruitment_v1.pkl"},
+                {"key": "chunk_size", "value": "300"}
+              ]
+            },
+            "description": "청크 사이즈 300으로 성능 테스트 (Batch Writer와 동일)"
+          }
+        },
+        {
+          "name": "Recruit - Chunk Size 500",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{python_base_url}}/data/ingest/recruit?file_name=recruitment_v1.pkl&chunk_size=500",
+              "host": ["{{python_base_url}}"],
+              "path": ["data", "ingest", "recruit"],
+              "query": [
+                {"key": "file_name", "value": "recruitment_v1.pkl"},
+                {"key": "chunk_size", "value": "500"}
+              ]
+            },
+            "description": "청크 사이즈 500으로 성능 테스트 (메모리 주의)"
+          }
+        }
+      ],
+      "description": "다양한 청크 사이즈로 성능 튜닝 테스트를 진행합니다.\n\n## 참고\n- gRPC 청크 사이즈: 50-1000 범위\n- JDBC 배치 사이즈: 300 고정 (application.yml)\n- JVM 힙: -Xms2g -Xmx8g (gradle.properties)"
+    },
+    {
+      "name": "Error Cases",
+      "item": [
+        {
+          "name": "File Not Found",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{python_base_url}}/data/ingest/recruit?file_name=nonexistent.pkl&chunk_size=100",
+              "host": ["{{python_base_url}}"],
+              "path": ["data", "ingest", "recruit"],
+              "query": [
+                {"key": "file_name", "value": "nonexistent.pkl"},
+                {"key": "chunk_size", "value": "100"}
+              ]
+            },
+            "description": "존재하지 않는 파일 요청 시 404 에러 확인"
+          },
+          "response": [
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{python_base_url}}/data/ingest/recruit?file_name=nonexistent.pkl",
+                  "host": ["{{python_base_url}}"],
+                  "path": ["data", "ingest", "recruit"],
+                  "query": [{"key": "file_name", "value": "nonexistent.pkl"}]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"detail\": \"데이터 파일을 찾을 수 없습니다: Demo-Python/data/nonexistent.pkl\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Invalid Domain",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{python_base_url}}/data/ingest/invalid_domain?file_name=recruitment_v1.pkl&chunk_size=100",
+              "host": ["{{python_base_url}}"],
+              "path": ["data", "ingest", "invalid_domain"],
+              "query": [
+                {"key": "file_name", "value": "recruitment_v1.pkl"},
+                {"key": "chunk_size", "value": "100"}
+              ]
+            },
+            "description": "지원하지 않는 도메인 요청 시 에러 확인"
+          },
+          "response": [
+            {
+              "name": "400 Bad Request",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{python_base_url}}/data/ingest/invalid_domain?file_name=recruitment_v1.pkl",
+                  "host": ["{{python_base_url}}"],
+                  "path": ["data", "ingest", "invalid_domain"],
+                  "query": [{"key": "file_name", "value": "recruitment_v1.pkl"}]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"detail\": \"지원하지 않는 도메인입니다: invalid_domain\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Chunk Size Out of Range",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{python_base_url}}/data/ingest/recruit?file_name=recruitment_v1.pkl&chunk_size=2000",
+              "host": ["{{python_base_url}}"],
+              "path": ["data", "ingest", "recruit"],
+              "query": [
+                {"key": "file_name", "value": "recruitment_v1.pkl"},
+                {"key": "chunk_size", "value": "2000"}
+              ]
+            },
+            "description": "청크 사이즈 범위(50-1000) 초과 시 422 에러 확인"
+          },
+          "response": [
+            {
+              "name": "422 Validation Error",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{python_base_url}}/data/ingest/recruit?file_name=recruitment_v1.pkl&chunk_size=2000",
+                  "host": ["{{python_base_url}}"],
+                  "path": ["data", "ingest", "recruit"],
+                  "query": [
+                    {"key": "file_name", "value": "recruitment_v1.pkl"},
+                    {"key": "chunk_size", "value": "2000"}
+                  ]
+                }
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"detail\": [\n    {\n      \"loc\": [\"query\", \"chunk_size\"],\n      \"msg\": \"ensure this value is less than or equal to 1000\",\n      \"type\": \"value_error.number.not_le\"\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ],
+      "description": "에러 상황 테스트를 위한 요청들"
+    },
+    {
+      "name": "GraphQL API (Api-Server)",
+      "item": [
+        {
+          "name": "1. Skill Categories 조회",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query { skillCategories { category skills } }\"\n}"
+            },
+            "url": {
+              "raw": "{{graphql_endpoint}}",
+              "host": ["{{graphql_endpoint}}"]
+            },
+            "description": "스킬 카테고리 목록을 조회합니다.\n\n**용도:** Frontend AppInitializer에서 스킬 선택기 데이터 로드\n**응답:** 6개 카테고리 (Backend, Frontend, Database, DevOps/Cloud, Machine Learning, Collaboration)"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"query\": \"query { skillCategories { category skills } }\"}"
+                },
+                "url": {
+                  "raw": "{{graphql_endpoint}}",
+                  "host": ["{{graphql_endpoint}}"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"data\": {\n    \"skillCategories\": [\n      { \"category\": \"Backend\", \"skills\": [\"Java\", \"Python\", \"Spring Boot\", ...] },\n      { \"category\": \"Frontend\", \"skills\": [\"React\", \"Vue\", \"Angular\", ...] },\n      ...\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "2. Recruit 검색 (CANDIDATE 모드)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query { searchMatches(mode: CANDIDATE, skills: [\\\"Java\\\", \\\"Spring Boot\\\", \\\"Python\\\"], experience: \\\"3-5 Years\\\") { matches { id title company score skills experience description } vectorVisualization { skill isCore x y } } }\"\n}"
+            },
+            "url": {
+              "raw": "{{graphql_endpoint}}",
+              "host": ["{{graphql_endpoint}}"]
+            },
+            "description": "구직자(CANDIDATE) 모드로 채용공고를 검색합니다.\n\n**mode:** CANDIDATE (채용공고 검색)\n**skills:** 스킬 목록 (pgvector 유사도 검색)\n**experience:** 경력 범위 (예: \"3-5 Years\")\n\n**응답:**\n- matches: 매칭된 채용공고 목록 (Top 10)\n- vectorVisualization: 스킬별 2D 좌표 (시각화용)"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"query\": \"query { searchMatches(mode: CANDIDATE, skills: [\\\"Java\\\", \\\"Spring Boot\\\", \\\"Python\\\"], experience: \\\"3-5 Years\\\") { matches { id title company score skills experience description } vectorVisualization { skill isCore x y } } }\"}"
+                },
+                "url": {
+                  "raw": "{{graphql_endpoint}}",
+                  "host": ["{{graphql_endpoint}}"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"data\": {\n    \"searchMatches\": {\n      \"matches\": [\n        {\n          \"id\": \"uuid\",\n          \"title\": \"Senior Java Developer\",\n          \"company\": \"TechCorp\",\n          \"score\": 0.85,\n          \"skills\": [\"Java\", \"Spring Boot\", \"Python\"],\n          \"experience\": 4,\n          \"description\": null\n        }\n      ],\n      \"vectorVisualization\": [\n        { \"skill\": \"Java\", \"isCore\": true, \"x\": 72.7, \"y\": 68.3 },\n        { \"skill\": \"Spring Boot\", \"isCore\": true, \"x\": 30.8, \"y\": 27.7 },\n        { \"skill\": \"Python\", \"isCore\": true, \"x\": 66.5, \"y\": 90.3 }\n      ]\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "3. Candidate 검색 (RECRUITER 모드)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query { searchMatches(mode: RECRUITER, skills: [\\\"React\\\", \\\"TypeScript\\\", \\\"Node.js\\\"], experience: \\\"0-2 Years\\\") { matches { id title company score skills experience description } vectorVisualization { skill isCore x y } } }\"\n}"
+            },
+            "url": {
+              "raw": "{{graphql_endpoint}}",
+              "host": ["{{graphql_endpoint}}"]
+            },
+            "description": "채용담당자(RECRUITER) 모드로 후보자를 검색합니다.\n\n**mode:** RECRUITER (후보자 검색)\n**skills:** 스킬 목록 (pgvector 유사도 검색)\n**experience:** 경력 범위 (예: \"0-2 Years\")\n\n**응답:**\n- matches: 매칭된 후보자 목록 (Top 10)\n- vectorVisualization: 스킬별 2D 좌표 (시각화용)"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"query\": \"query { searchMatches(mode: RECRUITER, skills: [\\\"React\\\", \\\"TypeScript\\\", \\\"Node.js\\\"], experience: \\\"0-2 Years\\\") { matches { id title company score skills experience description } vectorVisualization { skill isCore x y } } }\"}"
+                },
+                "url": {
+                  "raw": "{{graphql_endpoint}}",
+                  "host": ["{{graphql_endpoint}}"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"data\": {\n    \"searchMatches\": {\n      \"matches\": [\n        {\n          \"id\": \"uuid\",\n          \"title\": \"Frontend Developer\",\n          \"company\": \"N/A\",\n          \"score\": 0.85,\n          \"skills\": [\"React\", \"TypeScript\", \"Node.js\"],\n          \"experience\": 2,\n          \"description\": null\n        }\n      ],\n      \"vectorVisualization\": [\n        { \"skill\": \"React\", \"isCore\": true, \"x\": 45.2, \"y\": 72.1 }\n      ]\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "4. GraphiQL Playground",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/graphiql",
+              "host": ["{{api_base_url}}"],
+              "path": ["graphiql"]
+            },
+            "description": "GraphiQL 인터랙티브 플레이그라운드를 엽니다.\n\n**브라우저에서 열기 권장**\n- GraphQL 스키마 탐색\n- 쿼리 자동 완성\n- 실시간 문서 확인"
+          }
+        }
+      ],
+      "description": "Api-Server GraphQL 엔드포인트 테스트\n\n## 주요 쿼리\n1. **skillCategories**: 스킬 카테고리 목록 조회\n2. **searchMatches**: 통합 검색 (Recruit/Candidate)\n\n## 모드\n- **CANDIDATE**: 구직자가 채용공고 검색\n- **RECRUITER**: 채용담당자가 후보자 검색\n\n## 벡터 검색\n- pgvector 기반 Cosine 유사도\n- 384차원 임베딩 벡터\n- 유사도 임계값: 0.7"
+    }
+  ]
+}
