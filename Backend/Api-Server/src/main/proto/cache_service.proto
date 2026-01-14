@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.alpha.api.grpc";
+option java_outer_classname = "CacheServiceProto";
+
+package cache;
+
+// Cache Invalidation Service
+// - Batch Server sends cache invalidation requests to API Server
+// - API Server invalidates L1 (Caffeine) and L2 (Redis) caches
+service CacheInvalidationService {
+  // Invalidate cache for a specific recruit
+  rpc InvalidateRecruitCache(InvalidateRecruitRequest) returns (InvalidateResponse);
+
+  // Invalidate cache for a specific candidate
+  rpc InvalidateCandidateCache(InvalidateCandidateRequest) returns (InvalidateResponse);
+
+  // Invalidate all caches (after bulk data update)
+  rpc InvalidateAllCaches(InvalidateAllRequest) returns (InvalidateResponse);
+}
+
+// ===== Request Messages =====
+
+message InvalidateRecruitRequest {
+  string recruit_id = 1; // UUID as string
+}
+
+message InvalidateCandidateRequest {
+  string candidate_id = 1; // UUID as string
+}
+
+message InvalidateAllRequest {
+  string reason = 1; // Reason for cache invalidation (optional)
+}
+
+// ===== Response Messages =====
+
+message InvalidateResponse {
+  bool success = 1;
+  string message = 2;
+  int64 timestamp = 3; // Unix timestamp
+}

@@ -1,0 +1,74 @@
+input
+    recruit = pandas.read_pickle("data/recruitment_with_embedded.pkl")
+
+    # data_frame은 바로 head() 가능
+    df = recruit['data_frame']
+    print(df.keys())
+    print("--------------")
+    print(df.iloc[0][0])
+    print("--------------")
+    print(df.iloc[0][1])
+
+    # skill_embeddings은 dict일 가능성이 큼
+    skills = recruit['skill_embeddings']
+    print(skills.shape)  # 앞부분 키 확인
+
+output
+    Index(['Position', 'Long Description', 'Company Name', 'Exp Years',
+       'Primary Keyword', 'English Level', 'Published',
+       'Long Description_lang', 'id', '__index_level_0__', 'skills'],
+      dtype='object')
+--------------
+10X Engineer (co-founder, #4 employee, USD 11-12k, 1-4% equity)
+--------------
+**Product**
+The product is a live video chat and co-browsing with website visitors. It helps companies generate more customers with instant video meetings directly on visitor’s website while they’re browsing a company’s page. It’s like a virtual web attendant that greets you on the web and guides through company’s products, much like they do in real-world stores.
+
+It’s been in development for 5 months, sales started 2 months ago, already has 7 paid enterprise customers.
+
+It already received $3mln funding, incl. from Google and couple of US tech billionaries.
+
+**Team**
+- Daniel — Founder, previously Co-founder / CTO at couple other companies, incl. CTO at myetherwallet.com, winner of Peter Thiel Foundation scholarship
+- Will — founding engineer, 11 yrs experience, previously VP Engineering at coder.com and Senior Engineer at OkCupid.com
+- Aaron — founding engineer, 15 yrs experience
+- You — founding engineer, with 1-4% equity
+
+**Stage**
+- 5 months in development, e.g. almost from scratch
+- You will be a co-founder and #4 on the team with 1-4% equity
+- Already has 7 paying enterprise customers
+- Received $3mln funding, incl. from Google
+- New features development only; no legacy
+
+**Tech stack**
+- React, Typescript, Redux, Python, Flask, SQLAlchemy, Celery, WebRTC, WebSockets, Heroku
+- Expert-level with frontend is a must, but you have to be comfortable working across the stack
+- Highly preferred if you’re experienced with a broader range of technologies (Python, Java, Go, C#, PHP etc)
+
+**What will you do**
+- Build prototypes and features from start to finish: plan, build, test, deploy, iterate
+- Work in a small, very experienced, high performing, self-managed team
+- Have a lot of remote collaboration and getting feedback directly from users
+
+**Nearest features**
+- Scaling the system (WebSockets is a challenge here)
+- Session replay
+- Mobile app
+- Analytics
+- Video voicemails
+
+**Your profile**
+- Have an ownership mindset, value low process, high impact and real ownership in the company
+- Expert-level with the browser, incl. for example knowing Chrome RFCs
+- Experience developing products from scratch and in a “move fast and break things” environment
+- Have strong opinions on tech decisions, but happy to continuously challenge it
+- Thoughtful about creating and mantaining a world-class engineering culture in the company
+
+**What’s offered**
+- $11-12k/m compensation + 1-4% equity
+- Fully remote work, important are results
+- Move fast and break things approach
+- Low process, high impact environment
+- Direct contract with client (after 1-2 months of outstaffing)
+(93675, 384)

@@ -1,0 +1,144 @@
+spring:
+  application:
+    name: batch-service
+
+  # Web Application Type (HTTP 서버 비활성화, gRPC만 사용)
+  main:
+    web-application-type: none
+
+  # PostgreSQL + pgvector 설정
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:alpha_match}
+    username: ${DB_USER:postgres}
+    password: "${DB_PASSWORD:season@heaven!2}"
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # JPA 설정
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: none
+      # Hibernate가 스키마를 건드리지 않도록 완전 차단
+      # 모든 DDL은 Flyway로만 관리
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+        jdbc:
+          batch_size: 300
+          # Batch INSERT 최적화
+          # 대량 적재 시 네트워크 round-trip 감소
+        order_inserts: true
+        order_updates: true
+        # 동일 테이블 기준으로 SQL 정렬
+        # JDBC batch 효율 향상
+    show-sql: true
+
+  # Batch 설정
+  batch:
+    job:
+      enabled: false  # 자동 실행 방지 (스케줄러로 제어)
+    jdbc:
+      initialize-schema: never
+      # Spring Batch가 메타 테이블을 자동 생성하지 않도록 차단
+
+  # Flyway 설정 (DB 마이그레이션)
+  flyway:
+    enabled: true
+    baseline-on-migrate: false
+    # "기존 DB + history 없음"일 때 딱 한 번만 true로 사용 ( V1은 실행된걸로 칠게 )
+    locations: classpath:db/migration
+    validate-on-migrate: false
+    # 마이그레이션 checksum 불일치 시 실패 여부
+    clean-disabled: true
+    # flyway clean 명령으로 DB 전체 삭제 방지
+
+  # Quartz 설정 - 스케줄링 라이브러리 (Pattern 1 비활성화로 인해 전체 비활성화)
+  quartz:
+    auto-startup: false  # Quartz 자동 시작 비활성화
+
+# gRPC 설정
+grpc:
+  # gRPC 서버 설정 (Python에서 Client Streaming으로 데이터 수신)
+  server:
+    port: 9090  # Batch Server (IngestDataStream 수신)
+
+  client:
+    # Python AI Server (Embedding Stream)
+    python-embedding:
+      address: static://localhost:50053  # Python 서버 주소
+      negotiation-type: plaintext
+      max-inbound-message-size: 104857600  # 100MB
+
+    # API Server (Cache Invalidate)
+    api-cache:
+      address: static://localhost:50052
+      negotiation-type: plaintext
+
+    #- dns:///service-name → DNS 기반 서비스 디스커버리
+    #- static://host:port → 고정된 주소
+    #- xds:// → Envoy/xDS 기반 서비스 디스커버리
+
+# 커스텀 배치 설정
+batch:
+  embedding:
+    chunk-size: 300                    # 한 번에 처리할 row 수
+    max-retry: 3                       # 실패 시 재시도 횟수
+    retry-backoff-ms: 1000            # 재시도 대기 시간 (ms)
+
+    # 도메인별 설정
+    domains:
+      recruit:
+        vector-dimension: 1536         # Recruit Embedding 차원 (v5: 1536d → 1536d, OpenAI Embedding)
+        table-prefix: recruit          # 테이블 접두사
+      candidate:
+        vector-dimension: 1536         # Candidate Embedding 차원 (v5: 1536d → 1536d, OpenAI Embedding)
+        table-prefix: candidate        # 테이블 접두사
+      skill_dic:
+        vector-dimension: 1536         # SkillDic Embedding 차원 (v5: 1536d → 1536d, OpenAI Embedding)
+        table-prefix: skill_embedding_dic  # 테이블 접두사
+
+  # ============================================
+  # 스케줄러 설정 (Pattern 1: Server Streaming)
+  # ============================================
+  # Pattern 1 (Server Streaming): Batch가 Python에 요청하여 데이터 수신
+  #   - Batch Server (gRPC Client) → Python Server (gRPC Server)
+  #   - 정기적으로 스케줄러가 실행
+  #   - 용도: 배치 작업으로 정기적 데이터 동기화
+  #
+  # Pattern 2 (Client Streaming): Python이 Batch에 데이터 전송
+  #   - Python Server (gRPC Client) → Batch Server (gRPC Server)
+  #   - FastAPI 엔드포인트 트리거 시 실행
+  #   - 용도: 사용자 요청 시 즉시 처리
+  #   - 스케줄러 불필요!
+  #
+  # 현재 전략: 두 패턴 모두 지원, Pattern 1 스케줄러는 기본 비활성화
+  # ============================================
+  scheduler:
+    enabled: true                      # 스케줄러 전체 활성화 (false로 설정 시 모든 Job 비활성화)
+    jobs:
+      recruit:
+        cron: "0 0 2 * * ?"           # Recruit Job 실행 시간 (매일 새벽 2시)
+        enabled: false                 # Pattern 1 비활성화 (기본: Pattern 2만 사용)
+                                       # Pattern 1이 필요하면 true로 변경
+      candidate:
+        cron: "0 0 3 * * ?"           # Candidate Job 실행 시간 (매일 새벽 3시)
+        enabled: false                 # Pattern 1 비활성화 (기본: Pattern 2만 사용)
+                                       # Pattern 1이 필요하면 true로 변경
+
+# Logging 설정
+logging:
+  level:
+    com.alpha.backend: INFO  # DEBUG → INFO (성능 테스트용)
+    org.springframework.batch: INFO
+    org.hibernate.SQL: INFO  # DEBUG → INFO (SQL 로깅 비활성화)
+    org.hibernate.type.descriptor.sql.BasicBinder: INFO  # TRACE → INFO (파라미터 바인딩 로깅 비활성화)
+    io.grpc: INFO
+    org.flywaydb: INFO  # DEBUG → INFO (마이그레이션 완료 후)
+    org.springframework.boot.autoconfigure: INFO  # DEBUG → INFO (AutoConfiguration 로그 축소)

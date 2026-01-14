@@ -1,0 +1,114 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '4.0.1'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.google.protobuf' version '0.9.5'
+}
+
+group = 'com.alpha'
+version = '0.0.1-SNAPSHOT'
+description = 'api-server'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    set('springGrpcVersion', "1.0.0")
+    set('testcontainersVersion', "1.20.4")
+}
+
+
+dependencies {
+    // ===== Spring Boot Starters =====
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'org.springframework.boot:spring-boot-starter-graphql'
+    implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
+
+    // ===== R2DBC (Reactive Database) =====
+    implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
+    implementation 'org.postgresql:r2dbc-postgresql:1.0.5.RELEASE'
+
+    // ===== PostgreSQL + pgvector =====
+    runtimeOnly 'org.postgresql:postgresql'
+    implementation 'com.pgvector:pgvector:0.1.4'
+
+    // ===== Cache =====
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
+
+    // ===== gRPC =====
+    implementation 'io.grpc:grpc-services'
+    implementation 'io.grpc:grpc-stub'
+    implementation 'io.grpc:grpc-protobuf'
+    implementation 'org.springframework.grpc:spring-grpc-spring-boot-starter'
+
+    // ===== Reactor =====
+    implementation 'io.projectreactor:reactor-core'
+    implementation 'io.projectreactor.addons:reactor-extra'
+
+    // ===== Jackson =====
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+
+    // ===== Lombok =====
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // ===== Test =====
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-webflux-test'
+    testImplementation 'org.springframework.graphql:spring-graphql-test'
+    testImplementation 'org.springframework.grpc:spring-grpc-test'
+    testImplementation 'io.projectreactor:reactor-test'
+
+    // R2DBC Test Support
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    testImplementation 'org.testcontainers:postgresql'
+    testImplementation 'org.testcontainers:r2dbc'
+    testImplementation 'io.r2dbc:r2dbc-h2'
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.grpc:spring-grpc-dependencies:${springGrpcVersion}"
+        mavenBom "org.testcontainers:testcontainers-bom:${testcontainersVersion}"
+    }
+}
+
+protobuf {
+    protoc {
+        artifact = 'com.google.protobuf:protoc'
+    }
+    plugins {
+        grpc {
+            artifact = 'io.grpc:protoc-gen-grpc-java'
+        }
+    }
+    generateProtoTasks {
+        all()*.plugins {
+            grpc {
+                option '@generated=omit'
+            }
+        }
+    }
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

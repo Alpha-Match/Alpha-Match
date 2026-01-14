@@ -1,0 +1,48 @@
+name: Add GraphQL Query
+version: 1.0.0
+
+inputs:
+  domain: string
+  queryName: string
+  queryType: enum[single, list, search]
+
+steps:
+  - id: check_service
+    tool: Read
+    file: /Backend/Api-Server/domain/{{domain}}/service/{{Service}}.java
+
+  - id: check_resolver
+    tool: Read
+    file: /Backend/Api-Server/graphql/resolver/QueryResolver.java
+
+  - id: add_service_method
+    template: prompts/service-gen.md
+    condition: methodNotExists
+
+  - id: extend_schema
+    output: |
+      extend type Query {
+        {{queryName}}({{args}}): {{returnType}}
+      }
+
+  - id: add_resolver
+    template: prompts/resolver-gen.md
+
+  - id: add_test
+    template: prompts/test-gen.md
+
+output:
+  format: |
+    # Add Query: {{queryName}}
+
+    ## Service (if needed)
+    {{serviceMethod}}
+
+    ## Schema
+    {{schema}}
+
+    ## Resolver
+    {{resolver}}
+
+    ## Test
+    {{test}}

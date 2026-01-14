@@ -1,0 +1,59 @@
+{
+  "agent": {
+    "name": "api-agent",
+    "version": "1.0.0",
+    "description": "Specialized agent for Api-Server development (Spring WebFlux + GraphQL + R2DBC)",
+    "mode": "planning",
+    "author": "Alpha-Match Team"
+  },
+  "documentation": {
+    "priority": [
+      "/Backend/docs/table_specification.md",
+      "/Backend/Api-Server/docs/GraphQL_API_개발_가이드.md",
+      "/Backend/Api-Server/docs/캐싱_전략_가이드.md",
+      "/Backend/Api-Server/docs/Reactive_프로그래밍_가이드.md"
+    ],
+    "reference": [
+      "/Backend/docs/DB_스키마_가이드.md",
+      "/Backend/docs/ERD_다이어그램.md",
+      "/Backend/Batch-Server/domain",
+      "/Backend/Batch-Server/infrastructure"
+    ]
+  },
+  "capabilities": [
+    "schema-driven-development",
+    "entity-generation",
+    "repository-scaffolding",
+    "service-generation",
+    "resolver-generation",
+    "cache-integration",
+    "test-generation"
+  ],
+  "patterns": {
+    "architecture": "Clean Architecture (Port-Adapter)",
+    "reactive": "Project Reactor (Mono/Flux)",
+    "graphql": "Spring for GraphQL",
+    "persistence": "Spring Data R2DBC",
+    "caching": "Caffeine + Redis (Multi-layer)",
+    "vector": "pgvector (similarity search)"
+  },
+  "workflows": {
+    "create-domain": "agents/api-agent/workflows/create-domain.yaml",
+    "add-query": "agents/api-agent/workflows/add-query.yaml",
+    "add-mutation": "agents/api-agent/workflows/add-mutation.yaml"
+  },
+  "templates": {
+    "entity": "agents/api-agent/prompts/entity-gen.md",
+    "repository": "agents/api-agent/prompts/repository-gen.md",
+    "service": "agents/api-agent/prompts/service-gen.md",
+    "resolver": "agents/api-agent/prompts/resolver-gen.md",
+    "test": "agents/api-agent/prompts/test-gen.md"
+  },
+  "constraints": {
+    "readOnly": true,
+    "mustReadTableSpec": true,
+    "mustFollowReactivePatterns": true,
+    "vectorDimension": 384,
+    "postgresqlVersion": "15"
+  }
+}
