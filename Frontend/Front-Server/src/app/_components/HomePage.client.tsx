@@ -5,7 +5,8 @@ import {useAppDispatch, useAppSelector} from '@/core/client/services/state/hooks
 import {
     setDashboardData,
     setSearchPerformed,
-    setSkillCategories
+    setSkillCategories,
+    setSearchedSkills
 } from '@/core/client/services/state/features/search/searchSlice';
 import {useAppNavigation} from '@/core/client/hooks/navigation';
 import {useMediaQuery} from '@/core/client/hooks/ui';
@@ -80,6 +81,8 @@ export function HomePageClient({ initialSkillCategories, initialDashboardData }:
     startTransition(() => {
       const sortedSkills = [...selectedSkills].sort();
       dispatch(setSearchPerformed(userMode));
+      // Dispatch searched skills BEFORE running the main search to allow analysis panel to fetch concurrently
+      dispatch(setSearchedSkills({ userMode, skills: sortedSkills })); 
       runSearch(userMode, sortedSkills);
       navigateToResults();
     });
