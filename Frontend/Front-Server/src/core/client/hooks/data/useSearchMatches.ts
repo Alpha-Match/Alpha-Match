@@ -66,6 +66,7 @@ export const useSearchMatches = () => {
         sortBy: searchParams?.sortBy || getSortByString(currentUiMode),
       },
       notifyOnNetworkStatusChange: true,
+      fetchPolicy: 'cache-first', // Use cached data first
     }
   );
 

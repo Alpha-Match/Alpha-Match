@@ -38,6 +38,7 @@ export const SearchResultAnalysisPanel: React.FC<
 	>(GET_SEARCH_STATISTICS, {
 		variables: { mode: userMode, skills: searchedSkills },
 		skip: searchedSkills.length === 0,
+		fetchPolicy: 'cache-first', // Use cached data first
 	});
 
 	const totalCount = statsData?.searchStatistics?.totalCount;

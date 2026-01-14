@@ -36,6 +36,7 @@ export const TopSkills: React.FC<TopSkillsProps> = ({ mode, skills, skillCategor
     {
       variables: { mode, skills, limit },
       skip: skills.length === 0,
+      fetchPolicy: 'cache-first', // Use cached data first
     }
   );
 

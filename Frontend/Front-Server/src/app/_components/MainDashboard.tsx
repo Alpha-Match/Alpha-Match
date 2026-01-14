@@ -37,7 +37,8 @@ export default function MainDashboard({ userMode, activeColor, onSearchClick }: 
         GET_TOP_COMPANIES, 
         { 
             variables: { limit: 10 },
-            skip: userMode !== UserMode.CANDIDATE
+            skip: userMode !== UserMode.CANDIDATE,
+            fetchPolicy: 'cache-first', // Use cached data first
         }
     );
 
