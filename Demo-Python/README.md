@@ -92,9 +92,7 @@ Demo-Python/
 │   │
 │   ├── domain/                     # Pydantic 모델
 │   │   ├── base_data.py            # BaseData Protocol
-│   │   ├── recruit_data.py         # RecruitData (384d)
-│   │   ├── candidate_data.py       # CandidateData (768d)
-│   │   └── skill_embedding_dic_data.py  # SkillEmbeddingDicData (768d)
+│   │   ├── models.py               # 통합 모델 (RecruitData, CandidateData, SkillEmbeddingDicData - 1536d)
 │   │
 │   ├── infrastructure/
 │   │   └── chunk_loader/
@@ -264,13 +262,13 @@ DATA_DIR=./data
    - `{domain}_parquet_loader.py`
 3. **Factory 등록** (`loader_factory.py`)
 
-### 벡터 차원 규칙
+### 벡터 차원 규칙 (v3 업데이트)
 
-- **Recruit**: 384d
-- **Candidate**: 768d
-- **SkillEmbeddingDic**: 768d
+- **Recruit**: 1536d (OpenAI Embedding)
+- **Candidate**: 1536d (OpenAI Embedding)
+- **SkillEmbeddingDic**: 1536d (OpenAI Embedding)
 
-Pydantic validator로 검증 필수!
+Pydantic validator로 차원 검증 필수!
 
 ---
 
@@ -347,4 +345,25 @@ ValidationError: Recruit vector must be 384-dim
 
 ---
 
-**최종 수정일:** 2025-12-18
+## 🚀 현재 구현 상태
+
+### ✅ 완료
+- gRPC Server/Client 구현 (Batch Server 통신)
+- Chunk Loader (BaseChunkLoader + Iterator 패턴)
+- 3가지 포맷 지원 (pkl, csv, parquet)
+- 3개 도메인 구현 (Recruit, Candidate, SkillEmbeddingDic)
+- v3 데이터 모델 업데이트
+  - 벡터 차원: 384d → 1536d (OpenAI Embedding)
+  - CandidateData 필드 추가: resume_lang, moreinfo, looking_for
+  - SkillEmbeddingDic 전처리 로직 추가
+- Pydantic 기반 데이터 검증
+- FastAPI HTTP API
+
+### ⏳ 예정
+- 실제 Embedding 모델 통합 (OpenAI API)
+- 벡터 생성 API
+- 배치 처리 최적화
+
+---
+
+**최종 수정일:** 2026-01-14

@@ -229,18 +229,23 @@ Alpha-Match/
 ## 🔄 현재 개발 상태
 
 ### ✅ 완료
-- DB 스키마 설계 및 Flyway 마이그레이션
-- Batch Server: Factory 패턴 + Quartz Scheduler
-- Python-Java gRPC 양방향 통신
-- Candidate 도메인 전체 구현
-- Frontend: Apollo Client 4.0, 에러 처리
-
-### 🔄 진행 중
-- API Server 설계 및 구현
+- **API Server**: GraphQL API 완전 구현 (7개 Query, Dashboard API)
+  - Clean Architecture 4-Layer
+  - Multi-layer Caching (Caffeine + Redis)
+  - 캐시 성능 12.9x 향상
+- **Batch Server**: End-to-End 파이프라인 검증 완료
+  - Virtual Thread 병렬 쓰기 (33% 성능 향상)
+  - 206,334건 처리 (평균 76.8 rps)
+- **Demo-Python**: v3 데이터 모델 (1536d OpenAI Embedding)
+  - 3개 도메인 전처리 파이프라인
+- **Frontend**: 데스크탑 3단 Master-Detail View
+  - Redux Toolkit + redux-persist
+  - Apollo Client 4.0 + 에러 처리
+  - 동적 테마 시스템
 
 ### ⏳ 예정
-- API Server GraphQL Resolver 구현
-- Frontend GraphQL 쿼리 연동
+- gRPC 캐시 무효화 연동 (Batch → API)
+- Redis L2 캐시 실전 연동
 - 통합 테스트 및 성능 최적화
 
 ---
@@ -280,4 +285,4 @@ Alpha-Match/
 
 ---
 
-**최종 수정일:** 2025-12-18
+**최종 수정일:** 2026-01-14

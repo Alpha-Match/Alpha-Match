@@ -4,22 +4,20 @@
 
 Spring WebFlux 기반 Reactive 프로그래밍으로 구현된 고성능 GraphQL API 서버입니다. pgvector를 활용한 벡터 유사도 검색과 멀티 레이어 캐싱을 제공합니다.
 
-**⚠️ 주의: 이 프로젝트는 아직 구현 시작 전입니다. 아래 내용은 설계 기준입니다.**
-
 ---
 
-## 📋 주요 기능 (예정)
+## 📋 주요 기능
 
-- 🔍 **GraphQL API**: 유연한 쿼리 인터페이스
+- 🔍 **GraphQL API**: 유연한 쿼리 인터페이스 (7개 Query 구현)
 - ⚡ **Reactive Programming**: Non-blocking I/O로 고성능 처리
-- 🗄️ **pgvector 검색**: Vector Similarity Search (L2 거리)
+- 🗄️ **pgvector 검색**: Vector Similarity Search (Cosine/L2 거리)
 - 💾 **멀티 레이어 캐싱**: Caffeine (L1) + Redis (L2)
-- 🔌 **gRPC 통합**: AI Backend 호출 + Batch Server 통신
-- 🔄 **캐시 무효화**: Batch 완료 시 자동 무효화
+- 📊 **Dashboard API**: 카테고리 분포, 역량 매칭 분석
+- 🎯 **스킬 정규화**: 스킬 벡터 기반 유사도 검색
 
 ---
 
-## 🏗️ 아키텍처 (설계)
+## 🏗️ 아키텍처
 
 ### Reactive 플로우
 
@@ -50,26 +48,26 @@ Request → L1 (Caffeine) → L2 (Redis) → DB (PostgreSQL)
 
 ---
 
-## 🛠️ 기술 스택 (예정)
+## 🛠️ 기술 스택
 
 ### Core
-- **Java 21**: Virtual Thread
-- **Spring Boot 4.0**: 최신 Spring
+- **Java 21**: Virtual Thread 지원
+- **Spring Boot 4.0**: 최신 Spring 생태계
 - **Spring WebFlux**: Reactive Framework
 - **Spring for GraphQL**: GraphQL 통합
 
 ### Database & Cache
-- **PostgreSQL 16** + **pgvector**: Vector DB
+- **PostgreSQL 16** + **pgvector**: Vector DB (1536d)
 - **R2DBC**: Reactive DB 드라이버
-- **Caffeine**: In-memory 캐시
-- **Redis**: 분산 캐시
+- **Caffeine**: In-memory 캐시 (L1, 10초 TTL)
+- **Redis**: 분산 캐시 (L2, 10분 TTL)
 
 ### Communication
-- **gRPC**: AI Backend 및 Batch Server 통신
+- **gRPC**: Batch Server 캐시 무효화 통신 (예정)
 
 ---
 
-## 📂 예상 프로젝트 구조
+## 📂 프로젝트 구조
 
 ```
 Backend/Api-Server/
@@ -383,6 +381,22 @@ Error: operator does not exist: vector <-> text
 
 ---
 
-**현재 상태:** 설계 단계 (구현 시작 전)
+## 🚀 현재 구현 상태
 
-**최종 수정일:** 2025-12-18
+### ✅ 완료
+- Spring Boot 프로젝트 초기 설정 (R2DBC, Redis, gRPC)
+- Entity 9개 구현 (Recruit, Candidate, Skill Dictionary)
+- R2DBC Repository 구현 (pgvector 쿼리 포함)
+- GraphQL Schema 및 Resolver 구현 (7개 Query)
+- Multi-layer Caching 시스템 (Caffeine + Redis)
+- Dashboard 분석 API (카테고리 분포, 역량 매칭)
+- Clean Architecture 전면 리팩토링 (4-Layer)
+- 캐시 성능 테스트 (12.9x 속도 향상)
+
+### ⏳ 예정
+- gRPC Server 구현 (캐시 무효화 수신)
+- Redis L2 캐시 실전 연동
+
+---
+
+**최종 수정일:** 2026-01-14
