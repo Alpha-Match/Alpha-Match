@@ -5,6 +5,12 @@ import {Code, Search, X} from 'lucide-react';
 import {ClearButton} from '@/components/ui/ClearButton';
 import {SkillCategoryItem} from '@/components/input-panel'; // Import the new component
 
+interface SkillCategory {
+    skills: string[];
+    category: string;
+}
+
+
 export const SkillSelector: React.FC = () => {
   const dispatch = useAppDispatch();
   const mode = useAppSelector((state) => state.ui.userMode);
@@ -48,14 +54,14 @@ export const SkillSelector: React.FC = () => {
   };
 
   const filteredCategories = skillCategories
-    .map((category: {skills:string[]}) => ({
+    .map((category: SkillCategory) => ({
       ...category,
       skills: (category.skills ?? []).filter(skill =>
         skill.toLowerCase().includes(searchTerm.toLowerCase())
       ),
     }))
-    .filter((category: {skills:string[], category:string}) => category.skills.length > 0 || category.category.toLowerCase().includes(searchTerm.toLowerCase()))
-    .sort((a:{category:string}, b:{category:string}) => a.category.localeCompare(b.category));
+    .filter((category: SkillCategory) => category.skills.length > 0 || category.category.toLowerCase().includes(searchTerm.toLowerCase()))
+    .sort((a:SkillCategory, b:SkillCategory) => a.category.localeCompare(b.category));
 
   return (
     <section className="bg-panel-main p-4 rounded-lg shadow-sm border border-border space-y-3">
@@ -106,7 +112,7 @@ export const SkillSelector: React.FC = () => {
           {skillsLoaded && filteredCategories.length === 0 && searchTerm !== '' && (
             <div className="text-center text-text-tertiary text-sm py-4">일치하는 기술 스택이 없습니다.</div>
           )}
-          {skillsLoaded && filteredCategories.map((category:{category:string, skills:string[]}) => (
+          {skillsLoaded && filteredCategories.map((category:SkillCategory) => (
             <SkillCategoryItem
               key={category.category}
               category={category}

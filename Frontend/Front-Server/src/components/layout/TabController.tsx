@@ -25,7 +25,7 @@ const TABS: { id: PageViewMode; label: string; icon: React.ElementType }[] = [
 ];
 
 export const TabController: React.FC<TabControllerProps> = ({ activeView, onTabChange, userMode, detailAvailable }) => {
-  const theme = useAppSelector((state) => state.ui.theme); // useAppSelector를 통해 theme 상태 가져옴
+  const theme = useAppSelector((state) => state.theme.theme); // useAppSelector를 통해 theme 상태 가져옴
   
   const activeThemeColors = userMode === UserMode.CANDIDATE ? CANDIDATE_THEME_COLORS : RECRUITER_THEME_COLORS;
   const activeColor = theme === 'dark' ? activeThemeColors[1] : activeThemeColors[0];

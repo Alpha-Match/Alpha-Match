@@ -1,7 +1,8 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, LegendPayload} from 'recharts';
 import {SkillIcon} from '@/components/ui/SkillIcon'; // Import SkillIcon
-import {PieData} from '@/types'; // Import PieData
+import {PieData} from '@/types';
+import {useAppSelector} from "@/core/client/services/state/hooks"; // Import PieData
 
 // Props for the component
 interface TwoLevelPieChartProps {
@@ -96,6 +97,28 @@ const RenderCustomizedLegend: React.FC<CustomLegendComponentProps> = (props) => 
 };
 
 export const TwoLevelPieChart: React.FC<TwoLevelPieChartProps> = ({ innerData, outerData, categoryColorMap }) => {
+    const [resolvedLabelColor, setResolvedLabelColor] = useState('currentColor');
+    const [resolvedLegendItemColor, setResolvedLegendItemColor] = useState('currentColor');
+    const theme = useAppSelector((state) => state.theme.theme);
+
+    useEffect(() => {
+        const getCssVariableColor = (variableName: string) => {
+            if (typeof window !== 'undefined') {
+                const htmlElement = document.documentElement;
+                const style = window.getComputedStyle(htmlElement);
+                return style.getPropertyValue(variableName).trim();
+            }
+            return 'currentColor';
+        };
+
+        const primaryColor = getCssVariableColor('--color-text-primary');
+        setResolvedLabelColor(primaryColor ? `rgb(${primaryColor})` : 'currentColor');
+
+        const secondaryColor = getCssVariableColor('--color-text-secondary');
+        setResolvedLegendItemColor(secondaryColor ? `rgb(${secondaryColor})` : 'currentColor');
+
+    }, [theme]);
+
     // Recharts' label function receives props like { cx, cy, midAngle, outerRadius, percent, name, value }
     const RADIAN = Math.PI / 180;
 
@@ -110,7 +133,7 @@ export const TwoLevelPieChart: React.FC<TwoLevelPieChartProps> = ({ innerData, o
                     cy="50%"
                     outerRadius={90} // Increased outer radius
                     labelLine={false} // Label inside, no line
-                    label={({ name, percent = 0, x, y, cx, cy, midAngle = 0, outerRadius, fill }) => {
+                    label={({ name, percent = 0, x, y, cx, cy, midAngle = 0, outerRadius, fill = resolvedLabelColor }) => {
                       if (percent < 0.05) return null; // Only show for slices > 5%
 
                       // Calculate position closer to the outer edge of the inner ring
@@ -122,7 +145,7 @@ export const TwoLevelPieChart: React.FC<TwoLevelPieChartProps> = ({ innerData, o
                         <text
                           x={ex}
                           y={ey}
-                          fill="var(--color-text-primary)" // 테마에 맞는 색상으로 변경
+                          fill={resolvedLabelColor} // 테마에 맞는 색상으로 변경
                           textAnchor="middle" // Still middle for general centering
                           dominantBaseline="central"
                           className="text-sm font-bold" // Increased font size

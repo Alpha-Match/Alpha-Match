@@ -1,4 +1,4 @@
-import { combineReducers, configureStore } from '@reduxjs/toolkit';
+import { combineReducers, configureStore, AnyAction } from '@reduxjs/toolkit';
 import {
     persistReducer,
     FLUSH,
@@ -8,6 +8,7 @@ import {
     PURGE,
     REGISTER,
 } from 'redux-persist';
+import type { PersistState } from 'redux-persist/es/types'; // Correctly import PersistState
 import storage from 'redux-persist/lib/storage';
 import sessionStorage from 'redux-persist/lib/storage/session'; // Import sessionStorage
 
@@ -42,22 +43,27 @@ export type RootState = ReturnType<typeof rootReducer>;
 /* ------------------------------------------------------------------ */
 /* persisted reducer (for search and theme, using localStorage) */
 /* ------------------------------------------------------------------ */
-const persistedReducer = persistReducer(
-    {
-        key: 'root',
-        storage, // localStorage
-        whitelist: ['search', 'theme'], // Only search and theme for localStorage
-    },
+const rootPersistConfig = {
+    key: 'root',
+    storage, // localStorage
+    whitelist: ['search', 'theme'], // Only search and theme for localStorage
+};
+
+const finalPersistedReducer = persistReducer(
+    rootPersistConfig,
     rootReducer
 );
+
+// Define the type for the store's state, which now includes the root-level _persist
+export type PersistedStoreState = RootState & { _persist: PersistState }; // Use PersistState here
 
 /* ------------------------------------------------------------------ */
 /* store factory */
 /* ------------------------------------------------------------------ */
-export const makeStore = (initialState?: Partial<RootState>) =>
+export const makeStore = (initialState?: Partial<PersistedStoreState>) =>
     configureStore({
-        reducer: persistedReducer, // This will wrap the rootReducer, which already includes uiPersistedReducer
-        preloadedState: initialState as RootState,
+        reducer: finalPersistedReducer, // This will wrap the rootReducer, which already includes uiPersistedReducer
+        preloadedState: initialState as PersistedStoreState,
         middleware: (getDefaultMiddleware) =>
             getDefaultMiddleware({
                 serializableCheck: {

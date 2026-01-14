@@ -15,13 +15,14 @@ import {LoadingSpinner} from '@/components/ui';
 interface SearchResultPanelProps {
   matches: MatchItem[];
   onMatchSelect: (match: MatchItem) => void;
-  onBackToDashboard?: () => void; // Added this line
+  onBackToDashboard?: () => void;
   activeColor: string;
   userMode: UserMode;
   loadMore?: () => void;
   hasMore?: boolean;
   loading?: boolean;
   selectedMatchId?: string | null;
+  totalCount?: number; // Added totalCount prop
 }
 
 export const SearchResultPanel: React.FC<SearchResultPanelProps> = ({
@@ -32,6 +33,7 @@ export const SearchResultPanel: React.FC<SearchResultPanelProps> = ({
   hasMore = false,
   loading = false,
   selectedMatchId,
+  totalCount, // Destructure totalCount
 }) => {
   const sentinelRef = useIntersectionObserver<HTMLDivElement>(() => {
     if (hasMore && !loading && loadMore) {
@@ -55,7 +57,7 @@ export const SearchResultPanel: React.FC<SearchResultPanelProps> = ({
     <div className="w-full animate-fade-in h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold text-text-primary">
-          검색 결과 ({matches.length}건)
+          검색 결과 ({totalCount !== undefined ? totalCount : matches.length}건)
         </h2>
       </div>
       
