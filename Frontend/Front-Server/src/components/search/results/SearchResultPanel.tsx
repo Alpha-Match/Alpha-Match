@@ -31,7 +31,7 @@ export const SearchResultPanel: React.FC<SearchResultPanelProps> = ({
   activeColor,
   loadMore,
   hasMore = false,
-  loading = false,
+  loading = false, // Represents initial search loading
   selectedMatchId,
   totalCount, // Destructure totalCount
 }) => {
@@ -44,7 +44,17 @@ export const SearchResultPanel: React.FC<SearchResultPanelProps> = ({
     rootMargin: '100px',
   });
 
-  if (matches.length === 0 && !loading) {
+  // Display initial loading spinner for any new search
+  if (loading) {
+    return (
+      <div className="w-full h-full flex justify-center items-center">
+        <LoadingSpinner size={48} message="검색 결과를 불러오는 중..." color={activeColor} />
+      </div>
+    );
+  }
+
+  // Display "No search results" message if no matches after loading
+  if (matches.length === 0) {
     return (
       <div className="text-center p-8 text-text-tertiary h-full flex flex-col justify-center items-center">
         <h3 className="2xl font-bold mb-4">검색 결과가 없습니다.</h3>
@@ -57,7 +67,7 @@ export const SearchResultPanel: React.FC<SearchResultPanelProps> = ({
     <div className="w-full animate-fade-in h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold text-text-primary">
-          검색 결과 ({totalCount !== undefined ? totalCount : matches.length}건)
+          검색 결과 ({totalCount !== undefined && totalCount !== null ? totalCount : matches.length}건)
         </h2>
       </div>
       
@@ -74,13 +84,14 @@ export const SearchResultPanel: React.FC<SearchResultPanelProps> = ({
           ))}
         </ul>
 
-        {loading && (
+        {/* This spinner is for fetching more results (infinite scroll) */}
+        {loading && ( // 'loading' here represents 'fetchingMore' from parent
           <div className="py-8">
             <LoadingSpinner size={32} message="추가 결과를 불러오는 중..." color={activeColor} />
           </div>
         )}
 
-        {hasMore && !loading && <div ref={sentinelRef} className="h-4" />}
+        {hasMore && !loadMore && <div ref={sentinelRef} className="h-4" />}
 
         {!hasMore && matches.length > 0 && (
           <div className="text-center py-8 text-text-tertiary">

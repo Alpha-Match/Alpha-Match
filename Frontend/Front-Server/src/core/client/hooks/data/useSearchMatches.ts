@@ -216,7 +216,7 @@ export const useSearchMatches = () => {
   return {
     runSearch,
     loadMore,
-    loading: isInitialLoading,
+    loading: isSearching || (apolloLoading && networkStatus !== NetworkStatus.fetchMore),
     fetchingMore: isFetchingMore,
     error,
     matches,
