@@ -4,3 +4,4 @@ export * from './InputPanelHeader';
 export * from './ExperienceSelector';
 export * from './SkillSelector';
 export * from './SearchButton';
+export * from './SkillCategoryItem';

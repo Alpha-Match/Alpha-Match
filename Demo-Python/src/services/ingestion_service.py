@@ -94,11 +94,12 @@ async def ingest_data_from_file(domain: str, file_path: str, chunk_size: int = 1
         # 전체 데이터를 평탄화하여 전송 (향후 Chunk 단위 스트리밍으로 개선 가능)
         flattened_data = [row for chunk in all_chunks for row in chunk]
 
-        logger.debug("gRPC 클라이언트 스트리밍 시작...")
+        logger.debug(f"gRPC 클라이언트 스트리밍 시작 (chunk_size={chunk_size})...")
         response = await stream_data_to_batch_server(
             domain=domain,
             file_name=file_path.split('/')[-1].split('\\')[-1],  # 순수 파일명만 추출
-            data=flattened_data
+            data=flattened_data,
+            chunk_size=chunk_size  # API에서 전달받은 청크 크기 사용
         )
         logger.info(f"[{domain}] 데이터 수집 완료: {total_rows} rows 전송")
 

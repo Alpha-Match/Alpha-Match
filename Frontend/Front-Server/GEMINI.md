@@ -7,109 +7,59 @@
 
 ## 📋 문서 목적
 
-- **CLAUDE.md (이 문서)**: AI가 참조할 메타정보 + 코드 위치
+- **GEMINI.md (이 문서)**: AI가 참조할 메타정보 + 코드 위치
 - **README.md**: 사람이 읽을 아키텍처/컨벤션 상세 설명
 
 ---
 
 ## 🗺️ 핵심 문서 경로
-
-### 필수 참조
 - **아키텍처 및 컨벤션**: `README.md` (이 디렉토리)
-- **상세 기술 문서**: `GEMINI.md` (Gemini AI 작성, 상세 아키텍처)
 - **아키텍처 가이드**: `docs/ARCHITECTURE.md`
 - **캐싱 전략**: `docs/CACHING_STRATEGY.md`
-- **데이터 플로우**: `docs/DATA_FLOW.md`
+- **Apollo Client 패턴**: `docs/APOLLO_CLIENT_PATTERNS.md`
 
 ---
 
 ## 📂 구현된 코드 위치 (AI가 읽어야 할 경로)
 
-### 🚀 엔트리포인트 (App Router)
+### 📡 GraphQL & Hooks
 
-- `src/app/layout.tsx` - 루트 레이아웃 (Provider 설정)
-- `src/app/page.tsx` - 메인 페이지 (검색 UI)
-- `src/app/globals.css` - 전역 CSS (Tailwind)
-
-### ⚙️ Configuration
-
-**Apollo Client:**
-- `src/lib/apollo-client.ts` - Apollo Client 설정 (GraphQL 엔드포인트)
-- `src/lib/apollo-wrapper.tsx` - Apollo Provider Wrapper
-
-**Redux:**
-- `src/store/index.ts` - Redux Store 설정
-- `src/store/slices/searchSlice.ts` - 검색 필터 상태
-- `src/store/slices/notificationSlice.ts` - 알림 상태
-
-### 🎨 Components
-
-**핵심 컴포넌트:**
-- `src/components/SearchBar.tsx` - 검색 바
-- `src/components/FilterPanel.tsx` - 필터 패널
-- `src/components/ResultCard.tsx` - 결과 카드
-- `src/components/AppInitializer.tsx` - 앱 초기화 (동적 데이터 로드)
-
-**공통 컴포넌트:**
-- `src/components/common/` - 재사용 가능한 UI 컴포넌트
-
-### 📡 GraphQL
-
-**쿼리:**
-- `src/graphql/queries/` - GraphQL 쿼리 정의
-
-**타입:**
-- `src/graphql/types/` - GraphQL 타입 정의 (자동 생성 또는 수동)
-
-### 🔧 Utilities
-
-- `src/utils/` - 헬퍼 함수
-- `src/hooks/` - 커스텀 React Hooks
-
-### 📋 Types
-
-- `src/types/index.ts` - TypeScript 타입 정의
-
-### 🎨 Styles
-
-- `src/constants/index.ts` - 상수 (TECH_STACKS 등)
-- `tailwind.config.ts` - Tailwind 설정
-
-### 📋 설정 파일
-
-- `package.json` - 의존성
-- `next.config.mjs` - Next.js 설정
-- `tsconfig.json` - TypeScript 설정
+- `src/lib/client/services/api/queries/` - GraphQL 쿼리 정의
+- `src/lib/client/hooks/` - 커스텀 React Hooks
+  - `useSearchMatches` - 검색 실행 및 Redux ViewModel 연동
+  - `useMatchDetail` - 상세 정보 조회 (도메인별 분리)
+  - `useAppNavigation` - 앱 네비게이션 로직 및 히스토리 관리
+  - `useIntersectionObserver` - 요소 가시성 감지 (무한 스크롤 등)
+  - `useHydrated` - 클라이언트 하이드레이션 상태 추적
 
 ---
 
-## 🚀 현재 구현 상태
+## 🎯 UI/UX 아키텍처
 
-### ✅ 완료
-- Next.js 16 + App Router 마이그레이션
-- Apollo Client 4.0 업그레이드
-- Redux Toolkit 상태 관리
-- 전역 GraphQL 에러 처리 시스템 (Error Link)
-- 동적 TECH_STACKS 연동 (AppInitializer)
-- 파일 구조 리팩토링 (types, constants)
-- Tailwind CSS 스타일링
-- 타입스크립트 컴파일 에러 해결 (React 19, Apollo Client 4.0 타입 호환성, GraphQL 응답 데이터 타입 명시 등)
-- 전역 에러 알림 시스템 리팩토링 (Custom Event 기반 디커플링, UX 개선)
-- 컴포넌트 구조 리팩토링 (useSearchMatches 훅 분리, InputPanel 하위 컴포넌트 분리 및 파일 구조 계층화, Props Drilling 감소)
-- Apollo Client 4.0 패턴 문서화
+### 1. 데스크탑 레이아웃 재구성: 3단 Master-Detail View
 
-### 🔄 진행 중
-- ⏳ Redux를 이용한 상세 UI 상태 관리 로직 구현 (예: 검색 결과 필터링, UI 상태)
-- ⏳ 매칭 결과 시각화 컴포넌트 구현 및 데이터 바인딩
-- 🔄 네트워크 에러 토스트 알림 문제 디버깅 (후순위로 진행)
+사용자 피드백을 반영하여 데스크탑 검색 결과 화면을 **3단 레이아웃**으로 재구성합니다 (`pageViewMode`가 'dashboard'가 아닐 때). 이를 통해 각 패널의 책임이 명확해지고, 정보의 밀도를 적절히 분배하여 화면의 압박감을 해소하며, 사용자가 검색 조건 입력, 분석 결과 확인, 목록 탐색, 상세 정보 확인이라는 흐름을 자연스럽게 따라갈 수 있도록 돕습니다.
 
-### ⏳ 예정
-- GraphQL 쿼리 구현 (API Server 연동)
-- 벡터 유사도 시각화
-- 
----
-
-## ⚠️ AI가 반드시 알아야 할 규칙
+-   **좌측 (1단, `w-[380px]`): 검색 조건 입력 패널**
+    -   `InputPanel` (항상 표시되어 검색 조건 변경 가능)
+-   **중앙 (2단, `w-[450px]`): 검색 결과 분석 패널**
+    -   `SearchResultAnalysisPanel` (검색된 스킬에 대한 통계, 차트 등 분석 정보 표시)
+-   **우측 (3단, `flex-1`): 결과 목록 및 상세 정보 영역**
+    -   **초기 상태:** `SearchResultPanel` (검색 결과 리스트만 표시)
+    -   **항목 클릭 시:** `MatchDetailPanel` (선택된 항목의 상세 정보 표시)
+        - `MatchDetailPanel` 내의 '뒤로가기' 버튼을 클릭하면 다시 `SearchResultPanel` (목록)로 돌아갑니다.
+    
+    ### 2. Header에 전역 '대시보드로 돌아가기' 버튼 추가
+    
+    데스크탑 모드에서 `InputPanel`이나 검색 결과 화면에서 초기 대시보드 화면으로 돌아가는 명확한 버튼을 제공하기 위해 상단 헤더(`Header`) 컴포넌트에 '🏠 대시보드' 버튼을 추가합니다.
+    
+    -   `Header` 컴포넌트에는 `onNavigateToDashboard` 콜백 함수와 `showDashboardButton` 플래그를 prop으로 전달합니다.
+    -   `Header` 내부에서는 `showDashboardButton`이 `true`일 때 이 버튼을 렌더링하고, 클릭 시 `onNavigateToDashboard`를 호출하여 `MainDashboard` 화면으로 전환합니다.
+    -   이 버튼은 `pageViewMode`가 'dashboard'가 아닐 때 항상 표시되어, 사용자가 어떤 화면에 있든 한 번의 클릭으로 초기 대시보드로 돌아갈 수 있도록 접근성을 높입니다.
+    
+    ---
+    
+    ## ⚠️ AI가 반드시 알아야 할 규칙
 
 ### 1. 코드 컨벤션 참조
 **상세 컨벤션은 README.md와 GEMINI.md 참조!** AI는 코드 작성 전에:
@@ -119,12 +69,61 @@
 
 ### 2. Next.js App Router 패턴
 - `src/app/` - 페이지 및 레이아웃
-- Server Component vs Client Component 구분
-- `'use client'` 지시어 사용 시점 명확히
+- **Server Component vs Client Component 구분:**
+  - Server Component: 기본값, 서버에서만 실행, async 가능, 초기 데이터 fetch에 활용
+  - Client Component: `'use client'` 명시, useState/useEffect/Redux/Event Handler 사용
+  - 패턴: Server Component에서 데이터 fetch → Client Component에 props 전달
+- `lib/server/` - Server Components 전용 API 함수 (클라이언트 번들에 포함되지 않음)
 
-### 3. 상태 관리 분리
-- **서버 상태**: Apollo Client (GraphQL 캐시)
-- **클라이언트 상태**: Redux Toolkit (UI 상태, 필터 등)
+### 3. 상태 관리 분리 (ViewModel 패턴)
+
+본 프로젝트는 **3-Layer 상태 관리**를 통해 ViewModel 패턴을 구현합니다:
+
+```
+┌─────────────────────────────────────┐
+│  View Layer (React Components)      │
+└───────────────┬─────────────────────┘
+                │
+┌───────────────▼─────────────────────┐
+│  ViewModel Layer (Redux Toolkit)    │ ← UI 상태 + 검색 결과 캐시
+│  - src/lib/client/services/state/features/search/searchSlice: { │
+│      CANDIDATE: {                   │
+│        selectedSkills,              │
+│        searchedSkills, ← 검색된 스킬 │
+│        matches ← 영구 보존          │
+│      },                             │
+│      RECRUITER: { ... }             │
+│    }                                │
+│  - src/lib/client/services/state/features/ui/uiSlice: { │
+│      CANDIDATE: {                   │
+│        history: [{...}, ...],       │
+│        currentIndex: number         │
+│      }                              │
+│    }                                │
+└───────────────┬─────────────────────┘
+                │
+┌───────────────▼─────────────────────┐
+│  Data Layer (Apollo Client)         │ ← 네트워크 캐시
+│  InMemoryCache (GraphQL)            │
+└─────────────────────────────────────┘
+```
+
+**핵심 원칙:**
+- **Apollo Client**: GraphQL API 통신 및 네트워크 레벨 캐시 (InMemoryCache)
+- **Redux Toolkit**: ViewModel - 도메인별 UI 상태 및 검색 결과 영구 저장
+  - `searchSlice.matches`: 검색 결과를 Redux에 저장하여 모드 전환 시에도 보존
+  - `searchSlice.searchedSkills`: 검색에 실제 사용된 스킬을 저장하여, 의도치 않은 UI 업데이트를 방지 (예: `SearchedSkillsCategoryDistributionChart`)
+  - `uiSlice.history`: 페이지 뷰(`pageViewMode`, `selectedMatchId`)의 배열을 저장하여, 모드별 탐색 기록(뒤로 가기)을 관리합니다.
+- **Multiple Back Stacks**: 각 UserMode(CANDIDATE/RECRUITER)가 독립적인 상태 스택(검색 조건, 검색 결과, 탐색 기록)을 유지합니다.
+
+**데이터 페칭 책임 (Data Fetching Responsibilities):**
+- **페이지 레벨 데이터 (Page-level Data):** `HomePage.client.tsx`와 같은 최상위 컨테이너 컴포넌트가 Redux와 상호작용하며 페이지의 핵심 데이터(`matches`, `searchedSkills` 등)를 관리하고 하위 컴포넌트에 props로 전달합니다.
+- **컴포넌트 레벨 통계/분석 데이터 (Component-level Stats/Analysis Data):** `SearchResultPanel.tsx` 이나 그 하위의 `TopSkills`, `SearchedSkillsCategoryDistributionChart`와 같은 분석 컴포넌트는 **자체적으로 필요한 데이터를 GraphQL 쿼리(`useQuery`)를 통해 직접 가져올 수 있습니다.** 이는 컴포넌트의 독립성과 재사용성을 높이고, props drilling을 방지하는 유효한 패턴입니다. 예를 들어, 검색 결과의 전체 개수(`totalCount`)는 `SearchResultPanel`이 직접 `GET_SEARCH_STATISTICS` 쿼리로 가져옵니다.
+
+**주의사항:**
+- Hook의 useState로 matches를 관리하지 말 것 (컴포넌트 재렌더링 시 손실)
+- 반드시 `dispatch(setMatches({ userMode, matches }))`로 Redux에 저장
+- `pushHistory`와 `navigateBack` 액션을 사용하여 탐색 상태를 변경해야 합니다.
 
 ### 4. 타입 안정성
 - 모든 컴포넌트에 Props 타입 정의
@@ -132,12 +131,71 @@
 
 ### 5. 스타일링
 - Tailwind CSS 유틸리티 우선
-- 커스텀 CSS는 `globals.css`에 최소화
+- **중앙 집중형 테마 시스템:**
+  - `tailwind.config.ts`에 시맨틱 CSS 변수(예: `background`, `panel-main`, `text-primary`)를 정의하여 컬러 팔레트를 관리합니다.
+  - `globals.css`에서 라이트/다크 모드 및 `userMode` (CANDIDATE/RECRUITER)에 따른 이러한 CSS 변수의 실제 값을 정의합니다.
+  - 컴포넌트에서는 `bg-panel-main`, `text-text-secondary`, `border-border`와 같은 시맨틱 클래스를 사용하여 테마 변경에 자동으로 반응하도록 합니다.
+- **`TwoLevelPieChart` 색상 일관성 확보**: `TwoLevelPieChart.tsx` 컴포넌트 내 `skillColor` 계산 로직에서 `chroma(...).brighten(0.8)` 부분을 제거하여, 하위 기술 스택도 해당 카테고리와 동일한 색상을 사용하도록 수정합니다. 이를 통해 차트 내에서 카테고리와 하위 스킬 간의 시각적 연결성이 강화되고, 전체적인 테마 일관성이 향상됩니다.
+- **`RatioPieChart` 및 기타 파이 차트 테마 색상 일관성 확보**: `SearchedSkillsCategoryDistributionChart`의 색상 처리 방식을 참조하여, `RatioPieChart`와 같은 다른 파이 차트의 레이블 및 슬라이스 색상도 테마에 맞춰 동적으로 변경되도록 명시적으로 관리합니다.
+- **레이아웃 간격 일관성 확보**: `MatchDetailPanel` 및 기타 상세 뷰의 주요 정보 블록 하단에 `mb-8`과 같은 간격 유틸리티 클래스를 일관되게 적용하여 다음 섹션과의 시각적 구분을 명확히 합니다.
+- **커스텀 스크롤바:** `globals.css`에 정의된 `custom-scrollbar` 클래스를 통해 테마에 맞는 스크롤바를 제공하며, 필요한 스크롤 영역에 적용합니다.
 
 ### 6. 에러 처리
-- Apollo Error Link로 전역 에러 처리
+- Apollo Error Link로 전역 에러 처리 (`APOLLO_CLIENT_PATTERNS.md` 참조)
 - Redux notificationSlice로 사용자 알림
+- 컴포넌트 레벨 에러 처리: QueryBoundary 활용
+
+### 7. 트러블슈팅
+- **ViewModel & Multiple Back Stacks**: `docs/troubleshooting/ViewModel_Multiple_Back_Stacks.md`
+  - Redux useState 사용 시 주의사항
+  - 모드 전환 시 상태 손실 문제 해결
+  - useEffect 의존성 배열 최적화
+- **Hydration 오류**: `docs/troubleshooting/Hydration_Error_and_SSR.md`
+  - 서버-클라이언트 렌더링 불일치 문제 해결
 
 ---
 
-**최종 수정일:** 2025-12-18
+## 📚 추가 참고 문서
+
+- **히스토리**: `docs/hist/` - 주요 변경 이력 (읽기 전용)
+  - `2025-12-30_Server_Components_Migration.md` - Server Components 아키텍처 구축
+  - `2025-12-30_ViewModel_Multiple_Back_Stacks.md` - ViewModel 패턴 및 Multiple Back Stacks 구현
+  - `2026-01-06_01_Improvement_Plan_Implementation.md` - 개선 계획 구현 (히스토리 스택, UI 개선 등)
+  - `2026-01-06_02_SkillSelector_BugFix.md` - `SkillSelector.tsx`의 `undefined` 오류 수정 및 문서 업데이트
+  - `2026-01-06_03_Refactor_CustomHooks.md` - 리팩토링: 커스텀 훅 분리를 통한 클린 아키텍처 강화
+  - `2026-01-06_04_SkillSelector_PieChart_Improvements.md` - 프론트엔드 UI 개선: SkillSelector 토글 및 SearchedSkillsCategoryDistributionChart 레이블 표시
+  - `2026-01-06_05_CategoryPieChart_Label_Visibility_Fix.md` - `SearchedSkillsCategoryDistributionChart` 레이블 가시성 개선
+  - `2026-01-06_06_SkillSelector_DynamicHeight_Sorting_Fix.md` - `SkillSelector.tsx` 동적 높이, 정렬 및 전체 스킬 가시성 개선
+- **개선 계획**: `docs/Frontend_Improvement_Plan.md` - 향후 개선 로드맵
+- **Apollo Client 및 SSR 데이터 페칭**: `docs/Apollo_Client_and_SSR_Fetching.md`
+
+---
+
+**최종 수정일:** 2026-01-14
+**주요 업데이트:**
+- **redux-persist TypeScript 오류 수정**: `store.ts` 파일 내 `redux-persist` 관련 타입 오류를 수정하여 애플리케이션 빌드 안정성 확보.
+- **`SearchResultAnalysisPanel` 로딩 스피너 개선**: 분석 데이터 로딩 중 스피너가 표시되도록 하여 사용자 경험 향상.
+- **`SearchResultPanel` 총 검색 결과 수 표시 기능 추가**: `totalCount` prop을 받아 전체 검색 결과 수를 정확히 표시하도록 로직 개선.
+- **`TwoLevelPieChart` 레이블 테마 색상 적용**: 파이 차트 레이블이 테마에 따라 동적으로 색상이 변경되도록 수정.
+- **`MatchDetailPanel` 레이아웃 간격 일관성 확보**: Recruit 및 Candidate 상세 뷰의 주요 정보 블록 하단에 `mb-8`을 추가하여 다음 섹션과의 간격을 일관되게 조정.
+- **`RatioPieChart` 테마 색상 일관성 확보**: `SearchedSkillsCategoryDistributionChart`의 색상 처리 방식을 참조하여, `RatioPieChart`의 레이블 및 슬라이스 색상이 테마에 맞춰 동적으로 변경되도록 명시적으로 수정.
+- **`TwoLevelPieChart` TypeScript 오류 수정 및 레이블 테마 색상 적용**: Legend Payload 타입 오류 수정 및 파이 차트 레이블이 테마에 따라 색상이 변경되도록 개선.
+- **데스크탑 UI 재구성 (3단 Master-Detail View)**: 검색 결과 화면을 `InputPanel`, `SearchResultAnalysisPanel`, `SearchResultPanel`/`MatchDetailPanel`로 구성된 3단 레이아웃으로 변경하여 정보 밀도를 분배하고 UX 흐름을 개선.
+- **Header에 전역 '대시보드로 돌아가기' 버튼 추가**: 사용자가 어떤 화면에 있든 초기 대시보드로 쉽게 돌아갈 수 있도록 `Header` 컴포넌트에 버튼 추가.
+- **`TwoLevelPieChart` 색상 일관성 확보**: `chroma(...).brighten(0.8)` 제거하여 하위 기술 스택의 색상이 카테고리 색상과 동일하게 유지되도록 수정.
+- **검색 결과 통계 UX 개선**: `SearchResultPanel`에서 전체 검색 결과 수를 표시하도록 수정. `GET_TOP_SKILLS_IN_SEARCH` 쿼리를 `GET_SEARCH_STATISTICS`로 리팩토링하고 `totalCount`를 포함하도록 백엔드 요구사항 정의.
+- **`SkillSelector.tsx` 동적 높이, 정렬 및 전체 스킬 가시성 개선**: 토글 시 스킬 목록 잘림 문제 해결, 카테고리별 정렬, 모든 스킬 선택 가능하도록 개선
+- **`SearchedSkillsCategoryDistributionChart` 레이블 가시성 개선**: 점유율과 관계없이 모든 카테고리의 레이블이 차트 내에 표시되도록 수정
+- **`SkillSelector` 카테고리 목록 토글 기능**: 각 기술 스택 카테고리 목록을 확장/축소할 수 있도록 UI 개선
+- **`SearchedSkillsCategoryDistributionChart` 그래프 내 레이블 표시**: 파이 차트의 각 조각에 카테고리 이름과 백분율을 직접 표시하여 직관성 향상
+- **클린 아키텍처 리팩토링**: `useAppNavigation`과 `useIntersectionObserver` 커스텀 훅을 통해 컴포넌트 책임 분리 및 재사용성 강화
+- **`SkillSelector.tsx` 오류 수정**: `category.skills`가 `undefined`일 경우 `filter` 호출 시 발생하는 런타임 오류 해결
+- **히스토리 스택 구현**: `uiSlice`를 리팩토링하여 각 사용자 모드별 탐색 기록(뒤로 가기) 관리
+- **`SearchedSkillsCategoryDistributionChart` 업데이트 로직 수정**: 검색이 실행된 후에만 차트가 업데이트되도록 `searchedSkills` 상태 분리
+- **`SkillSelector` UI 개선**: 기술 스택을 카테고리별로 그룹화하여 표시
+- **Hydration 오류 수정**: `useHydrated` 훅을 도입하여 서버-클라이언트 렌더링 불일치 문제 해결 및 `MainDashboard.tsx` 안정성 강화
+- Dashboard 분석 컴포넌트 (SearchedSkillsCategoryDistributionChart, SkillCompetencyBadge)
+- 무한 스크롤 UX 개선 (NetworkStatus 기반 로딩 구분, Throttle)
+- 기술 스택 정렬 (캐시 일관성 향상)
+- Server/Client Component 분리 (HomePage.client.tsx)
+- 검색 UX 개선 (자동 검색 방지, 캐시 활용)

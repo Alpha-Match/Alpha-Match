@@ -56,7 +56,8 @@
 - **gRPC 통신 가이드**: `/Demo-Python/docs/gRPC_통신_가이드.md` (Client Streaming)
 
 ### 🌐 Frontend
-- **Frontend 가이드**: `/Frontend/Front-Server/CLAUDE.md`
+- **Frontend 가이드**: `/Frontend/Front-Server/GEMINI.md`
+- **Apollo Client 및 SSR 데이터 페칭**: `/Frontend/Front-Server/docs/Apollo_Client_and_SSR_Fetching.md`
 
 ### 🏗️ 시스템 아키텍처 (공통)
 - **시스템 아키텍처**: `/docs/시스템_아키텍처.md`
@@ -67,59 +68,14 @@
 
 ## 🚀 현재 구현 상태
 
-### ✅ 완료
-- **DB 스키마 v2**: Flyway V2 (2025-12-21 스키마 재구조화)
-  - 벡터 차원 통일 (384d)
-  - 새 테이블 추가 (skill_category_dic, recruit/candidate_description, recruit_skill)
-  - TIMESTAMPTZ 적용
-- **Batch Server 엔티티 v2**: 11개 엔티티 완료
-  - Recruit 도메인: 5개 (RecruitEntity, RecruitDescriptionEntity, RecruitSkillEntity, RecruitSkillId, RecruitSkillsEmbeddingEntity)
-  - Candidate 도메인: 5개 (CandidateEntity, CandidateDescriptionEntity, CandidateSkillEntity, CandidateSkillId, CandidateSkillsEmbeddingEntity)
-  - Skill Dictionary: 2개 (SkillCategoryDicEntity, SkillEmbeddingDicEntity)
-- **Batch Server Repository v2**: 12개 완료
-  - Recruit: 4개 Domain + 4개 JPA (Native Upsert, 복합키, 벡터검색)
-  - Candidate: 1개 Domain + 1개 JPA (CandidateDescription 신규)
-  - Skill Dictionary: 2개 Domain + 2개 JPA (UUID 자동생성)
-- **Batch Server 기반**: Factory 패턴 + Quartz Scheduler + gRPC Client/Server
-- **Demo Python v2**:
-  - Proto v2 (RecruitRow 11필드, 벡터 384d 통일)
-  - Domain Models v2 (RecruitData, CandidateData, SkillEmbeddingDicData)
-  - 전처리 파이프라인 (컬럼 매핑, Exp Years 변환, 필터링, numpy→list)
-  - Skill Embeddings 전용 로더 (synonyms 제외)
-  - gRPC Server + Chunk Loader + 도메인별 제네릭 구조
-- **Python-Java gRPC 양방향 통신**: Client Streaming (Python → Java)
-- **Spring Boot 4.0**: Jackson 3 마이그레이션
-- **Frontend**: Apollo Client 4.0, 전역 에러 처리, 동적 TECH_STACKS 연동
-- **DB 초기화 및 Batch Server 기동 (2025-12-22)**:
-  - PostgreSQL alpha_match DB 초기화 (reset_db.bat)
-  - Flyway V1, V2 수동 마이그레이션 실행 (run_migrations.bat)
-  - v2 스키마 전체 테이블 생성 완료
-  - Quartz 설정 최적화 (auto-startup: false, RAMJobStore)
-  - Batch Server 성공적 기동 (gRPC 9090, HTTP 8080)
-- **PGvector 직렬화 문제 해결 및 파이프라인 검증 (2025-12-22)**:
-  - Repository 3개 수정 (RecruitSkillsEmbedding, CandidateSkillsEmbedding, SkillEmbeddingDic)
-  - PGvector → String 변환 (.toString()) 후 PostgreSQL vector 타입으로 CAST
-  - bytea → vector 변환 오류 완전 해결
-  - **End-to-End 파이프라인 검증 성공** (Python → gRPC → Java → PostgreSQL)
-    - **Recruit 도메인**: 87,488 레코드 (471MB) 처리 완료
-      - 4-table 동시 upsert 검증 (recruit, recruit_skill, recruit_description, recruit_skills_embedding)
-      - 384차원 Vector Embedding 저장 완전 검증 ✅
-    - **Skill_dic 도메인**: 105 레코드 (358KB) 처리 완료
-      - 2-table 동시 upsert 검증 (skill_category_dic, skill_embedding_dic)
-      - FK 관계 처리 검증 (카테고리 자동 생성 → UUID 획득)
-      - UK 기반 Upsert 전략 검증 (category, skill 컬럼 기준) ✅
-
-### 🔄 진행 중
-- 없음
-
 ### ⏳ 예정
-- Candidate 도메인 파이프라인 테스트
-- API Server 설계 및 구현
-- GraphQL 구현 (Resolver → Service → Cache → DB)
-- Frontend GraphQL 쿼리 구현, React Query 캐싱
+- 청크 사이즈 튜닝 (100, 500, 1000 비교)
+- Redis 연동 및 실제 성능 테스트
+- gRPC Server 구현 (캐시 무효화 수신)
+- GraphQL Mutation 구현 (캐시 무효화 API)
+- Frontend: ErrorBoundary 컴포넌트 추가
+- Frontend: GraphQL Code Generator 설정 (선택적)
 - 성능 최적화 및 모니터링
-
-**상세 일정**: `/docs/개발_우선순위.md` 참조
 
 ---
 
@@ -131,7 +87,7 @@
 | **Api-Server** | Spring WebFlux | 8080, 50052 | GraphQL API, 캐싱, gRPC |
 | **Batch-Server** | Spring Batch | N/A | Embedding 수신/저장 |
 | **Demo-Python** | Python + gRPC | 50051 | Embedding 스트리밍 |
-| **PostgreSQL** | pgvector | 5432 | Vector DB |
+| **PostgreSQL** | pgvector | **5433** | Vector DB |
 | **Redis** | - | 6379 | 분산 캐싱 |
 
 ---
@@ -174,6 +130,7 @@
   - `Python_서버_개발_가이드.md`
   - `데이터_처리_가이드.md`
   - `gRPC_통신_가이드.md`
+- `/Frontend/Front-Server/GEMINI.md` (프론트엔드 아키텍처 및 개발 가이드)
 
 **Tier 2 - 아키텍처 문서 (구조 변경 시 업데이트)**
 - `/docs/시스템_아키텍처.md`
@@ -242,4 +199,4 @@ Batch Server가 자동으로 Python Server에 연결하여 데이터를 수신�
 
 ---
 
-**최종 수정일:** 2025-12-22 (Skill_dic 도메인 검증 완료)
+**최종 수정일:** 2026-01-05 (Dashboard 기능 및 검색 최적화 완료)

@@ -1,0 +1,240 @@
+{
+	"info": {
+		"_postman_id": "alpha-match-api-server",
+		"name": "Alpha-Match Api-Server",
+		"description": "GraphQL API Collection for Alpha-Match Api-Server\n\nIncludes:\n- Skill Categories (Caching Test)\n- Search Matches (CANDIDATE/RECRUITER modes)\n- Recruit Detail\n- Candidate Detail\n- Dashboard Statistics",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Get Skill Categories (Caching Test)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"query\": \"query { skillCategories { category skills } }\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8088/graphql",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"graphql"
+					]
+				},
+				"description": "Fetch all skill categories with their skills.\n\nUse this query to test caching performance:\n- First call: DB query (slower)\n- Subsequent calls: Cached response (faster)\n\nExpected response:\n```json\n{\n  \"data\": {\n    \"skillCategories\": [\n      {\n        \"category\": \"Backend\",\n        \"skills\": [\"Java\", \"Python\", \"Spring\", ...]\n      },\n      ...\n    ]\n  }\n}\n```"
+			},
+			"response": []
+		},
+		{
+			"name": "2. Search Matches - CANDIDATE Mode (Job Seeker)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"query\": \"query SearchMatches($mode: UserMode!, $skills: [String!]!, $experience: String!) { searchMatches(mode: $mode, skills: $skills, experience: $experience) { matches { id title company score skills experience } vectorVisualization { skill isCore x y } } }\",\n  \"variables\": {\n    \"mode\": \"CANDIDATE\",\n    \"skills\": [\"Java\", \"Spring\", \"React\"],\n    \"experience\": \"3-5 Years\"\n  }\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8088/graphql",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"graphql"
+					]
+				},
+				"description": "Search for job openings (Recruits) matching candidate's skills.\n\nMode: CANDIDATE (Job Seeker searching for jobs)\nSkills: Array of skill names\nExperience: \"0-2 Years\", \"3-5 Years\", \"6-9 Years\", \"10+ Years\", or \"\" (no filter)\n\nReturns:\n- matches: Top matching recruits with similarity scores\n- vectorVisualization: 2D visualization data\n\nNote: Description field is excluded for list view (performance optimization)"
+			},
+			"response": []
+		},
+		{
+			"name": "3. Search Matches - RECRUITER Mode",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"query\": \"query SearchMatches($mode: UserMode!, $skills: [String!]!, $experience: String!) { searchMatches(mode: $mode, skills: $skills, experience: $experience) { matches { id title company score skills experience } vectorVisualization { skill isCore x y } } }\",\n  \"variables\": {\n    \"mode\": \"RECRUITER\",\n    \"skills\": [\"Python\", \"Django\", \"PostgreSQL\"],\n    \"experience\": \"5-9 Years\"\n  }\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8088/graphql",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"graphql"
+					]
+				},
+				"description": "Search for candidates matching job requirements.\n\nMode: RECRUITER (Recruiter searching for candidates)\nSkills: Array of skill names\nExperience: \"0-2 Years\", \"3-5 Years\", \"6-9 Years\", \"10+ Years\", or \"\" (no filter)\n\nReturns:\n- matches: Top matching candidates with similarity scores\n- vectorVisualization: 2D visualization data"
+			},
+			"response": []
+		},
+		{
+			"name": "4. Search Matches - Experience Filters Test",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"query\": \"query SearchMatches($mode: UserMode!, $skills: [String!]!, $experience: String!) { searchMatches(mode: $mode, skills: $skills, experience: $experience) { matches { id title company score skills experience } vectorVisualization { skill isCore x y } } }\",\n  \"variables\": {\n    \"mode\": \"CANDIDATE\",\n    \"skills\": [\"Java\", \"Spring\"],\n    \"experience\": \"\"\n  }\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8088/graphql",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"graphql"
+					]
+				},
+				"description": "Test different experience filters:\n\nChange the 'experience' variable to:\n- \"0-2 Years\" - Entry level\n- \"3-5 Years\" - Mid level\n- \"6-9 Years\" - Senior level\n- \"10+ Years\" - Expert level\n- \"\" (empty string) - No filter, all experience levels\n\nVerify that results are filtered correctly based on experience_years column."
+			},
+			"response": []
+		},
+		{
+			"name": "5. Get Recruit Detail",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"query\": \"query GetRecruit($id: ID!) { getRecruit(id: $id) { id position companyName experienceYears primaryKeyword englishLevel skills description publishedAt } }\",\n  \"variables\": {\n    \"id\": \"REPLACE-WITH-ACTUAL-UUID\"\n  }\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8088/graphql",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"graphql"
+					]
+				},
+				"description": "Fetch detailed information for a specific recruit.\n\nReplace 'REPLACE-WITH-ACTUAL-UUID' with a real recruit_id from:\n1. Run 'Search Matches' query first\n2. Copy an 'id' from the matches array\n3. Paste it here\n\nReturns:\n- All recruit metadata (position, company, experience, etc.)\n- Full description (recruit_description.long_description)\n- All skills for this recruit\n\nExample UUID format: \"b9a1303e-dd0c-5ed1-8f62-be2bc4c7da4f\""
+			},
+			"response": []
+		},
+		{
+			"name": "6. Get Candidate Detail",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"query\": \"query GetCandidate($id: ID!) { getCandidate(id: $id) { id positionCategory experienceYears originalResume skills description } }\",\n  \"variables\": {\n    \"id\": \"REPLACE-WITH-ACTUAL-UUID\"\n  }\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8088/graphql",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"graphql"
+					]
+				},
+				"description": "Fetch detailed information for a specific candidate.\n\nReplace 'REPLACE-WITH-ACTUAL-UUID' with a real candidate_id from:\n1. Run 'Search Matches - RECRUITER Mode' query first\n2. Copy an 'id' from the matches array\n3. Paste it here\n\nReturns:\n- All candidate metadata (position category, experience, etc.)\n- Full description (candidate_description.original_resume)\n- All skills for this candidate"
+			},
+			"response": []
+		},
+		{
+			"name": "7. Dashboard Candidate Stats",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"query\": \"query DashboardData($userMode: UserMode!) { dashboardData(userMode: $userMode) { category skills { skill count } } }\",\n  \"variables\": {\n    \"userMode\": \"CANDIDATE\"\n  }\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8088/graphql",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8088",
+					"path": [
+						"graphql"
+					]
+				},
+				"description": "Get dashboard statistics for skill demand by category.\n\nMode:\n- CANDIDATE: Returns recruit statistics (job openings by skill)\n- RECRUITER: Returns candidate statistics (candidates by skill)\n\nReturns category-grouped skill counts for visualization.\n\nChange userMode variable to:\n- \"CANDIDATE\" - View job market statistics\n- \"RECRUITER\" - View candidate pool statistics"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8088",
+			"type": "string"
+		}
+	]
+}

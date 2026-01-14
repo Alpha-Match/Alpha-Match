@@ -21,7 +21,7 @@ import java.util.UUID;
  */
 @Repository
 public interface RecruitDescriptionJpaRepository
-        extends JpaRepository<RecruitDescriptionEntity, UUID>, RecruitDescriptionRepository {
+        extends JpaRepository<RecruitDescriptionEntity, UUID>, RecruitDescriptionRepository, RecruitDescriptionJpaRepositoryCustom {
 
     /**
      * RecruitDescription 단건 Upsert (Native Query)
@@ -51,7 +51,7 @@ public interface RecruitDescriptionJpaRepository
     void upsert(@Param("entity") RecruitDescriptionEntity entity);
 
     /**
-     * RecruitDescription 배치 Upsert (Iterative)
+     * RecruitDescription 배치 Upsert (Delegates to optimized implementation)
      *
      * Spring Batch에서 Chunk 단위로 호출
      *
@@ -60,6 +60,6 @@ public interface RecruitDescriptionJpaRepository
     @Override
     @Transactional
     default void upsertAll(List<RecruitDescriptionEntity> entities) {
-        entities.forEach(this::upsert);
+        upsertAllOptimized(entities);
     }
 }

@@ -42,7 +42,7 @@
 
 **Database:**
 - `src/main/java/com/alpha/backend/config/database/JpaConfig.java` - JPA 설정
-- `src/main/resources/db/migration/V1__init_database_schema.sql` - Flyway V1 (초기 스키마)
+- `src/main/resources/db/migration/V1__init_schema.sql` - Flyway V1 (초기 스키마)
 - `src/main/resources/db/migration/V2__restructure_schema_to_v2.sql` - Flyway V2 (스키마 재구조화, 2025-12-21)
 
 **gRPC:**
@@ -188,16 +188,30 @@
     - 2-table 동시 upsert 성공 (skill_category_dic, skill_embedding_dic)
     - FK 관계 처리 검증 (카테고리 자동 생성 → UUID 획득)
     - UK 기반 Upsert 전략 검증 (category, skill 컬럼 기준)
+- **JVM 힙 메모리 및 로깅 최적화 (2025-12-26)**
+  - `gradle.properties` 추가: `-Xms2g -Xmx8g -XX:+UseG1GC`
+  - 로깅 레벨 DEBUG → INFO 조정 (OOM 방지)
+  - 1.3GB 로그 파일 생성 문제 해결
+- **전체 도메인 성능 테스트 완료 (2025-12-26)**
+  - **Recruit**: 87,488건, 12m 54.8s, 113.0 rps
+  - **Candidate**: 118,741건, 30m 50.1s, 64.2 rps
+  - **Skill_dic**: 105건, 1.69s, 62.2 rps
+  - **총 처리량**: 206,334건, 44m 46.6s, 평균 76.8 rps
+  - 리포트: `docs/hist/2025-12-26_02_Performance_Test_Report.md`
+- **Virtual Thread 병렬 테이블 쓰기 구현 (2025-12-26)**
+  - RecruitDataProcessor, CandidateDataProcessor 적용
+  - 4-table 쓰기: recruit 순차 (FK) → skill, description, embedding 병렬
+  - **Recruit 성능 개선**: 12m 54.8s → 8m 38.2s (33.1% 단축, 168.8 rps)
+  - 리포트: `docs/hist/2025-12-26_04_Virtual_Thread_Parallel_Write_Report.md`
 
 ### 🔄 진행 중
 - 없음
 
 ### ⏳ 예정
-- Candidate 도메인 파이프라인 테스트
-- 로깅 레벨 조정 (DEBUG → INFO)
+- Candidate 도메인 병렬 쓰기 성능 테스트
+- 청크 사이즈 튜닝 (100 → 200~300 비교)
 - Batch Job v2 마이그레이션 (Reader, Processor, Writer - 4-table 구조 반영)
-- Proto 파일 v2 업데이트 (Recruit/Candidate 4-table 구조)
-- 성능 최적화 및 모니터링
+- JMX/Micrometer 메트릭 모니터링 추가
 
 ---
 
@@ -217,10 +231,11 @@
 `docs/도메인_확장_가이드.md` 필수 참조 (7단계 체크리스트)
 
 ### 4. Batch 작업 시 주의
-- Virtual Thread 사용: DB Connection Pool 고갈 방지
-- Chunk Size: 기본 300 (application-batch.yml에서 조정)
-- Upsert 순서: metadata → embedding (FK 제약)
+- **Virtual Thread 병렬 쓰기**: FK 없는 테이블은 병렬 처리 (skill, description, embedding)
+- HikariCP Pool Size (20) > Virtual Thread 동시 수 (3) 유지
+- Chunk Size: gRPC 100, JDBC batch 300
+- Upsert 순서: main entity → dependent tables (FK 제약)
 
 ---
 
-**최종 수정일:** 2025-12-22 (Skill_dic 도메인 검증 완료)
+**최종 수정일:** 2025-12-26 (Virtual Thread 병렬 테이블 쓰기 구현, 33% 성능 개선)

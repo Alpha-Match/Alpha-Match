@@ -33,12 +33,14 @@ public interface CandidateDescriptionJpaRepository
     @Modifying
     @Query(value = """
         INSERT INTO candidate_description (
-            candidate_id, original_resume, resume_lang, created_at, updated_at
+            candidate_id, original_resume, resume_lang, moreinfo, looking_for, created_at, updated_at
         )
         VALUES (
             :#{#entity.candidateId},
             :#{#entity.originalResume},
             :#{#entity.resumeLang},
+            :#{#entity.moreinfo},
+            :#{#entity.lookingFor},
             COALESCE(:#{#entity.createdAt}, NOW()),
             COALESCE(:#{#entity.updatedAt}, NOW())
         )
@@ -46,6 +48,8 @@ public interface CandidateDescriptionJpaRepository
         DO UPDATE SET
             original_resume = EXCLUDED.original_resume,
             resume_lang = EXCLUDED.resume_lang,
+            moreinfo = EXCLUDED.moreinfo,
+            looking_for = EXCLUDED.looking_for,
             updated_at = NOW()
         """, nativeQuery = true)
     void upsert(@Param("entity") CandidateDescriptionEntity entity);

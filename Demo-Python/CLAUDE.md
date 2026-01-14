@@ -42,8 +42,8 @@
 
 **도메인 모델 (Pydantic):**
 - `src/domain/recruit_data.py` - RecruitData (384d 벡터)
-- `src/domain/candidate_data.py` - CandidateData (768d 벡터)
-- `src/domain/skill_embedding_dic_data.py` - SkillEmbeddingDicData (768d 벡터)
+- `src/domain/candidate_data.py` - CandidateData (384d 벡터, v2 통일)
+- `src/domain/skill_embedding_dic_data.py` - SkillEmbeddingDicData (384d 벡터, v2 통일)
 
 **프로토콜 (Generic Interface):**
 - `src/domain/base_data.py` - BaseData Protocol (TypeVar covariant)
@@ -126,17 +126,17 @@
 - `infrastructure/chunk_loader/{domain}/` - 3가지 포맷 Loader 구현
 - `loader_factory.py` - Factory에 등록
 
-### 4. 벡터 차원 검증
+### 4. 벡터 차원 검증 (v2 통일: 384d)
 - Recruit: 384d
-- Candidate: 768d
-- SkillEmbeddingDic: 768d
+- Candidate: 384d
+- SkillEmbeddingDic: 384d
 
 Pydantic validator로 차원 검증 필수
 
 ### 5. gRPC Proto 동기화
 Java Batch Server의 Proto 파일과 동기화 필수:
-`/Backend/Batch-Server/src/main/proto/embedding_service.proto`
+`/Backend/Batch-Server/src/main/proto/embedding_stream.proto`
 
 ---
 
-**최종 수정일:** 2025-12-18
+**최종 수정일:** 2025-12-26 (Proto v2 동기화, 벡터 차원 384d 통일)

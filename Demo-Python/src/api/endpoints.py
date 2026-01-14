@@ -55,21 +55,29 @@ async def trigger_ingestion(
         description="data 폴더에 위치한 .pkl 파일의 이름",
         examples=["processed_recruitment_data.pkl"]
     ),
+    chunk_size: int = Query(
+        default=100,
+        ge=50,
+        le=1000,
+        description="gRPC 스트리밍 청크 크기 (기본: 100, 범위: 50-1000)"
+    ),
 ):
     """
     데이터 수집(Ingestion) 파이프라인을 시작하는 엔드포인트입니다.
 
     - **domain**: 처리할 데이터의 종류 (예: "recruit", "candidate").
     - **file_name**: 처리할 파일의 이름.
+    - **chunk_size**: gRPC 스트리밍 청크 크기 (기본 100, Batch Writer는 300 고정).
     """
     full_file_path = f"{data_config.DATA_DIR}/{file_name}"
-    logger.info(f"API 요청 수신: POST /data/ingest/{domain}?file_name={file_name}")
+    logger.info(f"API 요청 수신: POST /data/ingest/{domain}?file_name={file_name}&chunk_size={chunk_size}")
 
     try:
         # 서비스 계층의 핵심 로직을 호출합니다.
         grpc_response: embedding_stream_pb2.IngestDataResponse = await ingest_data_from_file(
             domain=domain,
-            file_path=full_file_path
+            file_path=full_file_path,
+            chunk_size=chunk_size
         )
 
         # gRPC 응답 객체를 Pydantic 모델(JSON으로 변환 가능)로 변환하여 반환합니다.

@@ -8,6 +8,38 @@
 
 ## 2. 핵심 메커니즘: `InMemoryCache`
 
+Apollo Client의 `InMemoryCache`는 클라이언트 측 데이터 관리의 핵심입니다. GraphQL 쿼리 요청이 발생하면, `InMemoryCache`는 다음과 같은 흐름으로 데이터를 처리하여 네트워크 요청을 최소화하고 UI 응답성을 높입니다.
+
+```mermaid
+graph TD
+    A[UI Component Render] -- useQuery Hook --> B{Apollo Client}
+
+    B -- 캐시 확인 --> C{캐시 히트?}
+    C -- 예 --> D[캐시된 데이터 반환]
+    C -- 아니오 --> E[GraphQL 요청 전송]
+
+    E --> F[GraphQL 서버]
+    F -- GraphQL 응답 --> G[응답 수신]
+
+    G -- 데이터 정규화 및 저장 --> H[InMemoryCache]
+    G -- 데이터 반환 --> I[UI 업데이트]
+
+    D --> I
+
+    subgraph InMemoryCache
+        H
+    end
+
+    classDef green fill:#d4edda,stroke:#28a745,color:#212529;
+    classDef blue fill:#cfe2f3,stroke:#007bff,color:#212529;
+    classDef yellow fill:#fff3cd,stroke:#ffc107,color:#212529;
+
+    B:::blue
+    C:::yellow
+    H:::green
+```
+*그림 2: Apollo Client InMemoryCache 동작 흐름도*
+
 -   **구현**: `@apollo/client` 라이브러리의 `InMemoryCache` 클래스
 -   **목적**: API로부터 받은 서버 상태를 클라이언트 메모리에 정규화된(normalized) 형태로 저장하고 관리하는 캐시 저장소입니다.
 -   **전략**:
@@ -32,98 +64,86 @@
 
 ---
 
-# Backend (API 서버) 캐싱 전략
+## 4. User Mode별 클라이언트 측 데이터 세분화 및 캐싱 (Client-Side Data Segmentation & Caching by User Mode)
 
-## 1. 개요
+프론트엔드 애플리케이션은 사용자 경험을 최적화하고, `UserMode` (CANDIDATE 또는 RECRUITER) 전환 시 각 모드별로 독립적인 작업 상태를 유지하기 위해 Redux를 활용한 클라이언트 측 데이터 세분화 전략을 적용합니다. 이는 마치 각 `UserMode`가 자신만의 `InMemoryCache`를 가지는 것처럼 동작하게 하여, 모드 전환 시 불필요한 데이터 재로딩이나 UI 초기화를 방지합니다.
 
-Alpha-Match의 API 서버는 사용자에게 빠르고 일관된 검색 경험을 제공하기 위해 **다계층 캐싱(Multi-Layer Caching)** 전략을 사용합니다. 이 전략은 DB 부하를 최소화하고, 반복적인 요청에 대한 응답 시간을 극적으로 단축시키는 것을 목표로 합니다.
-
-캐싱은 **읽기 성능 최적화**에 초점을 맞추며, 데이터의 최종 일관성(Eventual Consistency)을 전제로 합니다.
-
-## 2. 캐싱 아키텍처
-
-API 서버는 **L1(In-Memory) 캐시**와 **L2(Distributed)** 캐시의 두 계층으로 구성됩니다.
+### 4.1. 동작 흐름 시각화
 
 ```mermaid
 graph TD
-    subgraph API Server Instance 1
-        A[GraphQL 요청] --> B{L1: Caffeine};
-        B -- Hit --> D[응답];
-        B -- Miss --> C{L2: Redis};
-    end
-    
-    subgraph API Server Instance 2
-        A2[GraphQL 요청] --> B2{L1: Caffeine};
-        B2 -- Hit --> D2[응답];
-        B2 -- Miss --> C;
+    subgraph User Interaction
+        U[User] -- UserMode 변경 --> Header
+        U -- 검색 수행 --> InputPanel
     end
 
-    C -- Hit --> E[L2 데이터 반환];
-    E --> F[L1 캐시 저장];
-    F --> D;
+    subgraph Frontend Components
+        Header --> page.tsx
+        InputPanel --> page.tsx
+        page.tsx --> MainContent[메인 콘텐츠 영역]
+    end
 
-    C -- Miss --> G[DB 쿼리];
-    G --> H[DB 결과 반환];
-    H --> I[L2 캐시 저장];
-    I --> F;
+    subgraph Redux State (Mode-Specific)
+        Header -- dispatch setUserMode(newMode) --> uiSlice[uiSlice (UserMode, PageViewMode, MatchId)]
+        InputPanel -- dispatch search actions --> searchSlice[searchSlice (Skills, Experience)]
 
-    style A fill:#f9f,stroke:#333,stroke-width:2px
-    style A2 fill:#f9f,stroke:#333,stroke-width:2px
-    style D fill:#9cf,stroke:#333,stroke-width:2px
-    style D2 fill:#9cf,stroke:#333,stroke-width:2px
+        uiSlice -- get userMode --> searchSlice
+        uiSlice -- get pageViewMode, selectedMatchId --> page.tsx
+        searchSlice -- get selectedSkills, selectedExperience --> page.tsx
+    end
+
+    subgraph Data Flow & State Preservation
+        page.tsx -- 현재 userMode, 입력값 --> useSearchMatches[useSearchMatches Hook]
+        useSearchMatches -- GraphQL 쿼리 (모드 포함) --> Backend
+
+        Backend -- 결과 --> useSearchMatches
+        useSearchMatches -- 결과 저장 (모드별) --> useSearchMatches
+
+        useSearchMatches -- get matches (현재 userMode) --> page.tsx
+        page.tsx -- matches --> MainContent
+
+        MainContent -- pageViewMode, matches 기반 렌더링 --> UI
+
+        classDef green fill:#d4edda,stroke:#28a745,color:#212529;
+        classDef blue fill:#cfe2f3,stroke:#007bff,color:#212529;
+        classDef purple fill:#e2d4f3,stroke:#6f42c1,color:#212529;
+
+        uiSlice:::green
+        searchSlice:::green
+        useSearchMatches:::blue
+        MainContent:::purple
+    end
+
+    style Header fill:#f9f9f9,stroke:#333,stroke-width:2px
+    style InputPanel fill:#f9f9f9,stroke:#333,stroke-width:2px
+    style MainContent fill:#f9f9f9,stroke:#333,stroke-width:2px
 ```
+*그림 1: User Mode별 클라이언트 측 데이터 세분화 및 캐싱 흐름도*
 
-## 3. L1 캐시: Caffeine
+### 4.2. 메커니즘
 
--   **종류**: 인-메모리(In-Memory) 캐시
--   **구현**: `com.github.ben-manes.caffeine` 라이브러리 사용
--   **목적**: 가장 빠르고 빈번하게 접근하는 데이터를 각 API 서버 인스턴스의 메모리에 직접 저장하여, 네트워크 지연 시간 없이 가장 빠른 속도로 응답합니다.
--   **주요 캐싱 대상**:
-    -   ID 기반의 단일 조회 결과 (예: `getRecruit(id: "...")`)
-    -   자주 요청되는 소규모 메타데이터
--   **전략**:
-    -   **크기 제한 (Size-based)**: 캐시가 차지하는 최대 메모리 양 또는 항목 수를 제한하여, 인스턴스의 메모리 고갈을 방지합니다. (예: `maximumSize=10000`)
-    -   **시간 제한 (Time-based)**: 지정된 시간(예: 10분)이 지나면 캐시된 항목을 자동으로 만료시킵니다. (`expireAfterWrite=10m`)
+-   **상태 구조화**: Redux `searchSlice` 및 `uiSlice`는 `UserMode` (CANDIDATE, RECRUITER)를 키로 하는 객체 형태로 상태를 관리합니다.
+    -   `searchSlice`: 각 `UserMode`별로 `selectedSkills`, `selectedExperience`, `isInitial` 등의 검색 입력 상태를 독립적으로 저장합니다.
+    -   `uiSlice`: 각 `UserMode`별로 `pageViewMode` (dashboard, results, detail) 및 `selectedMatchId`와 같은 UI/뷰 상태를 독립적으로 저장합니다.
+-   **동적 접근**: 애플리케이션은 현재 활성화된 `userMode`에 따라 해당 모드의 세분화된 상태에 접근하여 데이터를 읽거나 업데이트합니다.
+-   **결과 캐싱**: `useSearchMatches` 훅은 `UserMode`별로 검색 결과(`matches`)를 내부적으로 관리합니다. 이전에 수행된 검색 결과는 다른 모드로 전환하더라도 메모리에 유지됩니다.
 
-## 4. L2 캐시: Redis
+### 4.3. 동작 방식 예시
 
--   **종류**: 분산(Distributed) 캐시
--   **구현**: `Spring Data Redis` 사용
--   **목적**: 여러 API 서버 인스턴스가 공유하는 중앙 캐시 저장소 역할을 합니다. L1 캐시에 없는 데이터나, 크기가 커서 메모리에 부담을 주는 데이터를 저장합니다.
--   **주요 캐싱 대상**:
-    -   복잡한 검색 쿼리 결과 (예: `searchMatches` 쿼리 전체 응답)
-    -   사용자 세션 정보 (인증/인가 구현 시)
--   **전략**:
-    -   **키(Key) 생성**: 요청된 GraphQL 쿼리와 변수(Variables)를 조합하고 해시(SHA-256 등)하여 고유한 캐시 키를 생성합니다.
-        -   `Key = hash(query + variables)`
-    -   **직렬화(Serialization)**: 캐시할 객체(주로 DTO)는 `JSON` 또는 성능이 중요한 경우 `Protobuf`/`MsgPack` 같은 바이너리 형식으로 직렬화하여 Redis에 저장합니다.
-    -   **만료 정책**: TTL(Time-To-Live)을 설정하여 데이터의 최신성을 보장하고, 메모리 정책은 `LRU(Least Recently Used)` 또는 `LFU(Least Frequently Used)`를 사용하여 효율적으로 관리합니다.
+1.  **CANDIDATE 모드**:
+    -   사용자가 CANDIDATE 모드에서 특정 기술 스택을 선택하고 검색을 수행합니다.
+    -   Redux `searchSlice`의 `CANDIDATE` 객체에 `selectedSkills`, `selectedExperience`가 저장되고, `uiSlice`의 `CANDIDATE` 객체에 `pageViewMode = 'results'` 및 검색 결과가 저장됩니다.
+2.  **RECRUITER 모드로 전환**:
+    -   사용자가 RECRUITER 모드로 전환하면, `uiSlice`의 `userMode`가 RECRUITER로 변경됩니다.
+    -   `page.tsx`의 `useEffect`는 `userMode` 변경을 감지하고, 이전에 RECRUITER 모드에서 저장된 `pageViewMode` (아마도 'dashboard' 또는 이전 검색 결과 뷰)에 따라 해당 모드의 상태를 표시합니다.
+    -   만약 RECRUITER 모드에서 이전에 검색을 수행했다면, `useSearchMatches`는 RECRUITER 모드에 해당하는 저장된 `matches`를 반환하여 즉시 화면에 표시합니다.
+3.  **CANDIDATE 모드로 재전환**:
+    -   사용자가 CANDIDATE 모드로 다시 전환하면, 시스템은 CANDIDATE 모드에 저장된 검색 입력 상태와 검색 결과 뷰(`pageViewMode = 'results'`)를 즉시 복원하여 이전 검색 결과를 보여줍니다.
 
-## 5. 캐시 무효화 (Cache Invalidation)
+### 4.4. 이점
 
-**"Cache is hard, naming things is hard, and cache invalidation is one of the hardest problems in computer science."**
+-   **Seamless User Experience**: `UserMode` 전환 시 UI가 깜빡이거나 초기화되지 않고, 각 모드의 작업 컨텍스트가 부드럽게 유지됩니다.
+-   **성능 최적화**: 이전 검색 결과가 메모리에 유지되므로, 동일한 모드로 재진입 시 불필요한 네트워크 요청 없이 즉시 결과를 표시할 수 있습니다.
+-   **상태 격리**: 각 모드의 상태가 독립적으로 관리되어 한 모드의 변경이 다른 모드에 영향을 주지 않습니다.
 
-데이터베이스의 원본 데이터가 변경되었을 때, 캐시된 데이터와의 불일치를 해결하는 것은 매우 중요합니다. Alpha-Match에서는 **Batch 서버가 데이터 업데이트를 완료하는 시점**에 캐시를 무효화합니다.
-
-```mermaid
-sequenceDiagram
-    participant Batch as Java Batch 서버
-    participant DB as PostgreSQL
-    participant API as Java API 서버
-    participant Cache as Redis/Caffeine
-    
-    Batch->>DB: 1. 데이터 Upsert 완료
-    Batch->>API: 2. 캐시 무효화 요청 (gRPC Call)
-    
-    API->>API: 3. 동시성 제어 (AtomicBoolean / Lock)
-    API->>Cache: 4. 모든 L1/L2 캐시 삭제 (FLUSHALL)
-    
-    Cache-->>API: 5. 삭제 완료 응답
-    API-->>Batch: 6. gRPC 응답 (Success)
-```
-
--   **트리거**: `Batch-Server`의 배치 작업(`Job`)이 성공적으로 완료된 후, `JobExecutionListener`에서 실행됩니다.
--   **메커니즘**: Batch 서버는 gRPC 클라이언트를 통해 API 서버에 있는 `CacheInvalidateService`의 RPC를 호출합니다.
--   **실행**: API 서버는 요청을 받으면 **모든 캐시를 삭제(Flush)**합니다.
-    -   **단순하지만 확실한 전략**: 가장 간단하고 확실하게 데이터 정합성을 맞추는 방법은 모든 키를 삭제하는 것입니다. 특정 키만 선별하여 삭제하는 것은 로직이 복잡해지고 실수할 가능성이 높습니다.
-    -   **동시성 제어**: 여러 배치 작업 또는 외부 요인에 의해 동시에 캐시 무효화 요청이 들어올 경우를 대비해, `AtomicBoolean` 플래그나 `ReentrantLock`을 사용하여 한 번에 하나의 스레드만 무효화 작업을 수행하도록 보장해야 합니다.
+이 전략은 Apollo Client의 `InMemoryCache`와 상호 보완적으로 작동하며, 클라이언트 애플리케이션의 전반적인 반응성과 사용자 경험을 크게 향상시킵니다.

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -30,9 +31,10 @@ public interface CandidateSkillsEmbeddingJpaRepository
      *
      * PostgreSQL 배열 타입 처리:
      * - skills: TEXT[]
-     * - skills_vector: VECTOR(384)
+     * - skills_vector: VECTOR(1536)
      */
     @Override
+    @Transactional
     @Modifying
     @Query(value = """
         INSERT INTO candidate_skills_embedding (
@@ -41,7 +43,7 @@ public interface CandidateSkillsEmbeddingJpaRepository
         VALUES (
             :#{#entity.candidateId},
             :#{#entity.skills},
-            CAST(:#{#entity.skillsVector.toString()} AS vector(384)),
+            CAST(:#{#entity.skillsVector.toString()} AS vector(1536)),
             COALESCE(:#{#entity.createdAt}, NOW()),
             NOW()
         )
@@ -57,6 +59,7 @@ public interface CandidateSkillsEmbeddingJpaRepository
      * Batch Upsert for multiple entities
      */
     @Override
+    @Transactional
     default void upsertAll(List<CandidateSkillsEmbeddingEntity> entities) {
         entities.forEach(this::upsert);
     }

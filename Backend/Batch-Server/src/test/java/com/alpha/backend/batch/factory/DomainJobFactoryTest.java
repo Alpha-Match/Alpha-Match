@@ -6,8 +6,8 @@ import com.alpha.backend.batch.listener.EmbeddingStepListener;
 import com.alpha.backend.infrastructure.config.BatchProperties;
 import com.alpha.backend.infrastructure.grpc.client.EmbeddingGrpcClient;
 import com.alpha.backend.infrastructure.persistence.CheckpointJpaRepository;
-import com.alpha.backend.infrastructure.persistence.RecruitEmbeddingJpaRepository;
-import com.alpha.backend.infrastructure.persistence.RecruitMetadataJpaRepository;
+import com.alpha.backend.infrastructure.persistence.RecruitSkillsEmbeddingJpaRepository;
+import com.alpha.backend.infrastructure.persistence.RecruitJpaRepository;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -61,10 +61,10 @@ class DomainJobFactoryTest {
     private JsonMapper jsonMapper;
 
     @Mock
-    private RecruitMetadataJpaRepository recruitMetadataRepository;
+    private RecruitJpaRepository recruitJpaRepository;
 
     @Mock
-    private RecruitEmbeddingJpaRepository recruitEmbeddingRepository;
+    private RecruitSkillsEmbeddingJpaRepository recruitSkillsEmbeddingRepository;
 
     private DomainJobFactory factory;
 
@@ -83,8 +83,8 @@ class DomainJobFactoryTest {
                 batchProperties,
                 dlqService,
                 jsonMapper,
-                recruitMetadataRepository,
-                recruitEmbeddingRepository
+                recruitJpaRepository,
+                recruitSkillsEmbeddingRepository
         );
     }
 

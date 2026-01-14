@@ -25,6 +25,7 @@ import com.alpha.backend.infrastructure.persistence.RecruitJpaRepository;
 import com.alpha.backend.infrastructure.persistence.RecruitSkillJpaRepository;
 import com.alpha.backend.infrastructure.persistence.RecruitSkillsEmbeddingJpaRepository;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.job.Job;
@@ -44,7 +45,7 @@ import java.util.UUID;
  * DomainJobFactory: 도메인별 Spring Batch Job/Step 동적 생성
  *
  * 현재 지원 도메인:
- * - recruit (384d)
+ * - recruit (1536d)
  *
  * 미래 확장 예정:
  * - candidate (768d) - proto 파일에 CandidateRow 추가 필요
@@ -78,6 +79,7 @@ public class DomainJobFactory {
     private final CheckpointJpaRepository checkpointRepository;
     private final BatchProperties batchProperties;
     private final DlqService dlqService;
+    private final EntityManager entityManager;
     private final JsonMapper jsonMapper;
 
     // Recruit domain dependencies (v2)
@@ -195,7 +197,8 @@ public class DomainJobFactory {
                 recruitRepository,
                 recruitSkillRepository,
                 recruitDescriptionRepository,
-                recruitSkillsEmbeddingRepository
+                recruitSkillsEmbeddingRepository,
+                entityManager
         );
     }
 

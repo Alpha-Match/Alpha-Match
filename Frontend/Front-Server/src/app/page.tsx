@@ -1,48 +1,37 @@
-'use client';
+import { getSkillCategories, getDashboardData } from '@/core/server/api';
+import { HomePageClient } from '@/app/_components/HomePage.client';
+import { UserMode } from '@/types';
 
-import React, { useEffect } from 'react';
-import { useAppSelector, useAppDispatch } from '../store/hooks';
-import { setSearchPerformed } from '../store/features/search/searchSlice';
-import { InputPanel } from '../components/input-panel';
-import { VisualizationPanel } from '../components/VisualizationPanel';
-import { Header } from '../components/Header';
-import { useSearchMatches } from '../hooks/useSearchMatches';
+/**
+ * @file page.tsx
+ * @description 메인 페이지 - Server Component
+ *              서버에서 초기 데이터를 fetch하고 클라이언트 컴포넌트에 전달합니다.
+ *              Next.js App Router의 Server Components 패턴을 활용합니다.
+ * @version 2.1.0
+ * @date 2025-12-30
+ */
+export default async function HomePage() {
+  // 서버 사이드에서 병렬로 초기 데이터를 가져옵니다.
+  const [
+    initialSkillCategories,
+    candidateDashboardData,
+    recruiterDashboardData
+  ] = await Promise.all([
+    getSkillCategories(),
+    getDashboardData(UserMode.CANDIDATE),
+    getDashboardData(UserMode.RECRUITER)
+  ]);
 
-const HomePage: React.FC = () => {
-  const dispatch = useAppDispatch();
-  const { activeTab, selectedSkills, selectedExperience } = useAppSelector((state) => state.search);
-  const { runSearch, loading, error, matches, vectorData } = useSearchMatches();
-
-  useEffect(() => {
-    if (error) {
-      console.error('GraphQL Query Error:', error);
-    }
-  }, [error]);
-
-  const handleSearch = () => {
-    dispatch(setSearchPerformed());
-    runSearch(activeTab, selectedSkills, selectedExperience);
+  const initialDashboardData = {
+    [UserMode.CANDIDATE]: candidateDashboardData,
+    [UserMode.RECRUITER]: recruiterDashboardData,
   };
 
+  // 클라이언트 컴포넌트에 초기 데이터를 전달
   return (
-    <div className="h-screen w-screen flex flex-col bg-slate-900 text-white overflow-hidden font-sans">
-      <Header />
-
-      <main className="flex-1 flex overflow-hidden">
-        <div className="w-1/3 min-w-[350px] max-w-[450px] h-full z-20 bg-slate-800/50 border-r border-slate-700">
-          <InputPanel
-            onSearch={handleSearch}
-            isLoading={loading}
-          />
-        </div>
-
-        <div className="flex-1 h-full relative z-10 bg-slate-900">
-          <VisualizationPanel matches={matches} vectorData={vectorData} />
-        </div>
-      </main>
-    </div>
+    <HomePageClient
+      initialSkillCategories={initialSkillCategories}
+      initialDashboardData={initialDashboardData}
+    />
   );
-};
-
-export default HomePage;
-
+}

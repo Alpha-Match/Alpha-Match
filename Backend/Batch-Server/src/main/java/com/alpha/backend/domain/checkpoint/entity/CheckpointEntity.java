@@ -11,7 +11,7 @@ import java.util.UUID;
  * Checkpoint Entity (Domain-agnostic)
  * 배치 처리의 마지막 처리 시점을 도메인별로 저장하는 엔티티
  *
- * 실제 DB 구조 (V1__init_database_schema.sql 기준):
+ * 실제 DB 구조 (V1__init_schema.sql 기준):
  * - id: BIGSERIAL (PK, 자동 증가)
  * - domain: VARCHAR(50) (UNIQUE, 도메인 구분)
  * - last_processed_uuid: UUID (마지막 처리 UUID)

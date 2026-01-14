@@ -1,66 +1,133 @@
-// src/components/SkillSelector.tsx
-import React from 'react';
-import { useAppSelector, useAppDispatch } from '../../store/hooks';
-import { toggleSkill } from '../../store/features/search/searchSlice';
-import { UserMode } from '../../types';
-import { Code } from 'lucide-react';
+import React, {useEffect, useState} from 'react';
+import {useAppDispatch, useAppSelector} from '@/core/client/services/state/hooks';
+import {resetSearch, toggleSkill} from '@/core/client/services/state/features/search/searchSlice';
+import {Code, Search, X} from 'lucide-react';
+import {ClearButton} from '@/components/ui/ClearButton';
+import {SkillCategoryItem} from '@/components/input-panel'; // Import the new component
+
+interface SkillCategory {
+    skills: string[];
+    category: string;
+}
+
 
 export const SkillSelector: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { 
-    activeTab: mode, 
-    selectedSkills, 
-    skillCategories, 
-    skillsLoaded 
-  } = useAppSelector((state) => state.search);
+  const mode = useAppSelector((state) => state.ui.userMode);
+  const { skillCategories, skillsLoaded } = useAppSelector((state) => state.search);
+  const { selectedSkills } = useAppSelector((state) => state.search[mode]);
 
-  const isCandidate = mode === UserMode.CANDIDATE;
+  const [searchTerm, setSearchTerm] = useState('');
+  const [openCategories, setOpenCategories] = useState<Set<string>>(() => new Set(
+    skillCategories.map((cat: {category : string}) => cat.category)
+  ));
+
+  useEffect(() => {
+    if (skillCategories.length > 0) {
+      setOpenCategories(prev => {
+        const newSet = new Set(prev);
+        skillCategories.forEach((cat: {category : string}) => newSet.add(cat.category));
+        return newSet;
+      });
+    }
+  }, [skillCategories]);
 
   const handleSkillToggle = (skill: string) => {
-    dispatch(toggleSkill(skill));
+    dispatch(toggleSkill({ userMode: mode, skill }));
+  };
+  
+  const handleClearSkills = () => {
+    dispatch(resetSearch(mode));
+    setSearchTerm('');
   };
 
+  const handleCategoryToggle = (categoryName: string) => {
+    setOpenCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryName)) {
+        newSet.delete(categoryName);
+      } else {
+        newSet.add(categoryName);
+      }
+      return newSet;
+    });
+  };
+
+  const filteredCategories = skillCategories
+    .map((category: SkillCategory) => ({
+      ...category,
+      skills: (category.skills ?? []).filter(skill =>
+        skill.toLowerCase().includes(searchTerm.toLowerCase())
+      ),
+    }))
+    .filter((category: SkillCategory) => category.skills.length > 0 || category.category.toLowerCase().includes(searchTerm.toLowerCase()))
+    .sort((a:SkillCategory, b:SkillCategory) => a.category.localeCompare(b.category));
+
   return (
-    <section>
-      <label className="block text-sm font-semibold text-slate-700 mb-3 uppercase tracking-wider flex items-center gap-2">
-        <Code className="w-4 h-4" />
-        Tech Stack (Select Multiple)
-      </label>
-      <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 h-96 overflow-y-auto custom-scrollbar">
-        <div className="grid grid-cols-1 gap-2">
-          {!skillsLoaded && (
-            <div className="text-center text-slate-500 text-sm">Loading skills...</div>
-          )}
-          {skillsLoaded && skillCategories.map((skill, idx) => {
-            const isSelected = selectedSkills.includes(skill);
-            return (
+    <section className="bg-panel-main p-4 rounded-lg shadow-sm border border-border space-y-3">
+      <div className="flex items-center justify-between text-sm font-semibold text-text-secondary uppercase tracking-wider">
+        <label className="flex items-center gap-2">
+          <Code className="w-4 h-4" />
+          기술 스택 (다중 선택)
+        </label>
+        <ClearButton onClear={handleClearSkills} label="초기화" />
+      </div>
+      
+      <div className="relative pb-3 border-b border-border/30">
+        <Search className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
+        <input
+          type="text"
+          placeholder="기술 스택 검색..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full pl-7 pr-3 py-2 bg-transparent focus:outline-none focus:ring-2 focus:ring-primary text-text-primary"
+        />
+      </div>
+
+      <div className={`flex flex-wrap gap-2 overflow-hidden transition-all duration-300 ease-in-out py-3 border-b border-border/30 ${
+        selectedSkills.length > 0 ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 p-0 border-transparent'
+      }`}>
+        {selectedSkills.map((skill:string) => (
+          <span
+            key={skill}
+            className="inline-flex items-center bg-primary/10 text-primary text-xs font-medium px-2.5 py-1 rounded-full border border-primary-light"
+          >
+              {skill}
               <button
-                key={`${skill}-${idx}`}
                 onClick={() => handleSkillToggle(skill)}
-                className={`group flex items-center p-2 rounded-md transition-all duration-150 ${
-                  isSelected
-                    ? `bg-white shadow-sm ring-1 ring-${isCandidate ? 'blue' : 'purple'}-200`
-                    : 'hover:bg-slate-200/50'
-                }`}
+                className="ml-1 -mr-1 flex items-center justify-center p-0.5 rounded-full hover:bg-primary/20 transition-colors"
+                aria-label={`Remove ${skill}`}
               >
-                <div className={`w-5 h-5 rounded border flex items-center justify-center mr-3 transition-colors ${
-                  isSelected
-                    ? `bg-${isCandidate ? 'blue' : 'purple'}-600 border-${isCandidate ? 'blue' : 'purple'}-600`
-                    : 'border-slate-300 bg-white group-hover:border-slate-400'
-                }`}>
-                  {isSelected && <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
-                </div>
-                <span className={`text-sm ${isSelected ? 'font-semibold text-slate-800' : 'text-slate-600'}`}>
-                  {skill}
-                </span>
+                <X className="w-3 h-3 text-primary" />
               </button>
-            );
-          })}
+            </span>
+          ))}
+        </div>
+
+      <div className="bg-transparent py-3">
+        <div className="grid grid-cols-1 gap-1">
+          {!skillsLoaded && (
+            <div className="text-center text-text-tertiary text-sm py-4">기술 스택 로딩 중...</div>
+          )}
+          {skillsLoaded && filteredCategories.length === 0 && searchTerm !== '' && (
+            <div className="text-center text-text-tertiary text-sm py-4">일치하는 기술 스택이 없습니다.</div>
+          )}
+          {skillsLoaded && filteredCategories.map((category:SkillCategory) => (
+            <SkillCategoryItem
+              key={category.category}
+              category={category}
+              isOpen={openCategories.has(category.category)}
+              onToggle={handleCategoryToggle}
+              selectedSkills={selectedSkills}
+              searchTerm={searchTerm} // Pass searchTerm down
+            />
+          ))}
         </div>
       </div>
-      <p className="text-xs text-slate-400 mt-2 text-right">
-        {selectedSkills.length} skills selected
+      <p className="text-xs text-text-tertiary mt-2 text-right">
+        {selectedSkills.length}개 스킬 선택됨
       </p>
     </section>
   );
 };
+

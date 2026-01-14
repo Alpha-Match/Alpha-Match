@@ -17,7 +17,7 @@ import java.util.UUID;
  * - skill_id (UUID, PK, auto-generated)
  * - category_id (UUID, FK → skill_category_dic)
  * - skill (TEXT, UNIQUE)
- * - skill_vector (VECTOR(384), NOT NULL)
+ * - skill_vector (VECTOR(1536), NOT NULL)
  * - created_at, updated_at (자동 관리)
  */
 @Entity
@@ -29,7 +29,7 @@ import java.util.UUID;
 @Builder
 public class SkillEmbeddingDicEntity {
 
-    public static final int VECTOR_DIMENSION = 384;
+    public static final int VECTOR_DIMENSION = 1536;
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -42,7 +42,7 @@ public class SkillEmbeddingDicEntity {
     @Column(name = "skill", nullable = false, unique = true, columnDefinition = "TEXT")
     private String skill;
 
-    @Column(name = "skill_vector", columnDefinition = "vector(384)", nullable = false)
+    @Column(name = "skill_vector", columnDefinition = "vector(1536)", nullable = false)
     private PGvector skillVector;
 
     @CreationTimestamp

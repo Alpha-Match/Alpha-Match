@@ -27,6 +27,15 @@ public class CandidateRowDto {
     @JsonProperty("original_resume")
     private String originalResume;
 
+    @JsonProperty("resume_lang")
+    private String resumeLang;
+
+    @JsonProperty("moreinfo")
+    private String moreinfo;
+
+    @JsonProperty("looking_for")
+    private String lookingFor;
+
     @JsonProperty("skills")
     private List<String> skills;
 

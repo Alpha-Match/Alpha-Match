@@ -23,6 +23,9 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 /**
@@ -83,18 +86,54 @@ public class RecruitDataProcessor implements DataProcessor {
                 embeddingEntities.add(toRecruitSkillsEmbeddingEntity(dto, recruitId));
             }
 
-            // 4. DB 저장 (순서 중요: recruit → skill, description, embedding)
+            // 4. DB 저장 (Virtual Thread 병렬 처리)
+            // 4-1. recruit 먼저 저장 (FK 제약조건 - 다른 테이블이 참조)
+            long startTime = System.currentTimeMillis();
             recruitRepository.upsertAll(recruitEntities);
-            log.info("Upserted {} recruit entities", recruitEntities.size());
+            long recruitTime = System.currentTimeMillis() - startTime;
+            log.info("Upserted {} recruit entities ({}ms)", recruitEntities.size(), recruitTime);
 
-            recruitSkillRepository.upsertAll(allSkillEntities);
-            log.info("Upserted {} recruit skill entities", allSkillEntities.size());
+            // 4-2. 나머지 3개 테이블 병렬 처리 (Virtual Thread)
+            // FK 제약조건이 recruit 테이블만 참조하므로 병렬 실행 가능
+            long parallelStartTime = System.currentTimeMillis();
 
-            recruitDescriptionRepository.upsertAll(descriptionEntities);
-            log.info("Upserted {} recruit description entities", descriptionEntities.size());
+            // 캡처용 final 변수
+            final List<RecruitSkillEntity> finalSkillEntities = allSkillEntities;
+            final List<RecruitDescriptionEntity> finalDescriptionEntities = descriptionEntities;
+            final List<RecruitSkillsEmbeddingEntity> finalEmbeddingEntities = embeddingEntities;
 
-            recruitSkillsEmbeddingRepository.upsertAll(embeddingEntities);
-            log.info("Upserted {} recruit embedding entities", embeddingEntities.size());
+            try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+                // 3개 테이블 동시 쓰기
+                Future<?> skillFuture = executor.submit(() -> {
+                    long st = System.currentTimeMillis();
+                    recruitSkillRepository.upsertAll(finalSkillEntities);
+                    log.info("Upserted {} recruit skill entities ({}ms)", finalSkillEntities.size(), System.currentTimeMillis() - st);
+                });
+
+                Future<?> descFuture = executor.submit(() -> {
+                    long st = System.currentTimeMillis();
+                    recruitDescriptionRepository.upsertAll(finalDescriptionEntities);
+                    log.info("Upserted {} recruit description entities ({}ms)", finalDescriptionEntities.size(), System.currentTimeMillis() - st);
+                });
+
+                Future<?> embeddingFuture = executor.submit(() -> {
+                    long st = System.currentTimeMillis();
+                    recruitSkillsEmbeddingRepository.upsertAll(finalEmbeddingEntities);
+                    log.info("Upserted {} recruit embedding entities ({}ms)", finalEmbeddingEntities.size(), System.currentTimeMillis() - st);
+                });
+
+                // 모든 병렬 작업 완료 대기
+                skillFuture.get();
+                descFuture.get();
+                embeddingFuture.get();
+            } catch (Exception e) {
+                throw new RuntimeException("병렬 테이블 쓰기 실패: " + e.getMessage(), e);
+            }
+
+            long parallelTime = System.currentTimeMillis() - parallelStartTime;
+            long totalTime = System.currentTimeMillis() - startTime;
+            log.info("Parallel write completed: recruit={}ms, parallel(skill+desc+embedding)={}ms, total={}ms",
+                    recruitTime, parallelTime, totalTime);
 
             return dtos.size();
 

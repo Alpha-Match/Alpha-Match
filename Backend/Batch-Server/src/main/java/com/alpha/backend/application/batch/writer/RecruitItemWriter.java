@@ -9,6 +9,7 @@ import com.alpha.backend.infrastructure.persistence.RecruitDescriptionJpaReposit
 import com.alpha.backend.infrastructure.persistence.RecruitJpaRepository;
 import com.alpha.backend.infrastructure.persistence.RecruitSkillJpaRepository;
 import com.alpha.backend.infrastructure.persistence.RecruitSkillsEmbeddingJpaRepository;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.infrastructure.item.Chunk;
@@ -17,6 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * Recruit ItemWriter (v2)
@@ -38,6 +42,7 @@ public class RecruitItemWriter implements ItemWriter<RecruitItem> {
     private final RecruitSkillJpaRepository recruitSkillRepository;
     private final RecruitDescriptionJpaRepository recruitDescriptionRepository;
     private final RecruitSkillsEmbeddingJpaRepository recruitSkillsEmbeddingRepository;
+    private final EntityManager entityManager;
 
     @Override
     @Transactional
@@ -65,27 +70,45 @@ public class RecruitItemWriter implements ItemWriter<RecruitItem> {
         }
 
         try {
-            // 1. recruit 테이블 Upsert (먼저 저장, PK)
+            // 1. recruit 테이블 Upsert (먼저 저장, PK, 순차)
             log.debug("[Recruit Writer] Upserting {} recruits", recruits.size());
             recruitRepository.upsertAll(recruits);
 
-            // 2. recruit_skill 테이블 Upsert (FK → recruit)
-            if (!allSkills.isEmpty()) {
-                log.debug("[Recruit Writer] Upserting {} skills", allSkills.size());
-                recruitSkillRepository.upsertAll(allSkills);
-            } else {
-                log.debug("[Recruit Writer] No skills to upsert (Proto v1 lacks skills field)");
+            // 2. 나머지 3개 테이블 병렬 Upsert (Virtual Thread, FK → recruit)
+            try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+                // 2-1. recruit_skill 테이블 병렬 Upsert
+                Future<?> skillFuture = executor.submit(() -> {
+                    if (!allSkills.isEmpty()) {
+                        log.debug("[Recruit Writer] Upserting {} skills (parallel)", allSkills.size());
+                        recruitSkillRepository.upsertAll(allSkills);
+                    } else {
+                        log.debug("[Recruit Writer] No skills to upsert");
+                    }
+                });
+
+                // 2-2. recruit_description 테이블 병렬 Upsert
+                Future<?> descFuture = executor.submit(() -> {
+                    log.debug("[Recruit Writer] Upserting {} descriptions (parallel)", descriptions.size());
+                    recruitDescriptionRepository.upsertAll(descriptions);
+                });
+
+                // 2-3. recruit_skills_embedding 테이블 병렬 Upsert
+                Future<?> embeddingFuture = executor.submit(() -> {
+                    log.debug("[Recruit Writer] Upserting {} embeddings (parallel)", embeddings.size());
+                    recruitSkillsEmbeddingRepository.upsertAll(embeddings);
+                });
+
+                // 모든 병렬 작업 완료 대기
+                skillFuture.get();
+                descFuture.get();
+                embeddingFuture.get();
             }
 
-            // 3. recruit_description 테이블 Upsert (FK → recruit)
-            log.debug("[Recruit Writer] Upserting {} descriptions", descriptions.size());
-            recruitDescriptionRepository.upsertAll(descriptions);
+            // 3. EntityManager 플러시 및 클리어 (메모리 해제)
+            entityManager.flush();
+            entityManager.clear();
 
-            // 4. recruit_skills_embedding 테이블 Upsert (FK → recruit)
-            log.debug("[Recruit Writer] Upserting {} embeddings", embeddings.size());
-            recruitSkillsEmbeddingRepository.upsertAll(embeddings);
-
-            log.info("[Recruit Writer] Successfully wrote {} recruits ({} skills, {} descriptions, {} embeddings)",
+            log.info("[Recruit Writer] Successfully wrote {} recruits ({} skills, {} descriptions, {} embeddings), EntityManager cleared",
                     recruits.size(), allSkills.size(), descriptions.size(), embeddings.size());
 
         } catch (Exception e) {

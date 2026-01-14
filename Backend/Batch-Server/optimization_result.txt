@@ -1,0 +1,22 @@
+================================================================================
+Index Optimization - Remove IVFFlat Indexes
+================================================================================
+
+Dropping redundant IVFFlat indexes...
+--------------------------------------------------------------------------------
+  Dropping index: idx_recruit_skills_vector...
+  [OK] Dropped idx_recruit_skills_vector in 0.01s
+  Dropping index: idx_skill_vector...
+  [OK] Dropped idx_skill_vector in 0.02s
+  Dropping index: idx_candidate_skills_vector...
+  [OK] Dropped idx_candidate_skills_vector in 0.01s
+
+================================================================================
+Optimization completed: 3/3 indexes removed
+================================================================================
+
+Expected benefits:
+  - Space saved: ~705 MB
+  - Ingestion performance: ~22% faster
+  - Search performance: Same or better (HNSW only)
+

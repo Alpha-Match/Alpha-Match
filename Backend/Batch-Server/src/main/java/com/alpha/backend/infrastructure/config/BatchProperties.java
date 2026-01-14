@@ -19,7 +19,7 @@ import java.util.Map;
  *     max-retry: 3
  *     domains:
  *       recruit:
- *         vector-dimension: 384
+ *         vector-dimension: 1536
  *         table-prefix: recruit
  *       candidate:
  *         vector-dimension: 768
@@ -64,7 +64,7 @@ public class BatchProperties {
      */
     private DomainConfig getDefaultDomainConfig() {
         DomainConfig config = new DomainConfig();
-        config.setVectorDimension(384);
+        config.setVectorDimension(1536);
         config.setTablePrefix("recruit");
         return config;
     }

@@ -9,8 +9,8 @@ grpcio-tools==1.60.0
 protobuf==4.25.8
 
 # Data Processing
-pandas==2.1.4
-numpy==1.26.2
+pandas>=2.2.0  # Support numpy 2.x
+numpy>=1.26.2,<3.0.0  # Support both 1.x and 2.x for pkl compatibility
 
 # Optional: PyTorch (추후 실제 Embedding 생성 시)
 # torch==2.1.2

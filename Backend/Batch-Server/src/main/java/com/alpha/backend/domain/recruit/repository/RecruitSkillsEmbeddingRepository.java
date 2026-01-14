@@ -12,14 +12,14 @@ import java.util.UUID;
  * v2 Schema: recruit_skills_embedding 테이블 (v1의 recruit_embedding 대체)
  * - recruit_id (UUID PK/FK) - 1:1 with recruit
  * - skills (TEXT[]) - 스킬 목록 배열
- * - skills_vector (VECTOR(384)) - 384차원 임베딩
+ * - skills_vector (VECTOR(1536)) - 1536차원 임베딩
  * - created_at, updated_at
  *
  * Relationship: recruit (1) ↔ (1) recruit_skills_embedding (CASCADE DELETE)
  *
  * 변경 사항:
  * - 테이블명: recruit_embedding → recruit_skills_embedding
- * - 벡터 차원: 384d (통일)
+ * - 벡터 차원: 1536d (통일)
  * - 필드 추가: skills (TEXT[])
  */
 public interface RecruitSkillsEmbeddingRepository {
@@ -73,7 +73,7 @@ public interface RecruitSkillsEmbeddingRepository {
     /**
      * 벡터 유사도 검색 (Cosine Distance)
      *
-     * @param queryVector 쿼리 벡터 (384차원)
+     * @param queryVector 쿼리 벡터 (1536차원)
      * @param limit 결과 개수
      * @return 유사한 Recruit ID 리스트 (거리 순)
      */

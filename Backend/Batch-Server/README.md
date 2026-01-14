@@ -11,6 +11,7 @@ Spring Batch 기반 배치 서버로, Python AI Server로부터 gRPC Streaming�
 - 🔄 **gRPC Streaming 수신**: Python Server로부터 대용량 데이터 실시간 수신
 - 💾 **도메인별 저장**: Recruit, Candidate, SkillEmbeddingDic 등 다중 도메인 지원
 - ⚡ **Chunk 기반 Batch Upsert**: 기본 300개 단위로 효율적 저장
+- 🚀 **Virtual Thread 병렬 쓰기**: 4-table 병렬 저장으로 33% 성능 향상
 - 🚨 **DLQ (Dead Letter Queue)**: 실패 레코드 격리 및 재처리
 - ✅ **Checkpoint 관리**: 중단 지점부터 재시작 지원
 - 🔔 **캐시 무효화**: Batch 완료 시 API Server 캐시 무효화 (예정)
@@ -158,7 +159,7 @@ Backend/Batch-Server/
 │
 ├── src/main/resources/
 │   ├── db/migration/
-│   │   └── V1__init_database_schema.sql            # Flyway 마이그레이션
+│   │   └── V1__init_schema.sql            # Flyway 마이그레이션
 │   ├── application.yml                             # 메인 설정
 │   └── application-batch.yml                       # Batch 도메인별 설정
 │
@@ -428,4 +429,24 @@ Error: Migration checksum mismatch
 
 ---
 
-**최종 수정일:** 2025-12-18
+## 🚀 현재 구현 상태
+
+### ✅ 완료
+- v2 스키마 구현 (Recruit 4-table, Candidate 4-table, SkillDic 2-table)
+- gRPC Server 구현 (Pattern 2: Client Streaming)
+- Virtual Thread 병렬 테이블 쓰기 (33% 성능 향상)
+- End-to-End 파이프라인 검증 완료
+  - Recruit: 87,488건 (168.8 rps)
+  - Candidate: 118,741건 (64.2 rps)
+  - Skill_dic: 105건 (62.2 rps)
+- PGvector 직렬화 문제 해결
+- JVM 힙 메모리 최적화 (-Xmx8g)
+
+### ⏳ 예정
+- API Server 캐시 무효화 연동
+- 청크 사이즈 튜닝 (100 → 200~300)
+- JMX/Micrometer 메트릭 모니터링
+
+---
+
+**최종 수정일:** 2026-01-14

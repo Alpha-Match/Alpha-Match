@@ -1,0 +1,76 @@
+================================================================================
+Database Performance Test - Vector Dimension 1536d
+================================================================================
+
+1. TABLE SIZES
+--------------------------------------------------------------------------------
+  recruit_skills_embedding                 | Total: 1998 MB    | Table: 15 MB     
+  recruit_skills_embedding_bak             | Total: 732 MB     | Table: 299 MB    
+  candidate_skills_embedding_bak           | Total: 619 MB     | Table: 231 MB    
+  recruit_skill_bak                        | Total: 226 MB     | Table: 130 MB    
+  candidate_skill_bak                      | Total: 140 MB     | Table: 78 MB     
+  recruit_skill                            | Total: 70 MB      | Table: 39 MB     
+  skill_embedding_dic                      | Total: 5024 kB    | Table: 16 kB     
+  skill_embedding_dic_bak                  | Total: 1792 kB    | Table: 344 kB    
+  candidate_skills_embedding               | Total: 1640 kB    | Table: 0 bytes   
+  skill_category_dic_bak                   | Total: 48 kB      | Table: 8192 bytes
+  skill_category_dic                       | Total: 48 kB      | Table: 8192 bytes
+  candidate_skill                          | Total: 16 kB      | Table: 0 bytes   
+
+  TOTAL TABLE SIZE: 3.70 GB
+
+2. INDEX SIZES
+--------------------------------------------------------------------------------
+  idx_recruit_skills_vector                          | 701 MB     | Table: recruit_skills_embedding
+  recruit_skills_embedding_hnsw_idx                  | 570 MB     | Table: recruit_skills_embedding
+  idx_recruit_skills_vector_bak                      | 299 MB     | Table: recruit_skills_embedding_bak
+  candidate_skills_embedding_hnsw_idx_bak            | 197 MB     | Table: candidate_skills_embedding_bak
+  idx_candidate_skills_vector_bak                    | 186 MB     | Table: candidate_skills_embedding_bak
+  recruit_skills_embedding_hnsw_idx_bak              | 126 MB     | Table: recruit_skills_embedding_bak
+  recruit_skill_pkey_bak                             | 96 MB      | Table: recruit_skill_bak
+  candidate_skill_pkey_bak                           | 63 MB      | Table: candidate_skill_bak
+  recruit_skill_pkey                                 | 31 MB      | Table: recruit_skill
+  recruit_skills_embedding_pkey_bak                  | 4856 kB    | Table: recruit_skills_embedding_bak
+  candidate_skills_embedding_pkey_bak                | 4712 kB    | Table: candidate_skills_embedding_bak
+  recruit_skills_embedding_pkey                      | 3656 kB    | Table: recruit_skills_embedding
+  idx_skill_vector                                   | 2520 kB    | Table: skill_embedding_dic
+  idx_candidate_skills_vector                        | 1608 kB    | Table: candidate_skills_embedding
+  skill_embedding_dic_hnsw_idx                       | 1184 kB    | Table: skill_embedding_dic
+  idx_skill_vector_bak                               | 1136 kB    | Table: skill_embedding_dic_bak
+  skill_embedding_dic_hnsw_idx_bak                   | 224 kB     | Table: skill_embedding_dic_bak
+  idx_skill_category                                 | 16 kB      | Table: skill_embedding_dic
+  skill_category_dic_category_key                    | 16 kB      | Table: skill_category_dic
+  skill_embedding_dic_pkey                           | 16 kB      | Table: skill_embedding_dic
+  skill_embedding_dic_skill_key                      | 16 kB      | Table: skill_embedding_dic
+  skill_category_dic_pkey_bak                        | 16 kB      | Table: skill_category_dic_bak
+  skill_category_dic_category_key_bak                | 16 kB      | Table: skill_category_dic_bak
+  skill_embedding_dic_pkey_bak                       | 16 kB      | Table: skill_embedding_dic_bak
+  skill_embedding_dic_skill_key_bak                  | 16 kB      | Table: skill_embedding_dic_bak
+  idx_skill_category_bak                             | 16 kB      | Table: skill_embedding_dic_bak
+  candidate_skills_embedding_hnsw_idx                | 16 kB      | Table: candidate_skills_embedding
+  skill_category_dic_pkey                            | 16 kB      | Table: skill_category_dic
+  candidate_skill_pkey                               | 8192 bytes | Table: candidate_skill
+  candidate_skills_embedding_pkey                    | 8192 bytes | Table: candidate_skills_embedding
+
+  TOTAL INDEX SIZE: 2.23 GB
+
+3. SAMPLE VECTOR FOR TESTING
+--------------------------------------------------------------------------------
+  Vector (first 100 chars): [-0.03691347,-0.014162401,0.05847414,-0.025432246,0.03270814,-0.038782503,-0.030705597,0.009862505,-...
+
+4. QUERY PERFORMANCE TESTS
+--------------------------------------------------------------------------------
+  Testing HNSW Index (3 runs)...
+    Avg: 1133.3 ms | Min: 231.63 ms | Max: 2929.11 ms
+
+5. SUMMARY
+--------------------------------------------------------------------------------
+  Total Data Size: 5.94 GB
+  - Tables: 3.70 GB (62.4%)
+  - Indexes: 2.23 GB (37.6%)
+
+  HNSW Query Performance: 1133.3 ms (avg of 3 runs)
+
+================================================================================
+Test completed
+================================================================================

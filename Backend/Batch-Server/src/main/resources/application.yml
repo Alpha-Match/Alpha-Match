@@ -2,6 +2,10 @@ spring:
   application:
     name: batch-service
 
+  # Web Application Type (HTTP 서버 비활성화, gRPC만 사용)
+  main:
+    web-application-type: none
+
   # PostgreSQL + pgvector 설정
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:alpha_match}
@@ -19,15 +23,21 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: none  # Flyway 마이그레이션 후 validate로 변경
+      ddl-auto: none
+      # Hibernate가 스키마를 건드리지 않도록 완전 차단
+      # 모든 DDL은 Flyway로만 관리
     properties:
       hibernate:
         format_sql: true
         use_sql_comments: true
         jdbc:
           batch_size: 300
+          # Batch INSERT 최적화
+          # 대량 적재 시 네트워크 round-trip 감소
         order_inserts: true
         order_updates: true
+        # 동일 테이블 기준으로 SQL 정렬
+        # JDBC batch 효율 향상
     show-sql: true
 
   # Batch 설정
@@ -35,13 +45,19 @@ spring:
     job:
       enabled: false  # 자동 실행 방지 (스케줄러로 제어)
     jdbc:
-      initialize-schema: never  # Flyway로 관리
+      initialize-schema: never
+      # Spring Batch가 메타 테이블을 자동 생성하지 않도록 차단
 
   # Flyway 설정 (DB 마이그레이션)
   flyway:
     enabled: true
-    baseline-on-migrate: true
+    baseline-on-migrate: false
+    # "기존 DB + history 없음"일 때 딱 한 번만 true로 사용 ( V1은 실행된걸로 칠게 )
     locations: classpath:db/migration
+    validate-on-migrate: false
+    # 마이그레이션 checksum 불일치 시 실패 여부
+    clean-disabled: true
+    # flyway clean 명령으로 DB 전체 삭제 방지
 
   # Quartz 설정 - 스케줄링 라이브러리 (Pattern 1 비활성화로 인해 전체 비활성화)
   quartz:
@@ -51,7 +67,7 @@ spring:
 grpc:
   # gRPC 서버 설정 (Python에서 Client Streaming으로 데이터 수신)
   server:
-    port: 50051  # Batch Server (IngestDataStream 수신)
+    port: 9090  # Batch Server (IngestDataStream 수신)
 
   client:
     # Python AI Server (Embedding Stream)
@@ -79,11 +95,14 @@ batch:
     # 도메인별 설정
     domains:
       recruit:
-        vector-dimension: 384          # Recruit Embedding 차원
+        vector-dimension: 1536         # Recruit Embedding 차원 (v5: 1536d → 1536d, OpenAI Embedding)
         table-prefix: recruit          # 테이블 접두사
       candidate:
-        vector-dimension: 768          # Candidate Embedding 차원
+        vector-dimension: 1536         # Candidate Embedding 차원 (v5: 1536d → 1536d, OpenAI Embedding)
         table-prefix: candidate        # 테이블 접두사
+      skill_dic:
+        vector-dimension: 1536         # SkillDic Embedding 차원 (v5: 1536d → 1536d, OpenAI Embedding)
+        table-prefix: skill_embedding_dic  # 테이블 접두사
 
   # ============================================
   # 스케줄러 설정 (Pattern 1: Server Streaming)
@@ -116,8 +135,10 @@ batch:
 # Logging 설정
 logging:
   level:
-    com.alpha.backend: DEBUG
+    com.alpha.backend: INFO  # DEBUG → INFO (성능 테스트용)
     org.springframework.batch: INFO
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.hibernate.SQL: INFO  # DEBUG → INFO (SQL 로깅 비활성화)
+    org.hibernate.type.descriptor.sql.BasicBinder: INFO  # TRACE → INFO (파라미터 바인딩 로깅 비활성화)
     io.grpc: INFO
+    org.flywaydb: INFO  # DEBUG → INFO (마이그레이션 완료 후)
+    org.springframework.boot.autoconfigure: INFO  # DEBUG → INFO (AutoConfiguration 로그 축소)

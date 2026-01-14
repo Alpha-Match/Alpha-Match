@@ -77,24 +77,31 @@ message RecruitRow {
   string description_lang = 10;     // 원문 언어 (e.g., "en", "ko", Nullable)
 
   // recruit_skills_embedding 테이블
-  repeated float skills_vector = 11; // 기술 스택 벡터 (384d)
+  repeated float skills_vector = 11; // 기술 스택 벡터 (1536d)
 }
 
-// Candidate 도메인 (후보자) - Flat DTO 구조
+// Candidate 도메인 (후보자) - v2 (4-table 구조)
 message CandidateRow {
+  // candidate 테이블
   string candidate_id = 1;          // UUID v7
   string position_category = 2;     // 직종 카테고리
   int32 experience_years = 3;       // 경력 (연)
-  string original_resume = 4;       // 원문 이력서
+
+  // candidate_skill 테이블 (1:N)
   repeated string skills = 5;       // 보유 스킬 배열 (e.g., ["Java", "Python"])
-  repeated float skills_vector = 6; // 기술 스택 벡터 (768d)
+
+  // candidate_description 테이블
+  string original_resume = 4;       // 원문 이력서
+
+  // candidate_skills_embedding 테이블
+  repeated float skills_vector = 6; // 기술 스택 벡터 (1536d, v2 통일)
 }
 
-// SkillEmbeddingDic 도메인 (기술 사전)
+// SkillEmbeddingDic 도메인 (기술 사전) - v2
 message SkillEmbeddingDicRow {
   string skill = 1;                 // 스킬명 (PK)
-  string position_category = 2;     // 직종 카테고리
-  repeated float skill_vector = 3;  // 스킬 벡터 (768d)
+  string position_category = 2;     // 직종 카테고리 (skill_category_dic FK)
+  repeated float skill_vector = 3;  // 스킬 벡터 (1536d, v2 통일)
 }
 
 // --- 신규 메시지 정의 ---
