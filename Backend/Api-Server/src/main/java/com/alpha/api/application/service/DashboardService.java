@@ -36,8 +36,10 @@ public class DashboardService {
     private final DatabaseClient databaseClient;
 
     /**
-     * Get dashboard data by user mode
+     * Get dashboard data by user mode (Optimized with CTE)
      * - Returns category-level skill statistics
+     * - Uses single SQL query with CTE + JOIN for optimal performance
+     * - Performance: N+1 queries (200+) → 1 query
      *
      * @param userMode User mode (CANDIDATE or RECRUITER)
      * @return Mono<List<DashboardCategoryData>>
@@ -45,29 +47,72 @@ public class DashboardService {
     public Mono<List<DashboardCategoryData>> getDashboardData(UserMode userMode) {
         log.info("getDashboardData called - userMode: {}", userMode);
 
-        // Get all categories with their skills
-        return skillCategoryDicRepository.findAllOrderByCategory()
-                .flatMap(category -> {
-                    // For each category, get skills and their counts
-                    return skillEmbeddingDicRepository.findByCategoryId(category.getCategoryId())
-                            .flatMap(skillEmbedding -> {
-                                // Get count based on user mode
-                                Mono<Long> countMono = (userMode == UserMode.CANDIDATE)
-                                        ? recruitSkillRepository.countBySkill(skillEmbedding.getSkill())
-                                        : candidateSkillRepository.countBySkill(skillEmbedding.getSkill());
+        // Dynamic table name based on user mode
+        // CANDIDATE mode → count from recruit_skill (job market demand)
+        // RECRUITER mode → count from candidate_skill (talent pool)
+        String skillTable = (userMode == UserMode.CANDIDATE) ? "recruit_skill" : "candidate_skill";
 
-                                return countMono.map(count -> DashboardSkillStat.builder()
-                                        .skill(skillEmbedding.getSkill())
-                                        .count(count.intValue())
-                                        .build());
-                            })
-                            .collectList()
-                            .map(skillStats -> DashboardCategoryData.builder()
-                                    .category(category.getCategory())
-                                    .skills(skillStats)
-                                    .build());
-                })
-                .collectList();
+        String sql = String.format("""
+            WITH skill_counts AS (
+                SELECT
+                    sed.skill,
+                    sed.category_id,
+                    COUNT(DISTINCT s.%s) AS count
+                FROM skill_embedding_dic sed
+                LEFT JOIN %s s ON LOWER(sed.skill) = LOWER(s.skill)
+                GROUP BY sed.skill_id, sed.skill, sed.category_id
+            )
+            SELECT
+                scd.category,
+                sc.skill,
+                COALESCE(sc.count, 0) AS count
+            FROM skill_counts sc
+            INNER JOIN skill_category_dic scd ON sc.category_id = scd.category_id
+            ORDER BY scd.category, sc.count DESC
+            """,
+                (userMode == UserMode.CANDIDATE) ? "recruit_id" : "candidate_id",
+                skillTable
+        );
+
+        return databaseClient.sql(sql)
+                .map(row -> new SkillStatRow(
+                        row.get("category", String.class),
+                        row.get("skill", String.class),
+                        row.get("count", Long.class).intValue()
+                ))
+                .all()
+                .collectList()
+                .map(this::groupByCategory)
+                .doOnSuccess(data -> log.info("getDashboardData returned {} categories", data.size()))
+                .doOnError(error -> log.error("getDashboardData error: {}", error.getMessage(), error));
+    }
+
+    /**
+     * Helper record for row mapping
+     */
+    private record SkillStatRow(String category, String skill, int count) {}
+
+    /**
+     * Group flat skill stats by category
+     */
+    private List<DashboardCategoryData> groupByCategory(List<SkillStatRow> rows) {
+        return rows.stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        SkillStatRow::category,
+                        java.util.LinkedHashMap::new, // Preserve order
+                        java.util.stream.Collectors.toList()
+                ))
+                .entrySet().stream()
+                .map(entry -> DashboardCategoryData.builder()
+                        .category(entry.getKey())
+                        .skills(entry.getValue().stream()
+                                .map(row -> DashboardSkillStat.builder()
+                                        .skill(row.skill())
+                                        .count(row.count())
+                                        .build())
+                                .toList())
+                        .build())
+                .toList();
     }
 
     /**
