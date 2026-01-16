@@ -130,6 +130,10 @@ public class SearchService {
                                         return computeAllCandidates(queryVector, sortedSkills, sortBy);
                                     }
                                 })
+                                .onErrorResume(e -> {
+                                    log.warn("Skill normalization failed, returning empty results: {}", e.getMessage());
+                                    return Mono.just(List.of());
+                                })
                 )
                 .flatMap(allMatches -> {
                     // Paginate from cached results
@@ -171,6 +175,10 @@ public class SearchService {
                     } else {
                         return fetchCandidatesFromDb(queryVector, sortedSkills, similarityThreshold, finalOffset, finalLimit, sortBy);
                     }
+                })
+                .onErrorResume(e -> {
+                    log.warn("Skill normalization failed for DB search, returning empty results: {}", e.getMessage());
+                    return Mono.just(List.of());
                 })
                 .flatMap(matches -> {
                     log.debug("DB direct pagination: offset={}, limit={}, returned={}",
@@ -920,6 +928,13 @@ public class SearchService {
                         return candidateSearchRepository.findSearchStatisticsByVector(
                                 queryVector, similarityThreshold, finalLimit);
                     }
+                })
+                .onErrorResume(e -> {
+                    log.warn("computeSearchStatistics failed, returning empty statistics: {}", e.getMessage());
+                    return Mono.just(SearchStatisticsResult.builder()
+                            .topSkills(new ArrayList<>())
+                            .totalCount(0)
+                            .build());
                 })
                 .doOnSuccess(result -> log.info("computeSearchStatistics completed - topSkills: {}, totalCount: {}",
                         result.getTopSkills().size(), result.getTotalCount()));

@@ -21,7 +21,7 @@ export interface SearchState {
   skillsLoaded: boolean;
 }
 
-const initialModeSpecificState: ModeSpecificSearchState = {
+export const initialModeSpecificState: ModeSpecificSearchState = {
   selectedSkills: [],
   searchedSkills: [], // 검색에 실제 사용된 스킬
   selectedExperience: ExperienceLevel.MID,
@@ -87,9 +87,8 @@ export const searchSlice = createSlice({
       state[userMode].topSkills = topSkills;
     },
     clearMatches: (state, action: PayloadAction<UserMode>) => {
+      // 통계 데이터(totalCount, topSkills)는 유지하여 새 검색 전까지 이전 데이터가 보이도록 함
       state[action.payload].matches = [];
-      state[action.payload].totalCount = null;
-      state[action.payload].topSkills = [];
     },
     resetSearch: (state, action: PayloadAction<UserMode>) => {
         state[action.payload] = { ...initialModeSpecificState, searchedSkills: [], dashboardData: state[action.payload].dashboardData };

@@ -8,15 +8,16 @@ import {
     PURGE,
     REGISTER,
 } from 'redux-persist';
-import type { PersistState, PersistConfig } from 'redux-persist/es/types'; // Correctly import PersistState
+import type { PersistState, PersistConfig } from 'redux-persist/es/types';
 import storage from 'redux-persist/lib/storage';
-import sessionStorage from 'redux-persist/lib/storage/session'; // Import sessionStorage
+import sessionStorage from 'redux-persist/lib/storage/session';
 
 import uiReducer from '@/core/client/services/state/features/ui/uiSlice';
-import searchReducer from '@/core/client/services/state/features/search/searchSlice';
+import searchReducer, { initialModeSpecificState } from '@/core/client/services/state/features/search/searchSlice';
 import notificationReducer from '@/core/client/services/state/features/notification/notificationSlice';
 import themeReducer from '@/core/client/services/state/features/theme/themeSlice';
 import { createTransform } from 'redux-persist';
+import { UserMode } from '@/types';
 
 /* ------------------------------------------------------------------ */
 /* ui reducer with sessionStorage (per session) */
@@ -24,7 +25,7 @@ import { createTransform } from 'redux-persist';
 const uiPersistConfig = {
     key: 'ui',
     storage: sessionStorage,
-    whitelist: ['isSidebarOpen', 'userMode', 'viewResetCounter', 'CANDIDATE', 'RECRUITER'], // Whitelist properties of ui slice
+    whitelist: ['isSidebarOpen', 'userMode', 'viewResetCounter', 'CANDIDATE', 'RECRUITER'],
 };
 
 const uiPersistedReducer = persistReducer(uiPersistConfig, uiReducer);
@@ -33,7 +34,7 @@ const uiPersistedReducer = persistReducer(uiPersistConfig, uiReducer);
 /* root reducer (NON-persisted) */
 /* ------------------------------------------------------------------ */
 export const rootReducer = combineReducers({
-    ui: uiPersistedReducer, // Use the persisted ui reducer
+    ui: uiPersistedReducer,
     search: searchReducer,
     notification: notificationReducer,
     theme: themeReducer,
@@ -42,28 +43,37 @@ export const rootReducer = combineReducers({
 export type RootState = ReturnType<typeof rootReducer>;
 
 /* ------------------------------------------------------------------ */
-/* Transform to exclude matches from search persistence */
-/* topSkills and totalCount are persisted for SearchResultAnalysisPanel */
+/* Transform to handle search persistence */
 /* ------------------------------------------------------------------ */
 const searchTransform = createTransform(
-    // Transform state on the way to storage
-    (inboundState: any) => {
-        // For each mode (CANDIDATE, RECRUITER), remove only matches
+    // Inbound: Transform state on the way to storage
+    (inboundState: any, key) => {
         const transformedState = { ...inboundState };
-        ['CANDIDATE', 'RECRUITER'].forEach((mode) => {
+        // Persist everything except 'matches' for each mode
+        [UserMode.CANDIDATE, UserMode.RECRUITER].forEach((mode) => {
             if (transformedState[mode]) {
-                transformedState[mode] = {
-                    ...transformedState[mode],
-                    matches: [], // Don't persist matches (large data, can be stale)
-                    // topSkills and totalCount are persisted
-                };
+                const { matches, ...rest } = transformedState[mode];
+                transformedState[mode] = rest;
             }
         });
         return transformedState;
     },
-    // Transform state when rehydrating (on the way out of storage)
-    (outboundState: any) => outboundState,
-    { whitelist: ['search'] } // Only apply to search reducer
+    // Outbound: Transform state when rehydrating
+    (outboundState: any, key) => {
+        if (!outboundState) return outboundState;
+
+        const rehydratedState = { ...outboundState };
+        [UserMode.CANDIDATE, UserMode.RECRUITER].forEach((mode) => {
+            // Merge rehydrated state with initial state to ensure all fields exist
+            rehydratedState[mode] = {
+                ...initialModeSpecificState,
+                ...(rehydratedState[mode] || {}),
+                 matches: [], // Always reset matches on rehydration
+            };
+        });
+        return rehydratedState;
+    },
+    { whitelist: ['search'] }
 );
 
 /* ------------------------------------------------------------------ */
@@ -72,24 +82,23 @@ const searchTransform = createTransform(
 const rootPersistConfig: PersistConfig<RootState> = {
     key: 'root',
     storage, // localStorage
-    whitelist: ['search', 'theme'], // Only search and theme for localStorage
-    transforms: [searchTransform], // Apply transform to exclude matches
+    whitelist: ['search', 'theme'],
+    transforms: [searchTransform],
 };
 
 const finalPersistedReducer = persistReducer(
     rootPersistConfig,
-    rootReducer as any // Type assertion needed due to nested persist
+    rootReducer as any
 );
 
-// Define the type for the store's state, which now includes the root-level _persist
-export type PersistedStoreState = RootState & { _persist: PersistState }; // Use PersistState here
+export type PersistedStoreState = RootState & { _persist: PersistState };
 
 /* ------------------------------------------------------------------ */
 /* store factory */
 /* ------------------------------------------------------------------ */
 export const makeStore = (initialState?: Partial<PersistedStoreState>) =>
     configureStore({
-        reducer: finalPersistedReducer, // This will wrap the rootReducer, which already includes uiPersistedReducer
+        reducer: finalPersistedReducer,
         preloadedState: initialState as PersistedStoreState,
         middleware: (getDefaultMiddleware) =>
             getDefaultMiddleware({

@@ -74,10 +74,24 @@ export function HomePageClient({ initialSkillCategories, initialDashboardData }:
   // Re-fetch search results when navigating to results view with existing searched skills
   // Use useRef to track if search was already triggered to prevent infinite loops
   const searchTriggeredRef = React.useRef(false);
+  const prevSearchedSkillsRef = React.useRef<string[]>([]);
 
   useEffect(() => {
-    // Reset flag when searchedSkills changes (new search initiated)
-    searchTriggeredRef.current = false;
+    // Reset flag only when searchedSkills actually changes (different content, not just reference)
+    const prevSkills = prevSearchedSkillsRef.current;
+    const currentSkills = searchedSkills;
+
+    const skillsChanged = prevSkills.length !== currentSkills.length ||
+      prevSkills.some((skill, idx) => skill !== currentSkills[idx]);
+
+    if (skillsChanged) {
+      prevSearchedSkillsRef.current = [...currentSkills];
+      // Only reset if this is a new search (skills actually changed)
+      // Don't reset if it's just a re-render with the same skills
+      if (prevSkills.length > 0 && currentSkills.length > 0) {
+        searchTriggeredRef.current = false;
+      }
+    }
   }, [searchedSkills]);
 
   useEffect(() => {
