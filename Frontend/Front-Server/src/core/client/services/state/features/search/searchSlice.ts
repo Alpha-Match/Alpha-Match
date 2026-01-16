@@ -21,7 +21,7 @@ export interface SearchState {
   skillsLoaded: boolean;
 }
 
-const initialModeSpecificState: ModeSpecificSearchState = {
+export const initialModeSpecificState: ModeSpecificSearchState = {
   selectedSkills: [],
   searchedSkills: [], // 검색에 실제 사용된 스킬
   selectedExperience: ExperienceLevel.MID,
