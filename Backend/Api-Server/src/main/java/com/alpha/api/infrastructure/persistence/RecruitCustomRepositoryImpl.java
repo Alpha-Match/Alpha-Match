@@ -160,4 +160,64 @@ public class RecruitCustomRepositoryImpl implements RecruitSearchRepository {
      * Helper record to hold SkillFrequency with totalCount from single query
      */
     private record SkillFrequencyWithTotal(SkillFrequency skillFrequency, Integer totalCount) {}
+
+    /**
+     * Find Recruits by similar skills with pagination (offset + limit)
+     * - Used for pagination beyond cached results (offset >= 500)
+     * - Results sorted by vector similarity at DB level
+     * - No upper limit constraint
+     *
+     * @param queryVector Query vector string
+     * @param similarityThreshold Minimum similarity score (0.0 to 1.0)
+     * @param offset Number of results to skip
+     * @param limit Maximum number of results to return
+     * @return Flux of RecruitSearchResult
+     */
+    @Override
+    public Flux<RecruitSearchResult> findSimilarByVectorWithScoreAndOffset(
+            String queryVector,
+            Double similarityThreshold,
+            Integer offset,
+            Integer limit
+    ) {
+        String sql = """
+            SELECT r.recruit_id, r.position, r.company_name, r.experience_years,
+                   r.primary_keyword, r.english_level, r.published_at, r.created_at, r.updated_at,
+                   (1 - (rse.skills_vector <=> CAST(:queryVector AS vector))) AS similarity_score
+            FROM recruit r
+            INNER JOIN recruit_skills_embedding rse ON r.recruit_id = rse.recruit_id
+            WHERE (1 - (rse.skills_vector <=> CAST(:queryVector AS vector))) >= :similarityThreshold
+              AND rse.skills_vector IS NOT NULL
+            ORDER BY rse.skills_vector <=> CAST(:queryVector AS vector)
+            OFFSET :offset
+            LIMIT :limit
+            """;
+
+        return databaseClient.sql(sql)
+                .bind("queryVector", queryVector)
+                .bind("similarityThreshold", similarityThreshold)
+                .bind("offset", offset)
+                .bind("limit", limit)
+                .map(row -> {
+                    Recruit recruit = Recruit.builder()
+                            .recruitId(row.get("recruit_id", UUID.class))
+                            .position(row.get("position", String.class))
+                            .companyName(row.get("company_name", String.class))
+                            .experienceYears(row.get("experience_years", Integer.class))
+                            .primaryKeyword(row.get("primary_keyword", String.class))
+                            .englishLevel(row.get("english_level", String.class))
+                            .publishedAt(row.get("published_at", OffsetDateTime.class))
+                            .createdAt(row.get("created_at", OffsetDateTime.class))
+                            .updatedAt(row.get("updated_at", OffsetDateTime.class))
+                            .build();
+
+                    Double similarityScore = row.get("similarity_score", Double.class);
+
+                    return RecruitSearchResult.builder()
+                            .recruit(recruit)
+                            .similarityScore(similarityScore)
+                            .build();
+                })
+                .all();
+    }
 }

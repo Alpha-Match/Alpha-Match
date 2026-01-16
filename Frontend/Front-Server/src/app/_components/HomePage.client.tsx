@@ -71,18 +71,37 @@ export function HomePageClient({ initialSkillCategories, initialDashboardData }:
   
   const { runSearch, loadMore, loading, fetchingMore, error, hasMore } = useSearchMatches();
 
+  // Re-fetch search results when navigating to results view with existing searched skills
+  // Use useRef to track if search was already triggered to prevent infinite loops
+  const searchTriggeredRef = React.useRef(false);
+
   useEffect(() => {
-    if (pageViewMode === 'results' && searchedSkills.length > 0 && !isInitial && matches.length === 0) {
+    // Reset flag when searchedSkills changes (new search initiated)
+    searchTriggeredRef.current = false;
+  }, [searchedSkills]);
+
+  useEffect(() => {
+    if (
+      pageViewMode === 'results' &&
+      searchedSkills.length > 0 &&
+      !isInitial &&
+      matches.length === 0 &&
+      !searchTriggeredRef.current &&
+      !loading
+    ) {
+      searchTriggeredRef.current = true;
       runSearch(userMode, searchedSkills);
     }
-  }, [userMode, pageViewMode, isInitial, searchedSkills, matches.length, runSearch]);
+  }, [userMode, pageViewMode, isInitial, searchedSkills, matches.length, loading]);
 
   const handleSearch = () => {
+    // Set flag before startTransition to prevent useEffect from triggering runSearch again
+    searchTriggeredRef.current = true;
     startTransition(() => {
       const sortedSkills = [...selectedSkills].sort();
       dispatch(setSearchPerformed(userMode));
       // Dispatch searched skills BEFORE running the main search to allow analysis panel to fetch concurrently
-      dispatch(setSearchedSkills({ userMode, skills: sortedSkills })); 
+      dispatch(setSearchedSkills({ userMode, skills: sortedSkills }));
       runSearch(userMode, sortedSkills);
       navigateToResults();
     });

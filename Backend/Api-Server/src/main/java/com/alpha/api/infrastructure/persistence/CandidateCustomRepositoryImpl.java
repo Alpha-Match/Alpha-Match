@@ -158,4 +158,61 @@ public class CandidateCustomRepositoryImpl implements CandidateSearchRepository 
      * Helper record to hold SkillFrequency with totalCount from single query
      */
     private record SkillFrequencyWithTotal(SkillFrequency skillFrequency, Integer totalCount) {}
+
+    /**
+     * Find Candidates by similar skills with pagination (offset + limit)
+     * - Used for pagination beyond cached results (offset >= 500)
+     * - Results sorted by vector similarity at DB level
+     * - No upper limit constraint
+     *
+     * @param queryVector Query vector string
+     * @param similarityThreshold Minimum similarity score (0.0 to 1.0)
+     * @param offset Number of results to skip
+     * @param limit Maximum number of results to return
+     * @return Flux of CandidateSearchResult
+     */
+    @Override
+    public Flux<CandidateSearchResult> findSimilarByVectorWithScoreAndOffset(
+            String queryVector,
+            Double similarityThreshold,
+            Integer offset,
+            Integer limit
+    ) {
+        String sql = """
+            SELECT c.candidate_id, c.position_category, c.experience_years, c.original_resume,
+                   c.created_at, c.updated_at,
+                   (1 - (cse.skills_vector <=> CAST(:queryVector AS vector))) AS similarity_score
+            FROM candidate c
+            INNER JOIN candidate_skills_embedding cse ON c.candidate_id = cse.candidate_id
+            WHERE (1 - (cse.skills_vector <=> CAST(:queryVector AS vector))) >= :similarityThreshold
+              AND cse.skills_vector IS NOT NULL
+            ORDER BY cse.skills_vector <=> CAST(:queryVector AS vector)
+            OFFSET :offset
+            LIMIT :limit
+            """;
+
+        return databaseClient.sql(sql)
+                .bind("queryVector", queryVector)
+                .bind("similarityThreshold", similarityThreshold)
+                .bind("offset", offset)
+                .bind("limit", limit)
+                .map(row -> {
+                    Candidate candidate = Candidate.builder()
+                            .candidateId(row.get("candidate_id", UUID.class))
+                            .positionCategory(row.get("position_category", String.class))
+                            .experienceYears(row.get("experience_years", Integer.class))
+                            .originalResume(row.get("original_resume", String.class))
+                            .createdAt(row.get("created_at", OffsetDateTime.class))
+                            .updatedAt(row.get("updated_at", OffsetDateTime.class))
+                            .build();
+
+                    Double similarityScore = row.get("similarity_score", Double.class);
+
+                    return CandidateSearchResult.builder()
+                            .candidate(candidate)
+                            .similarityScore(similarityScore)
+                            .build();
+                })
+                .all();
+    }
 }

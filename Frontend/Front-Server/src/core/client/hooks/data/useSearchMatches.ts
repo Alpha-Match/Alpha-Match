@@ -5,7 +5,7 @@ import {NetworkStatus} from '@apollo/client';
 import {CombinedGraphQLErrors, ServerError} from '@apollo/client/errors';
 import {SEARCH_MATCHES_QUERY} from '@/core/client/services/api/queries/search';
 import {useAppDispatch, useAppSelector} from '@/core/client/services/state/hooks';
-import {setMatches, setSearchedSkills, clearMatches} from '@/core/client/services/state/features/search/searchSlice';
+import {setMatches, appendMatches, setSearchedSkills, clearMatches} from '@/core/client/services/state/features/search/searchSlice';
 
 const PAGE_SIZE = 20; // 한 번에 로드할 개수
 const LOAD_MORE_THROTTLE_MS = 300; // 무한 스크롤 요청 간 최소 간격 (ms)
@@ -42,6 +42,7 @@ export const useSearchMatches = () => {
   const [isSearching, setIsSearching] = useState(false); // 즉각적인 로딩 상태를 위한 로컬 상태
 
   const lastLoadMoreTime = useRef<number>(0);
+  const hasLoadedMoreRef = useRef<boolean>(false); // Track if loadMore was ever called in this search session
 
   const getSortByString = useCallback((mode: UserMode): string => {
     let sortString = 'score DESC';
@@ -66,7 +67,7 @@ export const useSearchMatches = () => {
         sortBy: searchParams?.sortBy || getSortByString(currentUiMode),
       },
       notifyOnNetworkStatusChange: true,
-      fetchPolicy: 'cache-first', // Use cached data first
+      fetchPolicy: 'network-only', // Always fetch fresh data from server
     }
   );
 
@@ -79,26 +80,23 @@ export const useSearchMatches = () => {
       console.log('[Search] Query completed:', data);
       console.log('[Search] Matches count:', data.searchMatches.matches.length);
 
-      dispatch(
-        setMatches({
-          userMode: searchParams.mode,
-          matches: data.searchMatches.matches,
-        })
-      );
-      // setSearchedSkills is now dispatched in HomePage.client.tsx before runSearch
-      // This ensures that the analysis panel can start fetching concurrently.
-      // We keep this here in case the backend returns filtered skills or for robustness.
-      dispatch(
-        setSearchedSkills({
-          userMode: searchParams.mode,
-          skills: searchParams.skills,
-        })
-      );
+      // 초기 로드일 때만 setMatches 호출 (loadMore 후에는 호출 안함)
+      // hasLoadedMoreRef가 true이면 이미 loadMore가 호출된 상태이므로 Redux 업데이트 스킵
+      if (!hasLoadedMoreRef.current) {
+        dispatch(
+          setMatches({
+            userMode: searchParams.mode,
+            matches: data.searchMatches.matches,
+          })
+        );
+        dispatch(
+          setSearchedSkills({
+            userMode: searchParams.mode,
+            skills: searchParams.skills,
+          })
+        );
 
-      if (data.searchMatches.matches.length < PAGE_SIZE) {
-        setHasMore(false);
-      } else {
-        setHasMore(true);
+        setHasMore(data.searchMatches.matches.length >= PAGE_SIZE);
       }
     }
   }, [data, searchParams, dispatch]);
@@ -106,6 +104,18 @@ export const useSearchMatches = () => {
   useEffect(() => {
     if (queryError) {
       setIsSearching(false); // 에러 발생 시 로딩 상태 해제
+
+      // Skip AbortError notifications (happens when requests are cancelled, e.g., navigation)
+      const errorAny = queryError as any;
+      const isAbortError = errorAny.name === 'AbortError' ||
+        errorAny.message?.includes('aborted') ||
+        errorAny.networkError?.name === 'AbortError';
+
+      if (isAbortError) {
+        console.log('[Search] Request aborted (normal during navigation)');
+        return; // Don't show notification or clear results for abort errors
+      }
+
       setError(queryError);
       console.error('[Search] Query error:', queryError);
 
@@ -163,6 +173,7 @@ export const useSearchMatches = () => {
       setError(null);
       setHasMore(true);
       setIsSearching(true); // 검색 시작 시 즉시 로딩 상태로 설정
+      hasLoadedMoreRef.current = false; // Reset loadMore flag for new search
       dispatch(clearMatches(mode)); // Clear previous matches to show spinner immediately
 
       console.log('[Search] Starting new search:', {
@@ -193,8 +204,10 @@ export const useSearchMatches = () => {
     }
     lastLoadMoreTime.current = now;
 
-    const currentLength = matches.length;
+    // 이후 useEffect에서 setMatches 호출 방지
+    hasLoadedMoreRef.current = true;
 
+    const currentLength = matches.length;
     console.log('[Search] Loading more:', { currentLength, hasMore });
 
     try {
@@ -208,14 +221,23 @@ export const useSearchMatches = () => {
       console.log('[Search] FetchMore result:', result);
 
       const newMatches = result.data?.searchMatches?.matches || [];
-      if (newMatches.length < PAGE_SIZE) {
-        setHasMore(false);
+
+      // Redux에 새 매치만 추가 (기존 데이터 유지)
+      if (newMatches.length > 0) {
+        dispatch(
+          appendMatches({
+            userMode: searchParams.mode,
+            matches: newMatches,
+          })
+        );
       }
+
+      setHasMore(newMatches.length >= PAGE_SIZE);
     } catch (err) {
       console.error('[Search] FetchMore error:', err);
       setError(err as Error);
     }
-  }, [hasMore, isFetchingMore, searchParams, matches.length, fetchMore, getSortByString]);
+  }, [hasMore, isFetchingMore, searchParams, matches.length, fetchMore, getSortByString, dispatch]);
 
   return {
     runSearch,

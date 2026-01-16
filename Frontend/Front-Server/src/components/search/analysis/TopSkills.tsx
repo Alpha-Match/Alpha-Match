@@ -1,11 +1,8 @@
 'use client';
 
 import React, {useMemo} from 'react';
-import {useQuery} from '@apollo/client/react';
 import chroma from 'chroma-js';
-import {GET_SEARCH_STATISTICS} from '@/core/client/services/api/queries/stats';
 import {PieData, SkillCategory, SkillFrequency, UserMode} from '@/types';
-import {LoadingSpinner} from '@/components/ui/LoadingSpinner';
 import {useAppSelector} from '@/core/client/services/state/hooks';
 import {CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS} from "@/constants";
 import {TwoLevelPieChart} from '@/components/charts';
@@ -13,51 +10,28 @@ import {TwoLevelPieChart} from '@/components/charts';
 interface TopSkillsProps {
   mode: UserMode;
   skills: string[];
-  skillCategories: SkillCategory[]; // Prop for server-side fetched categories
+  skillCategories: SkillCategory[];
+  topSkills?: SkillFrequency[]; // 부모에서 전달받은 데이터
   limit?: number;
 }
 
-interface SearchStatisticsData {
-  searchStatistics: {
-    topSkills: SkillFrequency[];
-    totalCount: number;
-  };
-}
-
-interface SearchStatisticsVars {
-  mode: UserMode;
-  skills: string[];
-  limit?: number;
-}
-
-export const TopSkills: React.FC<TopSkillsProps> = ({ mode, skills, skillCategories, limit = 15 }) => {
-  const { data, loading, error } = useQuery<SearchStatisticsData, SearchStatisticsVars>(
-    GET_SEARCH_STATISTICS,
-    {
-      variables: { mode, skills, limit },
-      skip: skills.length === 0,
-      fetchPolicy: 'cache-first', // Use cached data first
-    }
-  );
-
+export const TopSkills: React.FC<TopSkillsProps> = ({ mode, skills, skillCategories, topSkills = [], limit = 15 }) => {
   const userMode = useAppSelector((state) => state.ui.userMode);
   const themeColors = userMode === UserMode.RECRUITER
     ? RECRUITER_THEME_COLORS
     : CANDIDATE_THEME_COLORS;
 
   const chartData = useMemo(() => {
-    if (!skillCategories || !data?.searchStatistics?.topSkills) {
+    if (!skillCategories || !topSkills || topSkills.length === 0) {
       return { innerData: [], outerData: [], categoryColorMap: new Map() };
     }
-    
+
     const skillToCategoryMap = new Map<string, string>();
     skillCategories.forEach(category => {
       category.skills.forEach(skill => {
-        skillToCategoryMap.set(skill.toLowerCase().trim(), category.category); // Normalize key
+        skillToCategoryMap.set(skill.toLowerCase().trim(), category.category);
       });
     });
-
-    const topSkills = data.searchStatistics.topSkills;
     const categories = new Map<string, { value: number; skills: SkillFrequency[] }>();
 
     topSkills.forEach(skill => {
@@ -97,7 +71,7 @@ export const TopSkills: React.FC<TopSkillsProps> = ({ mode, skills, skillCategor
     const categoryColorMap = new Map(innerData.map((c, i) => [c.name, categoryColorsPalette[i % categoryColorsPalette.length]]));
 
     return { innerData, outerData, categoryColorMap };
-  }, [data, skillCategories, themeColors]);
+  }, [topSkills, skillCategories, themeColors]);
 
   const { innerData, outerData, categoryColorMap } = chartData;
 
@@ -109,24 +83,6 @@ export const TopSkills: React.FC<TopSkillsProps> = ({ mode, skills, skillCategor
     );
   }
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-full min-h-[450px]">
-        <LoadingSpinner />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-red-500 p-4 rounded-lg border border-red-300 bg-red-50 dark:bg-red-900/20">
-        <p className="font-semibold text-sm">요구 기술 통계 로딩 중 오류</p>
-        <p className="text-xs mt-1">{error.message}</p>
-      </div>
-    );
-  }
-
-  const topSkills = data?.searchStatistics?.topSkills || [];
   if (topSkills.length === 0) {
     return (
       <div className="text-gray-500 dark:text-gray-400 text-center p-6 text-sm">

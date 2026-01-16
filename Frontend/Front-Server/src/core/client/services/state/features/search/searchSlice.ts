@@ -1,7 +1,7 @@
 'use client';
 
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
-import {DashboardCategory, ExperienceLevel, MatchItem, SkillCategory, UserMode} from '@/types';
+import {DashboardCategory, ExperienceLevel, MatchItem, SkillCategory, SkillFrequency, UserMode} from '@/types';
 
 export interface ModeSpecificSearchState {
   selectedSkills: string[];
@@ -10,7 +10,8 @@ export interface ModeSpecificSearchState {
   isInitial: boolean;
   matches: MatchItem[];
   dashboardData: DashboardCategory[] | null;
-  totalCount?: number | null;
+  totalCount: number | null;
+  topSkills: SkillFrequency[]; // GET_SEARCH_STATISTICS 결과
 }
 
 export interface SearchState {
@@ -28,6 +29,7 @@ const initialModeSpecificState: ModeSpecificSearchState = {
   matches: [],
   dashboardData: null,
   totalCount: null,
+  topSkills: [],
 };
 
 const initialState: SearchState = {
@@ -62,6 +64,11 @@ export const searchSlice = createSlice({
       const { userMode, matches } = action.payload;
       state[userMode].matches = matches;
     },
+    appendMatches: (state, action: PayloadAction<{ userMode: UserMode; matches: MatchItem[] }>) => {
+      const { userMode, matches } = action.payload;
+      // Append new matches to existing ones (for infinite scroll)
+      state[userMode].matches = [...state[userMode].matches, ...matches];
+    },
     setSearchedSkills: (state, action: PayloadAction<{ userMode: UserMode; skills: string[] }>) => {
       const { userMode, skills } = action.payload;
       state[userMode].searchedSkills = skills;
@@ -74,9 +81,15 @@ export const searchSlice = createSlice({
       const { userMode, count } = action.payload;
       state[userMode].totalCount = count;
     },
+    setSearchStatistics: (state, action: PayloadAction<{ userMode: UserMode; totalCount: number; topSkills: SkillFrequency[] }>) => {
+      const { userMode, totalCount, topSkills } = action.payload;
+      state[userMode].totalCount = totalCount;
+      state[userMode].topSkills = topSkills;
+    },
     clearMatches: (state, action: PayloadAction<UserMode>) => {
       state[action.payload].matches = [];
-      state[action.payload].totalCount = null; // Also clear totalCount
+      state[action.payload].totalCount = null;
+      state[action.payload].topSkills = [];
     },
     resetSearch: (state, action: PayloadAction<UserMode>) => {
         state[action.payload] = { ...initialModeSpecificState, searchedSkills: [], dashboardData: state[action.payload].dashboardData };
@@ -100,9 +113,11 @@ export const {
   setExperience,
   setSearchPerformed,
   setMatches,
+  appendMatches,
   setSearchedSkills,
   setDashboardData,
   setTotalCount,
+  setSearchStatistics,
   clearMatches,
   resetSearch,
   setSkillCategories,
