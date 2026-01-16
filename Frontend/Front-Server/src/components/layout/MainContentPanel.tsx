@@ -111,7 +111,7 @@ export const MainContentPanel: React.FC<MainContentPanelProps> = ({
         </div>
 
         {/* Column 3: Search Result List or Detail Panel */}
-        <div className="flex-1 h-full overflow-y-auto custom-scrollbar p-6">
+        <div className="flex-1 h-full overflow-hidden p-6">
           {pageViewMode === 'detail' && selectedMatchId ? (
             <MatchDetailPanel
               matchId={selectedMatchId}
@@ -121,7 +121,7 @@ export const MainContentPanel: React.FC<MainContentPanelProps> = ({
               searchedSkills={searchedSkills}
             />
           ) : (
-            <QueryBoundary loading={loading && matches.length === 0} error={error}>
+            <QueryBoundary loading={loading && matches.length === 0 && !fetchingMore} error={error}>
               <SearchResultPanel
                 matches={matches}
                 onMatchSelect={onMatchSelect}
@@ -155,7 +155,7 @@ export const MainContentPanel: React.FC<MainContentPanelProps> = ({
           return <InputPanel onSearch={onSearch} isLoading={loading} />;
         case 'results':
           return (
-            <QueryBoundary loading={loading && matches.length === 0} error={error}>
+            <QueryBoundary loading={loading && matches.length === 0 && !fetchingMore} error={error}>
               <SearchResultPanel
                 matches={matches}
                 onMatchSelect={onMatchSelect}
@@ -203,7 +203,7 @@ export const MainContentPanel: React.FC<MainContentPanelProps> = ({
           userMode={userMode}
           detailAvailable={!!selectedMatchId}
         />
-        <div className="flex-1 p-6 overflow-y-auto custom-scrollbar">
+        <div className="flex-1 p-6 overflow-hidden">
           {renderContent()}
         </div>
       </main>

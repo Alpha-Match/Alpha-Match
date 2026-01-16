@@ -111,26 +111,12 @@ const cacheConfig = new InMemoryCache({
   typePolicies: {
     Query: {
       fields: {
-        // searchMatches: 무한 스크롤 지원 (병합 정책)
+        // searchMatches: Redux가 상태 관리, Apollo는 캐시만 담당
+        // offset을 keyArgs에 포함하여 각 페이지를 별도 캐시 엔트리로 저장
+        // merge: false로 설정하여 Redux와의 충돌 방지
         searchMatches: {
-          keyArgs: ['mode', 'skills', 'experience'], // 캐시 키
-          merge(existing, incoming, { args }) {
-            if (!existing || args?.offset === 0) {
-              // 첫 로드 또는 새 검색
-              return incoming;
-            }
-
-            // 무한 스크롤: 기존 데이터 + 새 데이터 병합
-            return {
-              ...incoming,
-              matches: [
-                ...(existing.matches || []),
-                ...(incoming.matches || []),
-              ],
-              // vectorVisualization은 덮어쓰기 (마지막 상태 유지)
-              vectorVisualization: incoming.vectorVisualization,
-            };
-          },
+          keyArgs: ['mode', 'skills', 'experience', 'offset'],
+          merge: false,
         },
         // skillCategories: 한 번 로드하면 변경 없음 (앱 초기화용)
         skillCategories: {

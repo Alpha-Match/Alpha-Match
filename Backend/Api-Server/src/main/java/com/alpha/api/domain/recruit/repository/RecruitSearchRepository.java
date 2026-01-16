@@ -47,4 +47,23 @@ public interface RecruitSearchRepository {
             Double similarityThreshold,
             Integer limit
     );
+
+    /**
+     * Find Recruits by similar skills with pagination (offset + limit)
+     * - Used for pagination beyond cached results
+     * - Results sorted by vector similarity (DB level)
+     * - No upper limit constraint
+     *
+     * @param queryVector Query vector string (1536 dimensions, PostgreSQL vector format)
+     * @param similarityThreshold Minimum similarity score (0.0 to 1.0)
+     * @param offset Number of results to skip
+     * @param limit Maximum number of results to return
+     * @return Flux of RecruitSearchResult
+     */
+    Flux<RecruitSearchResult> findSimilarByVectorWithScoreAndOffset(
+            String queryVector,
+            Double similarityThreshold,
+            Integer offset,
+            Integer limit
+    );
 }

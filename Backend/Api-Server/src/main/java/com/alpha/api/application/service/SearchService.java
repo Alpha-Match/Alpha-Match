@@ -56,6 +56,9 @@ public class SearchService {
     private final SkillEmbeddingDicRepository skillEmbeddingDicRepository;
     private final SkillCategoryDicRepository skillCategoryDicRepository;
 
+    // Cache limit constant - results beyond this are fetched directly from DB
+    private static final int CACHE_LIMIT = 500;
+
     /**
      * Search matches (Frontend searchMatches query)
      * - mode: CANDIDATE searches Recruits, RECRUITER searches Candidates
@@ -64,6 +67,10 @@ public class SearchService {
      * - offset: Number of results to skip for pagination (default: 0)
      * - sortBy: Sort order string (e.g., "score DESC, publishedAt DESC") (nullable)
      * - Returns: matches + vectorVisualization
+     *
+     * Hybrid Pagination Strategy:
+     * - offset < 500: Use cached results (hybrid score sorted)
+     * - offset >= 500: Fetch directly from DB (vector similarity sorted)
      *
      * @param mode UserMode (CANDIDATE or RECRUITER)
      * @param skills List of skill names
@@ -87,6 +94,28 @@ public class SearchService {
                 .collect(Collectors.toList());
         log.debug("Sorted skills: {}", sortedSkills);
 
+        // Determine pagination strategy based on offset
+        if (finalOffset < CACHE_LIMIT) {
+            // Use cache for first 500 results
+            return searchMatchesFromCache(mode, sortedSkills, finalOffset, finalLimit, sortBy);
+        } else {
+            // Fetch directly from DB for results beyond cache limit
+            log.info("Offset {} >= CACHE_LIMIT {}, fetching directly from DB", finalOffset, CACHE_LIMIT);
+            return searchMatchesFromDb(mode, sortedSkills, finalOffset, finalLimit, sortBy);
+        }
+    }
+
+    /**
+     * Search matches from cache (offset < 500)
+     * - Uses cached results sorted by hybrid score
+     */
+    private Mono<SearchMatchesResult> searchMatchesFromCache(
+            UserMode mode,
+            List<String> sortedSkills,
+            int finalOffset,
+            int finalLimit,
+            String sortBy
+    ) {
         // Cache key for full search results (hybrid score sorted)
         String cacheKey = CacheService.searchResultsKey(mode.name(), sortedSkills);
 
@@ -108,7 +137,7 @@ public class SearchService {
                     int toIndex = Math.min(finalOffset + finalLimit, allMatches.size());
                     List<MatchItem> paginatedMatches = allMatches.subList(fromIndex, toIndex);
 
-                    log.debug("Pagination: total={}, offset={}, limit={}, returned={}",
+                    log.debug("Cache pagination: total={}, offset={}, limit={}, returned={}",
                             allMatches.size(), finalOffset, finalLimit, paginatedMatches.size());
 
                     // Generate vector visualization
@@ -118,6 +147,164 @@ public class SearchService {
                                     .vectorVisualization(vectorVisualization)
                                     .build());
                 });
+    }
+
+    /**
+     * Search matches directly from DB (offset >= 500)
+     * - Bypasses cache, fetches directly with SQL OFFSET/LIMIT
+     * - Results sorted by vector similarity at DB level
+     * - Hybrid scores calculated on fetched results
+     */
+    private Mono<SearchMatchesResult> searchMatchesFromDb(
+            UserMode mode,
+            List<String> sortedSkills,
+            int finalOffset,
+            int finalLimit,
+            String sortBy
+    ) {
+        Double similarityThreshold = 0.6;
+
+        return skillNormalizationService.normalizeSkillsToQueryVector(sortedSkills)
+                .flatMap(queryVector -> {
+                    if (mode == UserMode.CANDIDATE) {
+                        return fetchRecruitsFromDb(queryVector, sortedSkills, similarityThreshold, finalOffset, finalLimit, sortBy);
+                    } else {
+                        return fetchCandidatesFromDb(queryVector, sortedSkills, similarityThreshold, finalOffset, finalLimit, sortBy);
+                    }
+                })
+                .flatMap(matches -> {
+                    log.debug("DB direct pagination: offset={}, limit={}, returned={}",
+                            finalOffset, finalLimit, matches.size());
+
+                    // Generate vector visualization
+                    return generateVectorVisualization(sortedSkills)
+                            .map(vectorVisualization -> SearchMatchesResult.builder()
+                                    .matches(matches)
+                                    .vectorVisualization(vectorVisualization)
+                                    .build());
+                });
+    }
+
+    /**
+     * Fetch recruits directly from DB with offset/limit
+     */
+    private Mono<List<MatchItem>> fetchRecruitsFromDb(
+            String queryVector,
+            List<String> skills,
+            Double similarityThreshold,
+            int offset,
+            int limit,
+            String sortBy
+    ) {
+        ScoringStrategy scoringStrategy = scoringStrategyFactory.getStrategy(UserMode.CANDIDATE);
+        Set<String> searchSkillsSet = skills.stream()
+                .map(String::toLowerCase)
+                .map(String::trim)
+                .collect(Collectors.toSet());
+
+        return recruitSearchRepository.findSimilarByVectorWithScoreAndOffset(queryVector, similarityThreshold, offset, limit)
+                .flatMap(recruitSearchResult -> {
+                    var recruit = recruitSearchResult.getRecruit();
+                    Double similarityScore = recruitSearchResult.getSimilarityScore();
+
+                    return recruitSkillRepository.findByRecruitId(recruit.getRecruitId())
+                            .map(recruitSkill -> recruitSkill.getSkill())
+                            .collectList()
+                            .map(recruitSkills -> {
+                                Set<String> targetSkillsSet = recruitSkills.stream()
+                                        .map(String::toLowerCase)
+                                        .map(String::trim)
+                                        .collect(Collectors.toSet());
+
+                                ScoringContext context = ScoringContext.builder()
+                                        .vectorSimilarity(similarityScore)
+                                        .searchSkills(searchSkillsSet)
+                                        .targetSkills(targetSkillsSet)
+                                        .build();
+
+                                ScoringResult scoringResult = scoringStrategy.calculate(context);
+
+                                return MatchItem.builder()
+                                        .id(recruit.getRecruitId().toString())
+                                        .title(recruit.getPosition())
+                                        .company(recruit.getCompanyName())
+                                        .score(scoringResult.getHybridScore())
+                                        .skills(recruitSkills)
+                                        .experience(recruit.getExperienceYears())
+                                        .timestamp(recruit.getPublishedAt() != null ? recruit.getPublishedAt().toString() : null)
+                                        .vectorScore(scoringResult.getVectorScore())
+                                        .overlapRatio(scoringResult.getOverlapRatio())
+                                        .coverageRatio(scoringResult.getCoverageRatio())
+                                        .extraRatio(scoringResult.getExtraRatio())
+                                        .matchedSkills(new ArrayList<>(scoringResult.getMatchedSkills()))
+                                        .extraSkills(new ArrayList<>(scoringResult.getExtraSkills()))
+                                        .missingSkills(new ArrayList<>(scoringResult.getMissingSkills()))
+                                        .build();
+                            });
+                })
+                .collectList()
+                .map(matches -> applySorting(matches, sortBy != null ? sortBy : "score DESC"));
+    }
+
+    /**
+     * Fetch candidates directly from DB with offset/limit
+     */
+    private Mono<List<MatchItem>> fetchCandidatesFromDb(
+            String queryVector,
+            List<String> skills,
+            Double similarityThreshold,
+            int offset,
+            int limit,
+            String sortBy
+    ) {
+        ScoringStrategy scoringStrategy = scoringStrategyFactory.getStrategy(UserMode.RECRUITER);
+        Set<String> searchSkillsSet = skills.stream()
+                .map(String::toLowerCase)
+                .map(String::trim)
+                .collect(Collectors.toSet());
+
+        return candidateSearchRepository.findSimilarByVectorWithScoreAndOffset(queryVector, similarityThreshold, offset, limit)
+                .flatMap(candidateSearchResult -> {
+                    var candidate = candidateSearchResult.getCandidate();
+                    Double similarityScore = candidateSearchResult.getSimilarityScore();
+
+                    return candidateSkillRepository.findByCandidateId(candidate.getCandidateId())
+                            .map(candidateSkill -> candidateSkill.getSkill())
+                            .collectList()
+                            .map(candidateSkills -> {
+                                Set<String> targetSkillsSet = candidateSkills.stream()
+                                        .map(String::toLowerCase)
+                                        .map(String::trim)
+                                        .collect(Collectors.toSet());
+
+                                ScoringContext context = ScoringContext.builder()
+                                        .vectorSimilarity(similarityScore)
+                                        .searchSkills(searchSkillsSet)
+                                        .targetSkills(targetSkillsSet)
+                                        .build();
+
+                                ScoringResult scoringResult = scoringStrategy.calculate(context);
+
+                                return MatchItem.builder()
+                                        .id(candidate.getCandidateId().toString())
+                                        .title(candidate.getOriginalResume())
+                                        .company(candidate.getPositionCategory())
+                                        .score(scoringResult.getHybridScore())
+                                        .skills(candidateSkills)
+                                        .experience(candidate.getExperienceYears())
+                                        .timestamp(candidate.getCreatedAt() != null ? candidate.getCreatedAt().toString() : null)
+                                        .vectorScore(scoringResult.getVectorScore())
+                                        .overlapRatio(scoringResult.getOverlapRatio())
+                                        .coverageRatio(scoringResult.getCoverageRatio())
+                                        .extraRatio(scoringResult.getExtraRatio())
+                                        .matchedSkills(new ArrayList<>(scoringResult.getMatchedSkills()))
+                                        .extraSkills(new ArrayList<>(scoringResult.getExtraSkills()))
+                                        .missingSkills(new ArrayList<>(scoringResult.getMissingSkills()))
+                                        .build();
+                            });
+                })
+                .collectList()
+                .map(matches -> applySorting(matches, sortBy != null ? sortBy : "score DESC"));
     }
 
     /**
