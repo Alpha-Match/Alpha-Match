@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { useQuery } from '@apollo/client/react';
+import { NetworkStatus } from '@apollo/client'; // Add this import
 import { SkillCategory, SkillFrequency, UserMode } from '@/types';
 import { TopSkills, SearchResultAnalysis } from '@/components/search/analysis';
 import { GET_SEARCH_STATISTICS } from '@/core/client/services/api/queries/stats';
@@ -37,7 +38,8 @@ export const SearchResultAnalysisPanel: React.FC<
 	const persistedTotalCount = useAppSelector((state) => state.search[userMode].totalCount);
 	const persistedTopSkills = useAppSelector((state) => state.search[userMode].topSkills);
 
-	const { data: statsData, loading: statsLoading } = useQuery<
+
+	const { data: statsData, loading: statsLoading, networkStatus, error: statsError } = useQuery<
 		SearchStatisticsData,
 		SearchStatisticsVars
 	>(GET_SEARCH_STATISTICS, {
@@ -45,6 +47,13 @@ export const SearchResultAnalysisPanel: React.FC<
 		skip: searchedSkills.length === 0,
 		fetchPolicy: 'cache-and-network',
 	});
+
+	// 에러 발생 시 콘솔에 기록 (UI에서는 빈 결과로 처리)
+	useEffect(() => {
+		if (statsError) {
+			console.warn('[SearchResultAnalysisPanel] Statistics query error:', statsError.message);
+		}
+	}, [statsError]);
 
 	// Apollo 데이터가 있으면 사용, 없으면 Redux persist 데이터 사용
 	const totalCount = statsData?.searchStatistics?.totalCount ?? persistedTotalCount;
@@ -70,10 +79,11 @@ export const SearchResultAnalysisPanel: React.FC<
 		);
 	}
 
-	// persist된 데이터가 있으면 스피너 없이 바로 표시
+	// persist된 데이터가 있으면 스피너 없이 바로 표시 여부를 판단 (SearchResultAnalysis 컴포넌트에 전달)
 	const hasPersistedData = persistedTopSkills.length > 0 && persistedTotalCount !== null;
 
-	if (statsLoading && !hasPersistedData) {
+	// 로딩 스피너는 statsLoading (네트워크 요청 중) && networkStatus === NetworkStatus.loading (초기 로딩) && statsData가 없을 때만 표시
+	if (statsLoading && networkStatus === NetworkStatus.loading && !statsData?.searchStatistics) {
 		return (
 			<div className="w-full h-full flex justify-center items-center">
 				<LoadingSpinner
@@ -91,7 +101,7 @@ export const SearchResultAnalysisPanel: React.FC<
 			<SearchResultAnalysis
 				searchedSkills={searchedSkills}
 				totalCount={totalCount ?? undefined}
-				statsLoading={statsLoading && !hasPersistedData}
+				statsLoading={statsLoading}
 				activeColor={activeColor}
 			/>
 			<div className="bg-panel-main p-6 rounded-lg shadow-lg border border-border/30">
@@ -101,6 +111,7 @@ export const SearchResultAnalysisPanel: React.FC<
 					limit={15}
 					skillCategories={skillCategories}
 					topSkills={topSkills}
+					loading={statsLoading}
 				/>
 			</div>
 		</div>

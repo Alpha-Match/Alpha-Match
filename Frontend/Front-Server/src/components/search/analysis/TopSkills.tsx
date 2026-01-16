@@ -6,22 +6,30 @@ import {PieData, SkillCategory, SkillFrequency, UserMode} from '@/types';
 import {useAppSelector} from '@/core/client/services/state/hooks';
 import {CANDIDATE_THEME_COLORS, RECRUITER_THEME_COLORS} from "@/constants";
 import {TwoLevelPieChart} from '@/components/charts';
+import {LoadingSpinner} from '@/components/ui';
 
 interface TopSkillsProps {
   mode: UserMode;
   skills: string[];
   skillCategories: SkillCategory[];
-  topSkills?: SkillFrequency[]; // 부모에서 전달받은 데이터
+  topSkills?: SkillFrequency[];
   limit?: number;
+  loading?: boolean; // Add loading prop
 }
 
-export const TopSkills: React.FC<TopSkillsProps> = ({ mode, skills, skillCategories, topSkills = [], limit = 15 }) => {
+type ChartDataType = {
+  innerData: PieData[];
+  outerData: PieData[];
+  categoryColorMap: Map<string, string>;
+};
+
+export const TopSkills: React.FC<TopSkillsProps> = ({ mode, skills, skillCategories, topSkills = [], limit = 15, loading = false }) => {
   const userMode = useAppSelector((state) => state.ui.userMode);
   const themeColors = userMode === UserMode.RECRUITER
     ? RECRUITER_THEME_COLORS
     : CANDIDATE_THEME_COLORS;
 
-  const chartData = useMemo(() => {
+  const chartData = useMemo<ChartDataType>(() => {
     if (!skillCategories || !topSkills || topSkills.length === 0) {
       return { innerData: [], outerData: [], categoryColorMap: new Map() };
     }
@@ -35,8 +43,8 @@ export const TopSkills: React.FC<TopSkillsProps> = ({ mode, skills, skillCategor
     const categories = new Map<string, { value: number; skills: SkillFrequency[] }>();
 
     topSkills.forEach(skill => {
-      const normalizedSkillName = skill.skill.toLowerCase().trim(); // Normalize lookup key
-      const categoryName = skillToCategoryMap.get(normalizedSkillName) || '기타'; // Use normalized key
+      const normalizedSkillName = skill.skill.toLowerCase().trim();
+      const categoryName = skillToCategoryMap.get(normalizedSkillName) || '기타';
       if (!categories.has(categoryName)) {
         categories.set(categoryName, { value: 0, skills: [] });
       }
@@ -52,10 +60,8 @@ export const TopSkills: React.FC<TopSkillsProps> = ({ mode, skills, skillCategor
       value: data.value,
     }));
 
-    // Build outerData in a hierarchical order to match innerData
     const orderedOuterData: PieData[] = [];
     sortedCategories.forEach(([categoryName, categoryData]) => {
-      // Sort skills within each category by value for consistent outer ring order
       categoryData.skills.sort((a, b) => b.count - a.count).forEach(skill => {
         orderedOuterData.push({
           name: skill.skill,
@@ -65,7 +71,7 @@ export const TopSkills: React.FC<TopSkillsProps> = ({ mode, skills, skillCategor
         });
       });
     });
-    const outerData = orderedOuterData; // Assign the newly ordered data
+    const outerData = orderedOuterData;
     
     const categoryColorsPalette = chroma.scale(themeColors).mode('lch').colors(Math.max(innerData.length, themeColors.length));
     const categoryColorMap = new Map(innerData.map((c, i) => [c.name, categoryColorsPalette[i % categoryColorsPalette.length]]));
@@ -74,6 +80,15 @@ export const TopSkills: React.FC<TopSkillsProps> = ({ mode, skills, skillCategor
   }, [topSkills, skillCategories, themeColors]);
 
   const { innerData, outerData, categoryColorMap } = chartData;
+
+  // Show loading spinner if loading is true and no data to show yet
+  if (loading && topSkills.length === 0) {
+    return (
+      <div className="flex justify-center items-center h-48">
+        <LoadingSpinner size={32} message="기술 스택 분석 로딩 중..." />
+      </div>
+    );
+  }
 
   if (skills.length === 0) {
     return (
@@ -91,9 +106,9 @@ export const TopSkills: React.FC<TopSkillsProps> = ({ mode, skills, skillCategor
     );
   }
 
-    const title = mode === UserMode.CANDIDATE
-        ? `채용 시장 수요 기술 Top ${limit}`
-        : `인재 역량 현황 Top ${limit}`;
+  const title = mode === UserMode.CANDIDATE
+    ? `채용 시장 수요 기술 Top ${limit}`
+    : `인재 역량 현황 Top ${limit}`;
 
   return (
     <div>

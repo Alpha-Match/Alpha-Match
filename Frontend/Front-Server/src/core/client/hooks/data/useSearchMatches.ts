@@ -1,14 +1,13 @@
-import {MatchItem, SkillMatch, UserMode} from '@/types';
-import {useCallback, useEffect, useRef, useState} from 'react';
-import {useQuery} from '@apollo/client/react';
-import {NetworkStatus} from '@apollo/client';
-import {CombinedGraphQLErrors, ServerError} from '@apollo/client/errors';
-import {SEARCH_MATCHES_QUERY} from '@/core/client/services/api/queries/search';
-import {useAppDispatch, useAppSelector} from '@/core/client/services/state/hooks';
-import {setMatches, appendMatches, setSearchedSkills, clearMatches} from '@/core/client/services/state/features/search/searchSlice';
+import { MatchItem, SkillMatch, UserMode } from '@/types';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useQuery } from '@apollo/client/react';
+import { NetworkStatus } from '@apollo/client';
+import { SEARCH_MATCHES_QUERY } from '@/core/client/services/api/queries/search';
+import { useAppDispatch, useAppSelector } from '@/core/client/services/state/hooks';
+import { setMatches, appendMatches, clearMatches } from '@/core/client/services/state/features/search/searchSlice';
 
-const PAGE_SIZE = 20; // 한 번에 로드할 개수
-const LOAD_MORE_THROTTLE_MS = 300; // 무한 스크롤 요청 간 최소 간격 (ms)
+const PAGE_SIZE = 20;
+const LOAD_MORE_THROTTLE_MS = 300;
 
 interface SearchMatchesData {
   searchMatches: {
@@ -30,219 +29,123 @@ export const useSearchMatches = () => {
   const dispatch = useAppDispatch();
   const currentUiMode = useAppSelector((state) => state.ui.userMode);
   const matches = useAppSelector((state) => state.search[currentUiMode].matches);
-
-  const [searchParams, setSearchParams] = useState<{
-    mode: UserMode;
-    skills: string[];
-    experience: string;
-    sortBy?: string;
-  } | null>(null);
+  
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const [isSearching, setIsSearching] = useState(false); // 즉각적인 로딩 상태를 위한 로컬 상태
+  const [isSearching, setIsSearching] = useState(false); // Use local state for synchronous loading status
 
   const lastLoadMoreTime = useRef<number>(0);
-  const hasLoadedMoreRef = useRef<boolean>(false); // Track if loadMore was ever called in this search session
+  const currentSearchVars = useRef<Omit<SearchMatchesVars, 'limit' | 'offset'> | undefined>(undefined);
 
   const getSortByString = useCallback((mode: UserMode): string => {
     let sortString = 'score DESC';
-    if (mode === UserMode.CANDIDATE) {
-      sortString += ', publishedAt DESC';
-    } else if (mode === UserMode.RECRUITER) {
-      sortString += ', createdAt DESC';
-    }
+    if (mode === UserMode.CANDIDATE) sortString += ', publishedAt DESC';
+    else if (mode === UserMode.RECRUITER) sortString += ', createdAt DESC';
     return sortString;
   }, []);
 
-  const { data, loading: apolloLoading, fetchMore, error: queryError, networkStatus } = useQuery<SearchMatchesData, SearchMatchesVars>(
-    SEARCH_MATCHES_QUERY,
-    {
-      skip: !searchParams,
-      variables: {
-        mode: searchParams?.mode || UserMode.CANDIDATE,
-        skills: searchParams?.skills || [],
-        experience: searchParams?.experience || '',
-        limit: PAGE_SIZE,
-        offset: 0,
-        sortBy: searchParams?.sortBy || getSortByString(currentUiMode),
-      },
-      notifyOnNetworkStatusChange: true,
-      fetchPolicy: 'network-only', // Always fetch fresh data from server
-    }
-  );
+  const { error: queryError, fetchMore, networkStatus, refetch } = useQuery<
+    SearchMatchesData,
+    SearchMatchesVars
+  >(SEARCH_MATCHES_QUERY, {
+    variables: {
+      mode: currentUiMode,
+      skills: [],
+      experience: '',
+      limit: PAGE_SIZE,
+      offset: 0,
+      sortBy: getSortByString(currentUiMode),
+    },
+    skip: true,
+    notifyOnNetworkStatusChange: true,
+    fetchPolicy: 'network-only',
+  });
 
-  const isInitialLoading = (isSearching || (apolloLoading && networkStatus === NetworkStatus.loading)) && matches.length === 0;
   const isFetchingMore = networkStatus === NetworkStatus.fetchMore;
 
   useEffect(() => {
-    if (data && data.searchMatches && searchParams) {
-      setIsSearching(false); // 데이터 도착 시 로딩 상태 해제
-      console.log('[Search] Query completed:', data);
-      console.log('[Search] Matches count:', data.searchMatches.matches.length);
-
-      // 초기 로드일 때만 setMatches 호출 (loadMore 후에는 호출 안함)
-      // hasLoadedMoreRef가 true이면 이미 loadMore가 호출된 상태이므로 Redux 업데이트 스킵
-      if (!hasLoadedMoreRef.current) {
-        dispatch(
-          setMatches({
-            userMode: searchParams.mode,
-            matches: data.searchMatches.matches,
-          })
-        );
-        dispatch(
-          setSearchedSkills({
-            userMode: searchParams.mode,
-            skills: searchParams.skills,
-          })
-        );
-
-        setHasMore(data.searchMatches.matches.length >= PAGE_SIZE);
-      }
-    }
-  }, [data, searchParams, dispatch]);
-
-  useEffect(() => {
     if (queryError) {
-      setIsSearching(false); // 에러 발생 시 로딩 상태 해제
-
-      // Skip AbortError notifications (happens when requests are cancelled, e.g., navigation)
       const errorAny = queryError as any;
-      const isAbortError = errorAny.name === 'AbortError' ||
-        errorAny.message?.includes('aborted') ||
-        errorAny.networkError?.name === 'AbortError';
-
-      if (isAbortError) {
-        console.log('[Search] Request aborted (normal during navigation)');
-        return; // Don't show notification or clear results for abort errors
-      }
-
-      setError(queryError);
-      console.error('[Search] Query error:', queryError);
-
-      let userMessage = 'An unexpected error occurred during the search.';
-      if (CombinedGraphQLErrors.is(queryError)) {
-        userMessage = queryError.errors.map((e) => e.message).join(' ');
-      } else if (ServerError.is(queryError)) {
-        userMessage = 'Server is not responding. Please try again later.';
-      } else {
-        userMessage = 'A network error occurred. Please check your connection.';
-      }
-
-      document.dispatchEvent(
-        new CustomEvent('show-notification', {
-          detail: { message: userMessage, type: 'error' },
-        })
-      );
-
-      if (searchParams) {
-        dispatch(
-          setMatches({
-            userMode: searchParams.mode,
-            matches: [],
-          })
-        );
-        dispatch(
-          setSearchedSkills({
-            userMode: searchParams.mode,
-            skills: [],
-          })
-        );
+      if (errorAny.name !== 'AbortError' && !errorAny.message?.includes('aborted')) {
+        setError(queryError);
+        console.error('[Search] Query error:', queryError);
       }
     }
-  }, [queryError, searchParams, dispatch]);
+  }, [queryError]);
 
   const runSearch = useCallback(
     async (mode: UserMode, skills?: (string | null)[], experience?: string | null, sortBy?: string) => {
-      console.log('--- runSearch CALLED ---'); // 디버깅 로그 추가
-      const sanitizedSkills = skills ? skills.filter((s): s is string => !!s) : [];
-      const sanitizedExperience = experience || '';
-
-      if (sanitizedSkills.length === 0) {
-        console.warn('[Search] No skills selected');
-        document.dispatchEvent(
-          new CustomEvent('show-notification', {
-            detail: { message: '최소 1개 이상의 기술 스택을 선택해주세요.', type: 'warning' },
-          })
-        );
+      if (isSearching) {
+        console.warn('[Search] Search is already in progress.');
         return;
       }
 
-      const sortedSkills = [...sanitizedSkills].sort();
-      const effectiveSortBy = sortBy || getSortByString(mode);
+      const sanitizedSkills = skills ? skills.filter((s): s is string => !!s) : [];
+      if (sanitizedSkills.length === 0) {
+        // Handle no skills selected
+        return;
+      }
+
+      const newVars = {
+        mode,
+        skills: [...sanitizedSkills].sort(),
+        experience: experience || '',
+        sortBy: sortBy || getSortByString(mode),
+      };
+      currentSearchVars.current = newVars;
 
       setError(null);
       setHasMore(true);
-      setIsSearching(true); // 검색 시작 시 즉시 로딩 상태로 설정
-      hasLoadedMoreRef.current = false; // Reset loadMore flag for new search
-      dispatch(clearMatches(mode)); // Clear previous matches to show spinner immediately
+      setIsSearching(true); // Set loading state immediately
+      dispatch(clearMatches(mode));
 
-      console.log('[Search] Starting new search:', {
-        mode,
-        skills: sortedSkills,
-        experience: sanitizedExperience,
-        sortBy: effectiveSortBy,
-      });
+      try {
+        const result = await refetch({ ...newVars, limit: PAGE_SIZE, offset: 0 });
+        if (result.error) throw result.error;
 
-      setSearchParams({
-        mode,
-        skills: sortedSkills,
-        experience: sanitizedExperience,
-        sortBy: effectiveSortBy,
-      });
+        const newMatches = result.data?.searchMatches?.matches || [];
+        dispatch(setMatches({ userMode: mode, matches: newMatches }));
+        // Note: setSearchedSkills is called by the caller (HomePage.client.tsx) before runSearch
+        // to allow concurrent fetching. Do not call it here to avoid triggering ref reset loops.
+        setHasMore(newMatches.length >= PAGE_SIZE);
+
+      } catch (e: any) {
+        if (e.name !== 'AbortError') {
+          console.error('[Search] RunSearch failed:', e);
+          setError(e);
+        }
+      } finally {
+        setIsSearching(false); // Unset loading state
+      }
     },
-    [dispatch, getSortByString]
+    [dispatch, getSortByString, refetch, isSearching]
   );
 
   const loadMore = useCallback(async () => {
-    if (!hasMore || isFetchingMore || !searchParams) return;
-
+    if (!hasMore || isFetchingMore || !currentSearchVars.current) return;
     const now = Date.now();
-    const timeSinceLastLoad = now - lastLoadMoreTime.current;
-    if (timeSinceLastLoad < LOAD_MORE_THROTTLE_MS) {
-      console.log('[Search] Throttled - too soon since last load:', timeSinceLastLoad, 'ms');
-      return;
-    }
+    if (now - lastLoadMoreTime.current < LOAD_MORE_THROTTLE_MS) return;
     lastLoadMoreTime.current = now;
 
-    // 이후 useEffect에서 setMatches 호출 방지
-    hasLoadedMoreRef.current = true;
-
-    const currentLength = matches.length;
-    console.log('[Search] Loading more:', { currentLength, hasMore });
-
     try {
-      const result = await fetchMore({
-        variables: {
-          offset: currentLength,
-          sortBy: searchParams.sortBy || getSortByString(searchParams.mode),
-        },
-      });
-
-      console.log('[Search] FetchMore result:', result);
-
+      const result = await fetchMore({ variables: { offset: matches.length } });
       const newMatches = result.data?.searchMatches?.matches || [];
-
-      // Redux에 새 매치만 추가 (기존 데이터 유지)
       if (newMatches.length > 0) {
-        dispatch(
-          appendMatches({
-            userMode: searchParams.mode,
-            matches: newMatches,
-          })
-        );
+        dispatch(appendMatches({ userMode: currentSearchVars.current.mode, matches: newMatches }));
       }
-
       setHasMore(newMatches.length >= PAGE_SIZE);
     } catch (err) {
-      console.error('[Search] FetchMore error:', err);
-      setError(err as Error);
+      if ((err as Error).name !== 'AbortError') {
+        console.error('[Search] FetchMore error:', err);
+        setError(err as Error);
+      }
     }
-  }, [hasMore, isFetchingMore, searchParams, matches.length, fetchMore, getSortByString, dispatch]);
+  }, [hasMore, isFetchingMore, matches.length, fetchMore, dispatch]);
 
   return {
     runSearch,
     loadMore,
-    loading: isSearching || (apolloLoading && networkStatus !== NetworkStatus.fetchMore),
+    loading: isSearching,
     fetchingMore: isFetchingMore,
     error,
     matches,
