@@ -1,11 +1,5 @@
 package com.alpha.api.application.service;
 
-import com.alpha.api.domain.candidate.repository.CandidateSkillRepository;
-import com.alpha.api.domain.recruit.repository.RecruitSkillRepository;
-import com.alpha.api.domain.skilldic.entity.SkillCategoryDic;
-import com.alpha.api.domain.skilldic.entity.SkillEmbeddingDic;
-import com.alpha.api.domain.skilldic.repository.SkillCategoryDicRepository;
-import com.alpha.api.domain.skilldic.repository.SkillEmbeddingDicRepository;
 import com.alpha.api.presentation.graphql.type.CompanyJobCount;
 import com.alpha.api.presentation.graphql.type.DashboardCategoryData;
 import com.alpha.api.presentation.graphql.type.DashboardSkillStat;
@@ -14,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -29,10 +22,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DashboardService {
 
-    private final SkillCategoryDicRepository skillCategoryDicRepository;
-    private final SkillEmbeddingDicRepository skillEmbeddingDicRepository;
-    private final RecruitSkillRepository recruitSkillRepository;
-    private final CandidateSkillRepository candidateSkillRepository;
     private final DatabaseClient databaseClient;
 
     /**
