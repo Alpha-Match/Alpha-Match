@@ -1,22 +1,23 @@
 package com.alpha.backend.application.grpc.processor;
 
+import com.alpha.backend.infrastructure.grpc.proto.RowChunk;
+
 /**
  * gRPC Client Streaming 데이터 처리 인터페이스
  * <p>
- * Python 서버로부터 IngestDataStream으로 전송된 JSON 데이터를 파싱하고 저장합니다.
+ * Python 서버로부터 IngestDataStream으로 전송된 Protobuf 이진 데이터를 처리하고 저장합니다.
  */
 public interface DataProcessor {
 
     /**
-     * JSON 청크를 파싱하고 데이터베이스에 저장
+     * RowChunk를 파싱하고 데이터베이스에 저장
      * <p>
-     * JSON bytes → DTO 파싱 → Entity 변환 → DB 저장
+     * RowChunk → 도메인별 Row 리스트 → Entity 변환 → DB 저장
      *
-     * @param jsonChunk JSON 인코딩된 바이트 배열
+     * @param rowChunk Protobuf RowChunk 메시지
      * @return 처리된 row 개수
-     * @throws com.fasterxml.jackson.core.JsonProcessingException JSON 파싱 실패 시
      */
-    int processChunk(byte[] jsonChunk);
+    int processChunk(RowChunk rowChunk);
 
     /**
      * 지원하는 도메인 이름 반환

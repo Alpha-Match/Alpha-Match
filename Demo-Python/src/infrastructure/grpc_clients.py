@@ -11,12 +11,50 @@ from typing import List, AsyncGenerator
 
 import grpc
 from ..config.settings import server_config
-from ..domain.models import BaseData
+from ..domain.models import BaseData, RecruitData, CandidateData, SkillEmbeddingDicData
 # 프로젝트 내 다른 모듈 및 생성된 proto 파일 임포트
 from ..proto import embedding_stream_pb2
 from ..proto import embedding_stream_pb2_grpc
 
 logger = logging.getLogger(__name__)
+
+
+def _to_recruit_row(r: RecruitData) -> embedding_stream_pb2.RecruitRow:
+    return embedding_stream_pb2.RecruitRow(
+        id=r.id,
+        position=r.position,
+        company_name=r.company_name,
+        experience_years=r.experience_years or 0,
+        primary_keyword=r.primary_keyword or "",
+        english_level=r.english_level or "",
+        published_at=r.published_at or "",
+        skills=r.skills,
+        long_description=r.long_description or "",
+        description_lang=r.description_lang or "",
+        skills_vector=r.skills_vector,
+    )
+
+
+def _to_candidate_row(r: CandidateData) -> embedding_stream_pb2.CandidateRow:
+    return embedding_stream_pb2.CandidateRow(
+        candidate_id=r.candidate_id,
+        position_category=r.position_category,
+        experience_years=r.experience_years,
+        original_resume=r.original_resume,
+        skills=r.skills,
+        skills_vector=r.skills_vector,
+        resume_lang=r.resume_lang or "",
+        moreinfo=r.moreinfo or "",
+        looking_for=r.looking_for or "",
+    )
+
+
+def _to_skill_dic_row(r: SkillEmbeddingDicData) -> embedding_stream_pb2.SkillEmbeddingDicRow:
+    return embedding_stream_pb2.SkillEmbeddingDicRow(
+        skill=r.skill,
+        position_category=r.position_category,
+        skill_vector=r.skill_vector,
+    )
 
 
 async def _prepare_ingest_requests(
@@ -29,7 +67,7 @@ async def _prepare_ingest_requests(
     """
     gRPC 클라이언트 스트리밍을 위한 요청 생성기(비동기 제너레이터)입니다.
 
-    첫 번째 요청으로 메타데이터를 전송하고, 이후 데이터 청크를 순차적으로 전송합니다.
+    첫 번째 요청으로 메타데이터를 전송하고, 이후 Protobuf 이진 인코딩된 RowChunk를 순차적으로 전송합니다.
 
     Args:
         domain (str): 데이터 도메인.
@@ -42,7 +80,6 @@ async def _prepare_ingest_requests(
         IngestDataRequest: gRPC 서버로 보낼 요청 메시지.
     """
     # 1. 메타데이터 전송
-    # 스트림의 시작을 알리는 메타데이터를 먼저 전송합니다.
     total_chunks = (len(data) + chunk_size - 1) // chunk_size
     metadata = embedding_stream_pb2.IngestMetadata(
         domain=domain,
@@ -52,23 +89,41 @@ async def _prepare_ingest_requests(
     yield embedding_stream_pb2.IngestDataRequest(metadata=metadata)
     logger.info(f"스트림 시작: 메타데이터 전송 (도메인: {domain}, 파일: {file_name})")
 
-    # 2. 데이터 청크 순차적 전송
-    # 전체 데이터를 정해진 크기의 청크로 나누어 순차적으로 전송합니다.
+    # 2. 데이터 청크 순차적 전송 (Protobuf 이진 인코딩)
     for i in range(0, len(data), chunk_size):
         chunk_data = data[i:i + chunk_size]
+        chunk_index = i // chunk_size + 1
 
-        # Pydantic 모델 리스트를 dict 리스트로 변환
-        # model_dump()를 사용하여 각 모델을 Python dict로 변환
-        json_chunk = [item.model_dump() for item in chunk_data]
+        # Pydantic 모델 → Protobuf Row → RowChunk 변환
+        if domain == "recruit":
+            proto_rows = [_to_recruit_row(r) for r in chunk_data]
+            row_chunk = embedding_stream_pb2.RowChunk(
+                recruit=embedding_stream_pb2.RecruitRowChunk(rows=proto_rows)
+            )
+        elif domain == "candidate":
+            proto_rows = [_to_candidate_row(r) for r in chunk_data]
+            row_chunk = embedding_stream_pb2.RowChunk(
+                candidate=embedding_stream_pb2.CandidateRowChunk(rows=proto_rows)
+            )
+        elif domain == "skill_dic":
+            proto_rows = [_to_skill_dic_row(r) for r in chunk_data]
+            row_chunk = embedding_stream_pb2.RowChunk(
+                skill_dic=embedding_stream_pb2.SkillEmbeddingDicRowChunk(rows=proto_rows)
+            )
+        else:
+            raise ValueError(f"지원하지 않는 도메인: {domain}")
 
-        # dict 리스트를 JSON 배열 문자열로 직렬화하고 UTF-8 바이트로 인코딩
-        # 결과: [{"id": "...", ...}, {"id": "...", ...}]
-        encoded_chunk = json.dumps(json_chunk).encode('utf-8')
+        # [MEASURE] Protobuf vs JSON 크기 비교 (측정 완료 후 json_bytes 라인 제거 예정)
+        proto_bytes = row_chunk.ByteSize()
+        json_bytes = len(json.dumps([r.model_dump() for r in chunk_data]).encode('utf-8'))
+        logger.info(
+            f"[MEASURE] Chunk {chunk_index}/{total_chunks}: "
+            f"proto={proto_bytes:,}B  json={json_bytes:,}B  "
+            f"reduction={100*(1-proto_bytes/json_bytes):.1f}%"
+        )
 
-        yield embedding_stream_pb2.IngestDataRequest(data_chunk=encoded_chunk)
-        logger.debug(f"데이터 청크 {i//chunk_size + 1}/{total_chunks} 전송 ({len(chunk_data)} rows)")
-        # 실제 운영 환경에서는 부하를 줄이기 위해 짧은 대기를 추가할 수 있습니다.
-        # await asyncio.sleep(0.01)
+        yield embedding_stream_pb2.IngestDataRequest(data_chunk=row_chunk)
+        logger.debug(f"데이터 청크 {chunk_index}/{total_chunks} 전송 ({len(chunk_data)} rows)")
 
     logger.info("모든 데이터 청크 전송 완료")
 
@@ -125,7 +180,6 @@ async def stream_data_to_batch_server(
 
     except grpc.aio.AioRpcError as e:
         logger.error(f"gRPC 통신 실패: {e.code()} - {e.details()}")
-        # 실제 서비스에서는 재시도 로직 등을 추가할 수 있습니다.
         raise
     except Exception as e:
         logger.error(f"데이터 스트리밍 중 예기치 않은 오류 발생: {e}")

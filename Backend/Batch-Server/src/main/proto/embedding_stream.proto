@@ -80,7 +80,7 @@ message RecruitRow {
   repeated float skills_vector = 11; // 기술 스택 벡터 (1536d)
 }
 
-// Candidate 도메인 (후보자) - v2 (4-table 구조)
+// Candidate 도메인 (후보자) - v3 (4-table 구조)
 message CandidateRow {
   // candidate 테이블
   string candidate_id = 1;          // UUID v7
@@ -92,6 +92,9 @@ message CandidateRow {
 
   // candidate_description 테이블
   string original_resume = 4;       // 원문 이력서
+  optional string resume_lang = 7;  // 이력서 언어 (v3 신규)
+  optional string moreinfo = 8;     // 추가 정보 (v3 신규)
+  optional string looking_for = 9;  // 구직 희망사항 (v3 신규)
 
   // candidate_skills_embedding 테이블
   repeated float skills_vector = 6; // 기술 스택 벡터 (1536d, v2 통일)
@@ -111,8 +114,8 @@ message IngestDataRequest {
   // 첫 번째 요청에만 메타데이터를 포함
   oneof request_type {
     IngestMetadata metadata = 1;
-    // 실제 데이터 청크 (JSON 문자열 형태)
-    bytes data_chunk = 2;
+    // 실제 데이터 청크 (Protobuf 이진 인코딩)
+    RowChunk data_chunk = 2;
   }
 }
 

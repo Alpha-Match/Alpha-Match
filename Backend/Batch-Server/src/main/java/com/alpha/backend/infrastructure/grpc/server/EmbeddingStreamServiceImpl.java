@@ -5,8 +5,8 @@ import com.alpha.backend.application.grpc.processor.DataProcessorFactory;
 import com.alpha.backend.infrastructure.grpc.proto.IngestDataRequest;
 import com.alpha.backend.infrastructure.grpc.proto.IngestDataResponse;
 import com.alpha.backend.infrastructure.grpc.proto.IngestMetadata;
+import com.alpha.backend.infrastructure.grpc.proto.RowChunk;
 import com.alpha.backend.infrastructure.grpc.proto.EmbeddingStreamServiceGrpc;
-import com.google.protobuf.ByteString;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
@@ -16,11 +16,11 @@ import org.springframework.grpc.server.service.GrpcService;
 /**
  * gRPC Server: Client Streaming으로 데이터 수신
  * <p>
- * Python 서버가 IngestDataStream RPC로 데이터를 전송하면 수신하여 DB에 저장합니다.
+ * Python 서버가 IngestDataStream RPC로 Protobuf 이진 데이터를 전송하면 수신하여 DB에 저장합니다.
  * <p>
  * 통신 패턴: Client Streaming
  * - 첫 번째 메시지: IngestMetadata (도메인 정보)
- * - 이후 메시지들: data_chunk (JSON 인코딩된 데이터)
+ * - 이후 메시지들: data_chunk (RowChunk - Protobuf 이진 인코딩)
  * <p>
  * Port: 50051 (application.yml 설정)
  */
@@ -88,18 +88,17 @@ public class EmbeddingStreamServiceImpl extends EmbeddingStreamServiceGrpc.Embed
 
             /**
              * 데이터 청크 처리
-             * - JSON bytes → DTO 파싱 → Entity 변환 → DB 저장
+             * - RowChunk → 도메인별 Row 리스트 → Entity 변환 → DB 저장
              */
-            private void handleDataChunk(ByteString dataChunk) {
+            private void handleDataChunk(RowChunk rowChunk) {
                 if (processor == null) {
                     throw new IllegalStateException("Processor not initialized. Metadata must be sent first.");
                 }
 
-                byte[] jsonBytes = dataChunk.toByteArray();
-                log.debug("[CHUNK] Received data chunk: {} bytes", jsonBytes.length);
+                log.debug("[CHUNK] Received RowChunk for domain: {}", domain);
 
                 // Processor에서 파싱 및 저장
-                int processedRows = processor.processChunk(jsonBytes);
+                int processedRows = processor.processChunk(rowChunk);
 
                 receivedChunks++;
                 totalRows += processedRows;

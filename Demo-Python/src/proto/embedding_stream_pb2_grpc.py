@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-from . import embedding_stream_pb2 as embedding__stream__pb2
+import embedding_stream_pb2 as embedding__stream__pb2
 
 
 class EmbeddingStreamServiceStub(object):
