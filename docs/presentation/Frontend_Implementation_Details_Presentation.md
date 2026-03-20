@@ -108,20 +108,19 @@ sequenceDiagram
 
 ## 4. 💡 예외 및 디버깅 (Edge Cases / Debugging)
 
-### 4.1 Apollo Client 캐싱 및 스피너 문제
+### 4.1 Apollo Client 캐싱으로 인한 스피너 반복 문제
 
-프론트엔드 애플리케이션에서 특정 화면(예: `SearchResultAnalysisPanel`)을 다시 방문했을 때, 이전에 데이터를 성공적으로 불러왔음에도 불구하고 로딩 스피너가 항상 표시되는 현상이 발생했습니다. ViewModel 패턴과 `redux-persist`를 통해 상태 관리를 하고 있음에도 불구하고 데이터가 즉시 로드되지 않는 문제였습니다.
+화면 재방문 시 이미 조회된 데이터임에도 항상 로딩 스피너가 노출되는 현상이 발견되었습니다. ViewModel 패턴과 `redux-persist`를 통해 상태 관리를 하고 있음에도 불구하고 데이터가 즉시 로드되지 않는 문제였습니다.
 
-*   **원인 분석**: 문제의 근본 원인은 Apollo Client의 `fetchPolicy` 설정에 있었습니다. `apollo-client.ts`의 전역 `defaultOptions`에서 `query`의 `fetchPolicy`가 `network-only`로 설정되어 있었고, `useQuery` 훅은 이를 따르고 있었습니다. 이 정책은 캐시에 유효한 데이터가 있더라도 항상 네트워크 요청을 강제하기 때문에 불필요한 로딩 스피너가 노출되었습니다. 또한, `SearchResultAnalysisPanel`의 쿼리가 메인 검색 쿼리(`useSearchMatches`) 완료 후 Redux `searchedSkills` 상태 업데이트를 기다렸다가 시작되는 데이터 종속성으로 인해 스피너가 순차적으로 나타나는 문제가 있었습니다.
+*   **원인 분석**: 문제의 근본 원인은 Apollo Client의 `fetchPolicy` 설정에 있었습니다. `query`의 `fetchPolicy`가 `network-only`로 설정되어 있었고, `useQuery` 훅은 이를 따르고 있었습니다. 이 정책은 캐시에 유효한 데이터가 있더라도 항상 네트워크 요청을 강제하기 때문에 불필요한 로딩 스피너가 노출되었습니다.
 
 *   **해결책**:
-    1.  각 컴포넌트(`SearchResultAnalysisPanel`, `MainDashboard`, `TopSkills`, `useSearchMatches`)의 `useQuery` 훅에서 `fetchPolicy`를 `cache-first`로 명시적으로 설정하여, Apollo Client 캐시의 데이터를 우선적으로 사용하도록 변경했습니다. 이는 동일한 검색 조건으로 화면을 다시 방문했을 때 캐시 데이터가 즉시 표시되도록 합니다.
-    2.  `HomePage.client.tsx`의 `handleSearch` 함수에서 검색 시작 시 `selectedSkills`를 Redux의 `searchedSkills`로 즉시 디스패치하도록 변경했습니다. 이로써 `SearchResultAnalysisPanel`의 쿼리가 메인 검색 쿼리와 병렬로 시작될 수 있게 되어, 로딩 경험이 더 동시적으로 느껴지게 개선되었습니다.
+    1. `useQuery` 훅에서 `fetchPolicy`를 `cache-first`로 명시적으로 설정하여, Apollo Client 캐시의 데이터를 우선적으로 사용하도록 변경했습니다. 이는 동일한 검색 조건으로 화면을 다시 방문했을 때 캐시 데이터가 즉시 표시되도록 합니다.
 
-### 4.2 Hydration 오류 처리
+### 4.2 Server / Client Component 간 Hydration 오류 예방
 
-*   **문제**: Next.js 환경에서 Server Component와 Client Component 간의 렌더링 불일치(HTML 구조, 속성 등)로 인해 Hydration 과정에서 오류가 발생할 수 있습니다. 이는 특히 브라우저 환경에 따라 다르게 렌더링되는 요소(예: `<canvas>`, 날짜/시간 포맷)나 초기 클라이언트 상태에 따라 UI가 변경되는 경우 발생하기 쉽습니다. 프로젝트에서도 이와 유사한 렌더링 불일치 문제가 발생할 가능성이 있었고, 이를 선제적으로 방지할 필요가 있었습니다.
-*   **해결**: `src/lib/client/hooks/ui/useHydrated.ts`의 `useHydrated` 훅을 도입했습니다. 이 훅은 컴포넌트가 클라이언트에서 완전히 하이드레이션된 후에만 특정 클라이언트 전용 로직이나 UI 렌더링을 시작하도록 하여 렌더링 불일치로 인한 오류를 방지합니다. 예를 들어, 클라이언트 전용 라이브러리(차트, 맵 등)를 사용하는 컴포넌트는 `useHydrated`를 통해 안전하게 마운트될 수 있습니다.
+*   **문제**: Alpha-Match는 Next.js App Router 기반으로 초기 HTML은 Server Component에서 생성하여 ISR/SSR로 데이터가 포함된 HTML을 제공하고 이후 클라이언트에서 차트 라이브러리가 DOM을 다시 구성하는 구조를 사용합니다. 이때 <canvas> 기반의 차트 라이브러리와 같은 요소에 의해 Hydration 오류 발생하였습니다.
+*   **해결**: `useHydrated` 훅을 도입하여 차트와 같이 서버/클라이언트 간 렌더링 불일치 가능성이 있는 컴포넌트는 우선 Skeleton UI를 적용한 뒤 hydrated === true 이후에만 실제 렌더링 수행하게 하여 오류를 사전 차단하였습니다.
 
 ### 4.3 Apollo Error Link를 통한 전역 에러 처리
 
