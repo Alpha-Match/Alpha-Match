@@ -181,6 +181,15 @@
 
 ## 🛠️ 빠른 시작
 
+### DB 비밀번호 (필수 환경변수)
+DB 비밀번호는 저장소에 커밋하지 않습니다. 실행 전에 `DB_PASSWORD` 환경변수를 설정하세요.
+```bash
+export DB_PASSWORD=...        # Windows: set DB_PASSWORD=...
+```
+- Spring(Api/Batch): `application.yml`이 `${DB_PASSWORD}`를 읽음
+- Flyway(gradle): `-Pdb.password=...` 또는 `DB_PASSWORD`
+- `*.bat` 스크립트: `PGPASSWORD`가 없으면 `DB_PASSWORD`를 사용
+
 ### Batch Server 실행
 ```bash
 cd Backend/Batch-Server

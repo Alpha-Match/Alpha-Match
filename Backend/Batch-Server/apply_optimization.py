@@ -5,6 +5,7 @@ Apply Index Optimization
 - Keep only HNSW indexes
 """
 
+import os
 import psycopg2
 import time
 
@@ -14,7 +15,7 @@ DB_PARAMS = {
     'port': 5433,
     'database': 'alpha_match',
     'user': 'postgres',
-    'password': 'season@heaven!2'
+    'password': os.environ.get('DB_PASSWORD', '')
 }
 
 def connect_db():

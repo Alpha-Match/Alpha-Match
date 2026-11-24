@@ -6,6 +6,7 @@ Database Performance Test Script
 - Tests query execution time
 """
 
+import os
 import psycopg2
 import time
 import json
@@ -17,7 +18,7 @@ DB_PARAMS = {
     'port': 5433,
     'database': 'alpha_match',
     'user': 'postgres',
-    'password': 'season@heaven!2'
+    'password': os.environ.get('DB_PASSWORD', '')
 }
 
 def connect_db():

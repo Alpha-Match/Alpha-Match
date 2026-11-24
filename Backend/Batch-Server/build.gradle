@@ -119,7 +119,7 @@ protobuf {
 flyway {
 	url = project.findProperty("db.url")
 	user = project.findProperty("db.user")
-	password = project.findProperty("db.password")
+	password = project.findProperty("db.password") ?: System.getenv("DB_PASSWORD")
 	locations = ['classpath:db/migration']
 	cleanDisabled = true
 

@@ -15,7 +15,7 @@ spring:
   r2dbc:
     url: r2dbc:postgresql://localhost:5433/alpha_match
     username: postgres
-    password: season@heaven!2
+    password: ${DB_PASSWORD}
     pool:
       initial-size: 10
       max-size: 20
