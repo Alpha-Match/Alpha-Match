@@ -7,13 +7,13 @@ buildscript {
 		// Flyway Gradle Plugin 실행 엔진
 		classpath "org.flywaydb:flyway-core:11.14.1"
 		classpath "org.flywaydb:flyway-database-postgresql:11.14.1"
-		classpath "org.postgresql:postgresql:42.7.8"
+		classpath "org.postgresql:postgresql:42.7.15"
 	}
 }
 
 plugins {
 	id 'java'
-	id 'org.springframework.boot' version '4.0.0'
+	id 'org.springframework.boot' version '4.0.10'
 	id 'io.spring.dependency-management' version '1.1.7'
 	id 'com.google.protobuf' version '0.9.5'
 	id 'org.flywaydb.flyway' version '11.14.1'
@@ -41,7 +41,7 @@ repositories {
 }
 
 ext {
-	set('springGrpcVersion', "1.0.0")
+	set('springGrpcVersion', "1.0.3")
 }
 
 dependencies {
