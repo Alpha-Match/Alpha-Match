@@ -1,12 +1,21 @@
 # Web Server (FastAPI)
-fastapi==0.108.0
-uvicorn[standard]==0.25.0
-pydantic==2.5.3
+fastapi==0.165.0
+uvicorn[standard]==0.54.0
+pydantic==2.14.4
 
 # gRPC
-grpcio==1.60.0
-grpcio-tools==1.60.0
-protobuf==4.25.8
+# protobuf 5.x를 지원하는 마지막 grpcio-tools 계열(1.71.x). 1.72+는 protobuf 6.x가 필요해
+# 기존 생성 코드(src/proto/*_pb2.py, Protobuf 4.25 gencode) 재생성 없이 쓸 수 있는 범위로 유지
+grpcio==1.71.2
+grpcio-tools==1.71.2
+protobuf==5.29.6
+
+# 전이 의존성 보안 하한 (보안 권고 대응: starlette KEV CVE-2026-48710 등)
+starlette==1.10.0
+anyio==4.16.0
+h11==0.16.0
+idna==3.20
+setuptools==84.2.1
 
 # Data Processing
 pandas>=2.2.0  # Support numpy 2.x
