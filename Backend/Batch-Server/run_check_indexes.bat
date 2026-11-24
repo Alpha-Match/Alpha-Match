@@ -1,3 +1,3 @@
 @echo off
-set PGPASSWORD=season@heaven!2
+if not defined PGPASSWORD set PGPASSWORD=%DB_PASSWORD%
 psql -h localhost -p 5433 -U postgres -d alpha_match -f check_vector_indexes.sql
